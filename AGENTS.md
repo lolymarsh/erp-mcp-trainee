@@ -23,7 +23,7 @@ Frontend:  React 19 + Vite + TypeScript (strict)
            Zustand (global state), Recharts (charts)
            Zod (validation), Axios (HTTP)
 
-Backend:   Node.js 22 + Express + TypeScript (strict)
+Backend:   Node.js 22 + Express 5 + TypeScript (strict)
            Drizzle ORM (MySQL), Mongoose (MongoDB)
            Zod (validation), bcrypt (password), jsonwebtoken
            Jest + Supertest + Testcontainers (testing)
@@ -268,6 +268,42 @@ Config ที่ `eslint.config.mjs`:
 - `@typescript-eslint/no-explicit-any` (ห้าม any)
 - `no-restricted-syntax` (≈ forbidigo: ห้าม `== ""`)
 
-## 12. Speak Thai
+## 12. Dependencies — Use Latest Stable
+
+เมื่อ implement Phase 01 (project init) หรือเพิ่ม dependency ใหม่:
+
+```bash
+# ✅ ติดตั้ง latest stable เสมอ — ใช้ @latest
+npm install express@latest cors@latest helmet@latest
+npm install drizzle-orm@latest mysql2@latest zod@latest
+npm install ioredis@latest amqplib@latest mongoose@latest
+
+# ✅ Dev deps latest
+npm install -D typescript@latest tsx@latest jest@latest
+npm install -D eslint@latest prettier@latest drizzle-kit@latest
+
+# ❌ ห้าม: ใช้ caret (^) แล้วลืม — npm outdated เช็คก่อน
+# ❌ ห้าม: ใช้เวอร์ชั่นเก่าติด project — npm update ทุกครั้งที่ setup
+```
+
+ก่อน commit: `npm outdated` → ถ้ามีแพ็กเกจเก่า → `npm update` → ทดสอบว่าไม่พัง → commit
+
+## 13. Middleware Strategy
+
+```
+App Server (Express):
+  ✅ CORS allow all      (origin: '*')
+  ✅ JSON parsing        (Express 5 built-in)
+  ✅ JWT Auth            (business logic — อยู่ที่ app)
+
+DevOps (Nginx/Traefik — Phase 09):
+  🔒 Rate Limiting       (ย้ายจาก rateLimit.ts → Nginx limit_req_zone)
+  🔒 CORS restriction    (filter origins ที่ reverse proxy)
+  🔒 Security Headers    (CSP, HSTS, X-Frame-Options)
+```
+
+rateLimit.ts เก็บไว้เป็น dev fallback — comment ว่า "production: use Nginx instead"
+
+## 14. Speak Thai
 
 ตอบเป็นภาษาไทย — เพราะ user และ codebase นี้เป็นภาษาไทย

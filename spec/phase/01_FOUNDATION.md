@@ -27,13 +27,16 @@ docker compose up -d
 ```bash
 cd backend
 npm init -y
-npm install express cors helmet pino pino-pretty
+npm install express@^5.2.1 cors helmet pino pino-pretty
 npm install drizzle-orm mysql2 zod bcrypt jsonwebtoken
 npm install ioredis amqplib mongoose uuid
-npm install -D typescript @types/node @types/express @types/bcrypt @types/jsonwebtoken @types/cors @types/uuid
+npm install -D typescript @types/node @types/cors @types/bcrypt @types/jsonwebtoken @types/uuid
 npm install -D tsx jest ts-jest @types/jest supertest @types/supertest @testcontainers/mysql
 npm install -D eslint prettier typescript-eslint eslint-plugin-prettier
 npm install -D drizzle-kit
+
+# Express 5: no @types/express needed — types bundled
+# Express 5: req.body available without body-parser
 npx tsc --init --strict
 ```
 
@@ -254,8 +257,8 @@ backend/src/shared/
 ├── pagination/
 │   └── schema.ts            ← paginationSchema, filterSchema, filterRequestSchema, FilterRequest type
 ├── middleware/
-│   ├── auth.ts              ← JWT verify + Redis session check
-│   ├── rateLimit.ts         ← Redis-based rate limiter (20 req/min)
+│   ├── auth.ts              ← JWT + Redis session verify
+│   ├── rateLimit.ts         ← Dev fallback (production → Nginx/Traefik)
 │   └── validator.ts         ← Zod schema validation middleware
 └── mapper/
     └── map.ts               ← Generic type mapper utility

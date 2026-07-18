@@ -1,7 +1,7 @@
 # Versus Thailand ERP — Architecture
 
 > **Project**: Study/Learning — No Production Deployment
-> **Stack**: React 19 (MVC) + MUI + Tailwind / Node.js + Express + TypeScript
+> **Stack**: React 19 (MVC) + MUI + Tailwind / Node.js + Express 5 + TypeScript
 > **Infra**: Docker — MySQL, MongoDB, Redis, RabbitMQ
 
 ---
@@ -139,7 +139,7 @@ backend/
 │   ├── shared/                 # Shared utilities (≈ Go pkg/)
 │   │   ├── middleware/
 │   │   │   ├── auth.ts         # JWT + Redis session middleware
-│   │   │   ├── rateLimit.ts    # Rate limiter (Redis-based)
+│   │   │   ├── rateLimit.ts    # Rate limiter (dev fallback — DevOps handles in prod)
 │   │   │   └── validator.ts    # Zod validation middleware
 │   │   ├── errors/
 │   │   │   └── AppError.ts     # Custom error classes (≈ apperrors package)
@@ -737,7 +737,67 @@ export function setupRoutes(app: Express): void {
 
 ---
 
-## 6. Frontend MVC Architecture
+## 6. DevOps Layer (Reverse Proxy Strategy)
+
+อ่านเต็มที่ `spec/phase/09_DEVOPS.md`
+
+### Philosophy: App Server บางที่สุด
+
+```
+สิ่งที่ App Server (Express) ทำ:
+  ✅ CORS allow all (origin: '*')       ← DevOps ค่อย filter ที่ reverse proxy
+  ✅ JSON parsing (Express 5 built-in)   ← ไม่ต้อง body-parser
+  ✅ Health check
+  ✅ Business routes
+
+สิ่งที่ DevOps (Nginx/Traefik) ทำ:
+  🔒 Rate Limiting
+  🔒 CORS (actual restriction)
+  🔒 Security Headers (CSP, HSTS, X-Frame)
+  🔒 HTTPS/TLS Termination
+  🔒 Static File Serving (frontend build)
+  🔒 Compression (gzip/brotli)
+  🔒 Access Logs
+```
+
+### Express 5 — What Changed from v4
+
+| v4 | v5 | Impact |
+|----|----|--------|
+| `npm i express @types/express body-parser` | `npm i express` | Types in-box, JSON parsing built-in |
+| `app.use(express.json())` | Same | No change |
+| `app.use(cors({ origin: '*' }))` | Same | ยัง allow all — Nginx filter จริง |
+| `helmet()` | Optional (Nginx handles) | ถ้ามี reverse proxy = disable helmet |
+| `rateLimit.ts` middleware | Remove (Nginx handles) | ลดโค้ดใน app server |
+| Error: 4-arg handler | Same | `(err, req, res, next)` |
+| `req.query` prototype pollution | Fixed in v5 | ปลอดภัยกว่า |
+
+### App Server Middleware (Minimal)
+
+```ts
+// app.ts — Express 5, บางที่สุด
+import express from 'express';
+import cors from 'cors';
+import { setupRoutes } from './router';
+
+const app = express();
+
+app.use(cors({ origin: '*' }));  // allow all — Nginx filters origins
+app.use(express.json());         // Express 5 built-in
+
+app.get('/health', (_req, res) => res.json({ code: 200, message: 'healthy' }));
+
+setupRoutes(app);
+
+export default app;
+```
+
+> **Note**: ถ้า dev โดยตรง (ไม่มี reverse proxy) — helmet + rateLimit ยังมีอยู่เป็น fallback
+> ถ้ามี Nginx/Traefik หน้าบ้าน → helmet + rateLimit ปิดได้ ย้ายไป DevOps layer
+
+---
+
+## 7. Frontend MVC Architecture
 
 ### 6.1 MVC in React — วิธีคิด
 
@@ -1062,9 +1122,9 @@ User Action (click, type)
 
 ---
 
-## 7. Data Flows
+## 8. Data Flows
 
-### 7.1 Standard CRUD Flow (Customer Example)
+### 8.1 Standard CRUD Flow (Customer Example)
 
 ```
 Frontend                  Backend                     MySQL
@@ -1085,7 +1145,7 @@ Frontend                  Backend                     MySQL
    │◄── 200 { data: [...] }─│                          │
 ```
 
-### 7.2 AI Chat Flow (Synchronous)
+### 8.2 AI Chat Flow (Synchronous)
 
 ```
 Frontend                  Backend                     LLM API        MySQL        Redis
@@ -1129,7 +1189,7 @@ Frontend                  Backend                     LLM API        MySQL      
    │                         │                          │    └─────────────────────┘
 ```
 
-### 7.3 AI Chat Flow (Async — Heavy Query / Export)
+### 8.3 AI Chat Flow (Async — Heavy Query / Export)
 
 ```
 Frontend            Backend                   RabbitMQ          Worker              Redis
@@ -1160,7 +1220,7 @@ Frontend            Backend                   RabbitMQ          Worker          
    │     downloadUrl }  │                         │                │                  │
 ```
 
-### 7.4 Report Generation Flow (RabbitMQ)
+### 8.4 Report Generation Flow (RabbitMQ)
 
 ```
 Frontend            Backend                   RabbitMQ          reportWorker       MySQL
@@ -1188,9 +1248,9 @@ Frontend            Backend                   RabbitMQ          reportWorker    
 
 ---
 
-## 8. Key Design Patterns
+## 9. Key Design Patterns
 
-### 8.1 Dependency Injection (Go-style → TypeScript)
+### 9.1 Dependency Injection (Go-style → TypeScript)
 
 ```
 Go:
@@ -1205,7 +1265,7 @@ TypeScript:
   // all wired in src/router.ts — same as internal/router/router.go
 ```
 
-### 8.2 Interface-based Design (เหมือน Go เป๊ะ)
+### 9.2 Interface-based Design (เหมือน Go เป๊ะ)
 
 ```ts
 // repo.ts — interface defines contract
@@ -1227,7 +1287,7 @@ const mockRepo: IUserRepository = {
 const svc = new UserService(mockRepo); // ← swap real for mock in tests
 ```
 
-### 8.3 Optimistic Locking (Version Check)
+### 9.3 Optimistic Locking (Version Check)
 
 ```ts
 // repo.ts — same pattern as your Go code (version column)
@@ -1247,7 +1307,7 @@ if (!updated) {
 }
 ```
 
-### 8.4 Fire-and-Forget Audit Log (Non-blocking)
+### 9.4 Fire-and-Forget Audit Log (Non-blocking)
 
 ```ts
 // Go: _ = s.auditService.InsertAuditLog(...)  // ignore error, non-blocking
@@ -1262,11 +1322,11 @@ try {
 
 ---
 
-## 9. Coding Rules — ห้ามละเมิด
+## 10. Coding Rules — ห้ามละเมิด
 
 อิงจาก `/Users/lolymarsh/Desktop/project/be-go-echo/pkg/request/request.go` และ `pkg/common/pagination_helper.go`
 
-### 9.1 Pagination — ทุก List/GET/Filter ต้องมี
+### 10.1 Pagination — ทุก List/GET/Filter ต้องมี
 
 **Rule**: ทุก endpoint ที่ return รายการ (list) ต้องรับ pagination params และ return pagination metadata
 
@@ -1381,7 +1441,7 @@ app.get('/customers/:id', authMiddleware, handler.getById);
 // Response: { "code": 200, "data": { "id": "...", ... } }
 ```
 
-### 9.2 Transaction — Multi-Table Writes ต้องใช้ DB Transaction
+### 10.2 Transaction — Multi-Table Writes ต้องใช้ DB Transaction
 
 **Rule**: เมื่อ API หนึ่งต้อง insert/update/delete หลายตารางพร้อมกัน — **ห้าม execute ทีละ query** ต้อง wrap ด้วย transaction
 
@@ -1471,7 +1531,7 @@ const [product] = await db.select().from(products).where(...);     // no FOR UPD
 await db.update(products).set({ stock: product.stock - qty });     // race condition!
 ```
 
-### 9.3 Optimistic Locking — Version Check ทุก PATCH/PUT
+### 10.3 Optimistic Locking — Version Check ทุก PATCH/PUT
 
 **Rule**: ทุก PATCH/PUT/DELETE ต้องรับ `version` จากหน้าบ้าน หลังบ้าน query เช็ค version ตรงกัน — ถ้าไม่ตรง = มีคนแก้ไขไปแล้ว → return 409 Conflict
 
@@ -1602,7 +1662,7 @@ export function useCustomerDetail(id: string) {
 }
 ```
 
-### 9.4 Rules Summary
+### 10.4 Rules Summary
 
 | # | Rule | Scope | Penalty |
 |---|------|-------|---------|
@@ -1616,7 +1676,7 @@ export function useCustomerDetail(id: string) {
 
 ---
 
-## 10. Environment Variables (`.env`)
+## 11. Environment Variables (`.env`)
 
 ```bash
 # ===== Server =====
@@ -1653,7 +1713,7 @@ LLM_MODEL=gemini-1.5-flash
 
 ---
 
-## 11. Development Commands
+## 12. Development Commands
 
 ```bash
 # Start all infrastructure
@@ -1684,7 +1744,7 @@ npm run test:e2e      # Playwright
 
 ---
 
-## 12. Testing Architecture
+## 13. Testing Architecture
 
 ```
 backend/src/modules/user/

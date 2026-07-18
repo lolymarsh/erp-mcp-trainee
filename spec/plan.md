@@ -3,7 +3,7 @@
 > **Business**: ติดตั้งแก๊สรถยนต์ (CNG/LPG Vehicle Gas Installation)
 > **Purpose**: โปรเจกต์ศึกษาก่อนเข้าทำงานจริง (Study/Learning Project) — ไม่มี Deploy จริง
 > **Type**: Internal ERP พร้อม AI Chatbot
-> **Stack**: React 19 (MVC) + React Router + MUI + Tailwind / Node.js + Express — ALL TypeScript
+> **Stack**: React 19 (MVC) + React Router + MUI + Tailwind / Node.js + Express 5 — ALL TypeScript
 > **Infra**: Docker Compose — MySQL, MongoDB, Redis, RabbitMQ
 
 ---
@@ -554,7 +554,7 @@ erp-mcp-trainee/
 │   │   ├── shared/              ← Cross-cutting (≈ Go pkg/)
 │   │   │   ├── middleware/
 │   │   │   │   ├── auth.ts      ← JWT + Redis session verify
-│   │   │   │   ├── rateLimit.ts ← Redis-based rate limiter
+│   │   │   │   ├── rateLimit.ts ← Dev fallback (production → Nginx)
 │   │   │   │   └── validator.ts ← Zod schema middleware
 │   │   │   ├── errors/
 │   │   │   │   └── AppError.ts  ← Custom error classes (NotFound, Unauthorized, Conflict)
@@ -597,7 +597,7 @@ erp-mcp-trainee/
 | **Styling** | Tailwind CSS v4 | Utility-first, custom layouts |
 | **State Management** | Zustand | Simple, no boilerplate |
 | **Charts** | Recharts | Dashboard charts |
-| **Backend** | Node.js + Express + TypeScript | ตาม requirement |
+| **Backend** | Node.js + Express 5 + TypeScript | Types in-box, no @types/express needed |
 | **Architecture Pattern** | Go-style Domain Modules | 1 folder = 1 business domain (entity, schema, handler, service, repo, route) |
 | **SQL Database** | MySQL 8.4 | Core business data, ACID, complex queries |
 | **NoSQL Database** | MongoDB 7 | Chat history, activity logs, audit trail |
@@ -684,6 +684,7 @@ Week 13-14: Advanced Features
   ├── Advanced AI (forecast, recommendations)
   ├── Performance optimization (Redis caching strategy)
   ├── More E2E test coverage
+  ├── DevOps setup (Nginx reverse proxy, TLS, rate limit at edge)
   └── Documentation (Thai + English)
 ```
 
@@ -807,6 +808,7 @@ services:
 8. 🔜 `AI Chatbot MVP` — LLM integration + chat UI + tests
 9. 🔜 `Dashboard` — Summary + charts + Redis cache + tests
 10. 🔜 `E2E Tests` — Playwright critical flows
+11. 🔜 `DevOps` — Reverse proxy, TLS, rate limit (Phase 09 — reference only)
 
 ---
 

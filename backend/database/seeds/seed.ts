@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
-import { db } from '../../src/config/database';
+import { createDb } from '../../src/config/database';
 import * as schema from '../../src/config/schema';
 import { logger } from '../../src/config/logger';
 
 async function seed(): Promise<void> {
   logger.info('Seeding database...');
+  const { db } = createDb();
 
   const adminId = uuidv4();
   const hash = await bcrypt.hash('admin123', 12);

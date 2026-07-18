@@ -199,3 +199,22 @@ npm run typecheck   # tsc --noEmit (= go vet)
 ```
 
 Rules: max-lines-per-function=40, complexity=15, max-depth=5, no-any, no-floating-promises
+
+### 12. Dependencies — Latest Stable
+
+เมื่อ setup project หรือเพิ่ม dependency — ใช้ `@latest` เสมอ:
+```bash
+npm install express@latest drizzle-orm@latest zod@latest
+npm install -D typescript@latest eslint@latest drizzle-kit@latest
+```
+
+ก่อน commit: `npm outdated` → `npm update` → ทดสอบ
+
+### 13. Middleware Strategy
+
+```
+App Server:         CORS allow all + Auth + Validator
+DevOps (Nginx):     Rate Limiting, CORS restriction, Security Headers
+```
+
+rateLimit.ts เก็บไว้เป็น dev fallback — comment บอกว่าย้ายไป Nginx ใน production

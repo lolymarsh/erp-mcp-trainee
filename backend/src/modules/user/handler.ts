@@ -6,6 +6,12 @@ import { sendSuccess, sendError } from '../../shared/response/handler';
 import { AppError } from '../../shared/errors/AppError';
 import { logger } from '../../config/logger';
 
+function formatZodError(err: ZodError): string {
+  return err.issues
+    .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+    .join(', ');
+}
+
 export class UserHandler {
   constructor(private svc: IUserService) {}
 
@@ -20,7 +26,7 @@ export class UserHandler {
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '));
+        sendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, 'login failed');
@@ -54,7 +60,7 @@ export class UserHandler {
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '));
+        sendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, 'createUser failed');
