@@ -166,6 +166,136 @@ describe("InventoryHandler", () => {
       await handler.filter(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
+
+    it("should handle AppError in filter", async () => {
+      svc.filter.mockRejectedValue(new AppError(400, "Invalid filter"));
+      const { req, res } = mockReqRes();
+      req.body = { page: 1, pageSize: 20 };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle ZodError in filter", async () => {
+      const { req, res } = mockReqRes();
+      req.body = { page: "abc" };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in getById", async () => {
+      svc.getById.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      await handler.getById(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in create", async () => {
+      svc.create.mockRejectedValue(new AppError(409, "Duplicate SKU"));
+      const { req, res } = mockReqRes();
+      req.body = { categoryId: "cat-1", sku: "GS-001", name: "test" };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(409);
+    });
+
+    it("should handle ZodError in create", async () => {
+      const { req, res } = mockReqRes();
+      req.body = {};
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in create", async () => {
+      svc.create.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.body = { categoryId: "cat-1", sku: "GS-001", name: "test" };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in update", async () => {
+      svc.update.mockRejectedValue(new AppError(404, "Product not found"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { name: "Updated", version: 1 };
+      await handler.update(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle ZodError in update", async () => {
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { version: "abc" };
+      await handler.update(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in update", async () => {
+      svc.update.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { name: "Updated", version: 1 };
+      await handler.update(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in softDelete", async () => {
+      svc.softDelete.mockRejectedValue(new AppError(404, "Product not found"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { version: 1 };
+      await handler.softDelete(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle ZodError in softDelete", async () => {
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = {};
+      await handler.softDelete(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in softDelete", async () => {
+      svc.softDelete.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { version: 1 };
+      await handler.softDelete(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in adjustStock", async () => {
+      svc.adjustStock.mockRejectedValue(new AppError(404, "Product not found"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { type: "IN", quantity: 5 };
+      await handler.adjustStock(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should handle 500 in adjustStock", async () => {
+      svc.adjustStock.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "prod-1" };
+      req.body = { type: "IN", quantity: 5 };
+      await handler.adjustStock(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in listCategories", async () => {
+      svc.listCategories.mockRejectedValue(new AppError(500, "DB error"));
+      const { req, res } = mockReqRes();
+      await handler.listCategories(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle 500 in listCategories", async () => {
+      svc.listCategories.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      await handler.listCategories(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 
   describe("extractId with array params", () => {

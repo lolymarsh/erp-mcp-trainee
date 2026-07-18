@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Request, Response } from "express";
-import { ZodError } from "zod";
 import { UserHandler } from "./handler";
 import type { IUserService } from "./service";
 import { AppError } from "../../shared/errors/AppError";
@@ -40,6 +38,7 @@ describe("UserHandler", () => {
     it("should return 401 on invalid credentials", async () => {
       svc.login.mockRejectedValue(new AppError(401, "Invalid credentials"));
       const { req, res } = mockReqRes();
+      req.body = { username: "admin", password: "wrong" };
       await handler.login(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
     });
@@ -76,6 +75,14 @@ describe("UserHandler", () => {
       await handler.getProfile(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
+
+    it("should return 500 on unexpected error", async () => {
+      svc.getProfile.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.user = { userId: "u1", role: "ADMIN" };
+      await handler.getProfile(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 
   describe("createUser", () => {
@@ -93,6 +100,21 @@ describe("UserHandler", () => {
       req.body = { username: "admin", password: "pass123", displayName: "Admin", role: "ADMIN" };
       await handler.createUser(req, res);
       expect(res.status).toHaveBeenCalledWith(409);
+    });
+
+    it("should return 400 on validation error", async () => {
+      const { req, res } = mockReqRes();
+      req.body = {};
+      await handler.createUser(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should return 500 on unexpected error", async () => {
+      svc.createUser.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.body = { username: "newuser", password: "pass123", displayName: "New", role: "STAFF" };
+      await handler.createUser(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 });

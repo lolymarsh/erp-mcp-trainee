@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Request, Response } from "express";
 import { JobHandler } from "./handler";
 import type { IJobService } from "./service";
@@ -73,6 +72,14 @@ describe("JobHandler", () => {
       await handler.getById(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
+
+    it("should handle extractId with array params", async () => {
+      svc.getById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
+      const { req, res } = mockReqRes();
+      req.params = { id: ["job-1", "job-2"] as any };
+      await handler.getById(req, res);
+      expect(svc.getById).toHaveBeenCalledWith("job-1");
+    });
   });
 
   describe("create", () => {
@@ -94,6 +101,15 @@ describe("JobHandler", () => {
       req.user = { userId: "user-1", role: "ADMIN" };
       await handler.updateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it("should use system when no req.user", async () => {
+      svc.updateStatus.mockResolvedValue({ job: { ...mockJob, status: "IN_PROGRESS", version: 2 }, log: mockLog });
+      const { req, res } = mockReqRes();
+      req.params = { id: "job-1" };
+      req.body = { status: "IN_PROGRESS", version: 1 };
+      await handler.updateStatus(req, res);
+      expect(svc.updateStatus).toHaveBeenCalledWith("job-1", expect.any(Object), "system");
     });
 
     it("should return 409 on version mismatch", async () => {
@@ -142,6 +158,86 @@ describe("JobHandler", () => {
 
     it("should handle 500 on unexpected error in todayQueue", async () => {
       svc.getTodayQueue.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      await handler.todayQueue(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in filter", async () => {
+      svc.filter.mockRejectedValue(new AppError(400, "Invalid filter"));
+      const { req, res } = mockReqRes();
+      req.body = { page: 1, pageSize: 20 };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle ZodError in filter", async () => {
+      const { req, res } = mockReqRes();
+      req.body = { page: "abc" };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in filter", async () => {
+      svc.filter.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.body = { page: 1, pageSize: 20, filters: [] };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle 500 in getById", async () => {
+      svc.getById.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "job-1" };
+      await handler.getById(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in create", async () => {
+      svc.create.mockRejectedValue(new AppError(400, "Invalid job data"));
+      const { req, res } = mockReqRes();
+      req.body = { customerId: "cust-1", vehicleId: "veh-1", jobType: "INSTALL" };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in create", async () => {
+      svc.create.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.body = { customerId: "cust-1", vehicleId: "veh-1", jobType: "INSTALL" };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in updateStatus", async () => {
+      svc.updateStatus.mockRejectedValue(new AppError(403, "Forbidden"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "job-1" };
+      req.body = { status: "IN_PROGRESS", version: 1 };
+      await handler.updateStatus(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it("should handle ZodError in updateStatus", async () => {
+      const { req, res } = mockReqRes();
+      req.params = { id: "job-1" };
+      req.body = { status: "INVALID" };
+      await handler.updateStatus(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in updateStatus", async () => {
+      svc.updateStatus.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "job-1" };
+      req.body = { status: "IN_PROGRESS", version: 1 };
+      await handler.updateStatus(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in todayQueue", async () => {
+      svc.getTodayQueue.mockRejectedValue(new AppError(500, "DB error"));
       const { req, res } = mockReqRes();
       await handler.todayQueue(req, res);
       expect(res.status).toHaveBeenCalledWith(500);

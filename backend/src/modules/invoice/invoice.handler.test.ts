@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Request, Response } from "express";
 import { InvoiceHandler } from "./handler";
 import type { IInvoiceService } from "./service";
@@ -50,6 +49,20 @@ describe("InvoiceHandler", () => {
       req.params = { id: "inv-1" };
       await handler.getById(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it("should handle extractId with array params", async () => {
+      svc.getById.mockResolvedValue({
+        id: "inv-1", invoiceNumber: "INV-001", customerId: "c1", vehicleId: null,
+        totalAmount: "5000", discount: "0", tax: "0", grandTotal: "5000",
+        paymentStatus: "PENDING", paymentMethod: null, createdBy: "u1", version: 1,
+        createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
+        items: [],
+      });
+      const { req, res } = mockReqRes();
+      req.params = { id: ["inv-1", "inv-2"] as any };
+      await handler.getById(req, res);
+      expect(svc.getById).toHaveBeenCalledWith("inv-1");
     });
   });
 
@@ -115,6 +128,59 @@ describe("InvoiceHandler", () => {
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
       await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in filter", async () => {
+      svc.filter.mockRejectedValue(new AppError(400, "Invalid filter"));
+      const { req, res } = mockReqRes();
+      req.body = { page: 1, pageSize: 20 };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle ZodError in filter", async () => {
+      const { req, res } = mockReqRes();
+      req.body = { page: "abc" };
+      await handler.filter(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in getById", async () => {
+      svc.getById.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.params = { id: "inv-1" };
+      await handler.getById(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in create", async () => {
+      svc.create.mockRejectedValue(new AppError(400, "Invalid data"));
+      const { req, res } = mockReqRes();
+      req.body = { customerId: "c1", items: [{ productId: "p1", quantity: 1 }] };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it("should handle 500 in create", async () => {
+      svc.create.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      req.body = { customerId: "c1", items: [{ productId: "p1", quantity: 1 }] };
+      await handler.create(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle AppError in todaySummary", async () => {
+      svc.getTodaySummary.mockRejectedValue(new AppError(500, "DB error"));
+      const { req, res } = mockReqRes();
+      await handler.todaySummary(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should handle 500 in todaySummary", async () => {
+      svc.getTodaySummary.mockRejectedValue(new Error("unexpected"));
+      const { req, res } = mockReqRes();
+      await handler.todaySummary(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });

@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Request, Response } from "express";
-import { UserHandler as _ignore } from "../user/handler";
 import { CustomerHandler } from "./handler";
 import type { ICustomerService } from "./service";
 import { AppError } from "../../shared/errors/AppError";
