@@ -1,0 +1,240 @@
+---
+trigger: always_on
+---
+
+# Repository Layer Patterns
+
+## 0. Dependency Injection — CRITICAL
+
+**ห้าม import `db` global ใน repo — ต้อง inject ผ่าน constructor** (เหมือน Go `NewRepository(db *bun.DB)`)
+
+```ts
+// ✅ CORRECT — inject db
+import type { MySql2Database } from 'drizzle-orm/mysql2';
+
+export class CustomerRepository implements ICustomerRepository {
+  constructor(private db: MySql2Database<Record<string, never>>) {}
+  // ใช้ this.db.select()...
+}
+
+// ❌ WRONG — global import = test ไม่ได้
+import { db } from '../../config/database';
+export class CustomerRepository {
+  async findById(id: string) {
+    return db.select()...  // ← global = mock ไม่ได้
+  }
+}
+```
+
+**Wire in router.ts** (เหมือน `internal/router/router.go`):
+```ts
+import { db } from './config/database';
+const repo = new CustomerRepository(db);       // inject db
+const svc = new CustomerService(repo);
+const handler = new CustomerHandler(svc);
+```
+
+## 1. Interface Definition
+
+```ts
+export interface ICustomerRepository {
+  // Single entity
+  findById(id: string): Promise<CustomerEntity | null>;
+  findByPhone(phone: string): Promise<CustomerEntity | null>;
+
+  // Filter + Pagination
+  findByFilters(filters: FilterRequest): Promise<CustomerEntity[]>;
+  countByFilters(filters: FilterRequest): Promise<number>;
+
+  // Mutations
+  create(data: CreateCustomerData): Promise<CustomerEntity>;
+  update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null>;
+  softDelete(id: string, version: number): Promise<boolean>;
+}
+```
+
+## 2. Find by ID
+
+```ts
+async findById(id: string): Promise<CustomerEntity | null> {
+  const result = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.id, id))
+    .limit(1);
+  return result[0] ?? null;
+}
+```
+
+## 3. Filter with Drizzle
+
+```ts
+async findByFilters(filters: FilterRequest): Promise<CustomerEntity[]> {
+  let query = db.select().from(customers);
+
+  for (const filter of filters.filters ?? []) {
+    switch (filter.field) {
+      case 'search':
+        query = query.where(
+          or(
+            like(customers.firstName, `%${filter.value}%`),
+            like(customers.lastName, `%${filter.value}%`),
+            like(customers.phone, `%${filter.value}%`),
+            like(customers.licensePlate, `%${filter.value}%`),
+          )
+        );
+        break;
+      case 'is_active':
+        query = query.where(eq(customers.isActive, filter.value === 'true'));
+        break;
+    }
+  }
+
+  // Pagination
+  const offset = (filters.page - 1) * filters.pageSize;
+  query = query.limit(filters.pageSize).offset(offset);
+
+  // Sorting
+  if (filters.sortName && filters.sortBy) {
+    const column = customers[filters.sortName as keyof typeof customers];
+    query = query.orderBy(filters.sortBy === 'desc' ? desc(column) : asc(column));
+  } else {
+    query = query.orderBy(desc(customers.createdAt));
+  }
+
+  return query;
+}
+
+async countByFilters(filters: FilterRequest): Promise<number> {
+  // Same filter logic without pagination
+  let query = db.select({ count: count() }).from(customers);
+  // ... apply same filters ...
+  const result = await query;
+  return result[0]?.count ?? 0;
+}
+```
+
+## 4. Create
+
+```ts
+async create(data: CreateCustomerData): Promise<CustomerEntity> {
+  const [customer] = await db
+    .insert(customers)
+    .values({
+      ...data,
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .$returningId();
+  return customer as CustomerEntity;
+}
+```
+
+## 5. Update with Optimistic Locking
+
+```ts
+async update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null> {
+  const [updated] = await db
+    .update(customers)
+    .set({
+      ...data,
+      version: version + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(customers.id, id))
+    .where(eq(customers.version, version))  // ← optimistic lock check
+    .$returningId();
+
+  return updated ?? null;  // null = version mismatch or not found
+}
+```
+
+## 6. Soft Delete
+
+```ts
+async softDelete(id: string, version: number): Promise<boolean> {
+  const result = await db
+    .update(customers)
+    .set({
+      deletedAt: new Date(),
+      version: version + 1,
+    })
+    .where(eq(customers.id, id))
+    .where(eq(customers.version, version));
+
+  return result.rowsAffected > 0;
+}
+```
+
+## 7. Transaction (repo handles internally)
+
+```ts
+// Invoice repo — multi-table in single transaction
+async createInvoice(data: CreateInvoiceData): Promise<InvoiceEntity> {
+  return await db.transaction(async (tx) => {
+    const [inv] = await tx.insert(invoices).values(data.invoice).$returningId();
+
+    for (const item of data.items) {
+      await tx.insert(invoiceItems).values({ ...item, invoiceId: inv.id });
+
+      const [product] = await tx
+        .select()
+        .from(products)
+        .where(eq(products.id, item.productId))
+        .for('update'); // ← row-level lock — ป้องกัน race condition
+
+      if (!product || product.currentStock < item.quantity) {
+        throw new BadRequestError(`Insufficient stock for ${item.productId}`);
+      }
+
+      await tx
+        .update(products)
+        .set({ currentStock: product.currentStock - item.quantity })
+        .where(eq(products.id, item.productId));
+    }
+
+    return inv as InvoiceEntity;
+  });
+}
+```
+
+## 8. MongoDB Repository (Chat History)
+
+```ts
+// modules/chat/repo_mongo.ts
+import { ChatMessage } from './entity';
+
+export class ChatMongoRepository {
+  private collection;
+
+  constructor() {
+    this.collection = mongoDb.collection('chat_messages');
+  }
+
+  async save(message: ChatMessage): Promise<void> {
+    await this.collection.insertOne({
+      ...message,
+      createdAt: new Date(),
+    });
+  }
+
+  async getHistory(sessionId: string, limit = 50): Promise<ChatMessage[]> {
+    return this.collection
+      .find({ sessionId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray() as unknown as ChatMessage[];
+  }
+}
+```
+
+## 9. Repository Rules
+
+- ✅ Interface defines contract — service depends on interface
+- ✅ Update MUST use optimistic locking (`WHERE version = ?`)
+- ✅ Multi-table writes MUST use `db.transaction()`
+- ✅ Read-before-write in transaction MUST use `.for('update')`
+- ✅ Return `null` for not found — let service throw AppError
+- ✅ Soft delete only — no hard delete
+- ❌ No business logic in repo — just data access

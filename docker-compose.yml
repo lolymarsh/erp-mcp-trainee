@@ -1,0 +1,119 @@
+version: "3.9"
+
+# ============================================================
+# Versus Thailand ERP — Local Development Environment
+# ============================================================
+# ศึกษาก่อนเข้าทำานจริง — ไม่ Deploy จริง
+#
+# Services:
+#   mysql     — Core Business Data (SQL)
+#   mongodb   — Chat History, Activity Logs (NoSQL)
+#   redis     — Cache, Sessions, Rate Limiting
+#   rabbitmq  — Message Queue (Async Jobs)
+#
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose down           # Stop all services
+#   docker compose down -v        # Stop + delete all volumes
+#   docker compose ps             # Check service status
+# ============================================================
+
+services:
+  # ==================== MySQL (SQL — Core Business) ====================
+  mysql:
+    image: mysql:8.4
+    container_name: versus_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: versus_root
+      MYSQL_USER: versus
+      MYSQL_PASSWORD: versus_dev
+      MYSQL_DATABASE: versus_erp
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Seed data mount (optional, create later)
+      # - ./database/seeds:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "versus", "-pversus_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - versus_net
+
+  # ==================== MongoDB (NoSQL — Logs & History) ====================
+  mongodb:
+    image: mongo:7
+    container_name: versus_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: versus
+      MONGO_INITDB_ROOT_PASSWORD: versus_dev
+      MONGO_INITDB_DATABASE: versus_erp
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - versus_net
+
+  # ==================== Redis (Cache / Sessions / Rate Limiter) ====================
+  redis:
+    image: redis:7-alpine
+    container_name: versus_redis
+    restart: unless-stopped
+    command: redis-server --requirepass versus_dev --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "versus_dev", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - versus_net
+
+  # ==================== RabbitMQ (Message Queue — Async Workers) ====================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: versus_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: versus
+      RABBITMQ_DEFAULT_PASS: versus_dev
+    ports:
+      - "5672:5672"   # AMQP (app connection)
+      - "15672:15672" # Management UI → http://localhost:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - versus_net
+
+volumes:
+  mysql_data:
+    name: versus_mysql_data
+  mongo_data:
+    name: versus_mongo_data
+  redis_data:
+    name: versus_redis_data
+  rabbitmq_data:
+    name: versus_rabbitmq_data
+
+networks:
+  versus_net:
+    name: versus_net
+    driver: bridge

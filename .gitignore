@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Env files (contains secrets)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+test-results/
+playwright-report/
+
+# Frontend
+.vite/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# Drizzle Kit metadata (migrations SQL stays in git)
+drizzle/meta/
+
+# Personal notes
+my-question.md
+
+# Uploads / temp files
+uploads/
+tmp/
