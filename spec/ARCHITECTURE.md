@@ -739,7 +739,7 @@ export function setupRoutes(app: Express): void {
 
 ## 6. DevOps Layer (Reverse Proxy Strategy)
 
-อ่านเต็มที่ `spec/phase/09_DEVOPS.md`
+อ่านเต็มที่ `spec/2026-07-18_core/09_DEVOPS.md`
 
 ### Philosophy: App Server บางที่สุด
 

@@ -200,11 +200,14 @@ Rule: Every handler must have at least 1 integration test. Every service must ha
 ```
 spec/plan.md          — Full project plan, modules, endpoints, roadmap
 spec/ARCHITECTURE.md  — Architecture, Go→TS mapping, templates, coding rules
+spec/2026-07-18_core/ — Phase-by-phase implementation tasks (01-09)
 ```
 
 **Always read `spec/ARCHITECTURE.md` before starting any module** — all templates are there.
 
-## 8. Implementation Order
+**Read the relevant `spec/core/XX_NAME.md` for the phase you're implementing.**
+
+## 8. Implementation Order (Core Track)
 
 ```
 1. Docker compose up -d              (infra running)
@@ -223,6 +226,8 @@ spec/ARCHITECTURE.md  — Architecture, Go→TS mapping, templates, coding rules
 14. Frontend modules/*               (follow backend order: customer → inventory → ...)
 15. E2E tests                        (Playwright)
 ```
+
+> See `spec/2026-07-18_core/` for detailed tasks per phase. New features → create `spec/{YYYY-MM-DD}_{feature}/` folder.
 
 ## 9. Database Connection Strings
 

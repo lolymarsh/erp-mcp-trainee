@@ -3,7 +3,7 @@ export interface UserEntity {
   username: string;
   passwordHash: string;
   displayName: string;
-  role: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN';
+  role: "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
   isActive: boolean;
   version: number;
   createdAt: Date;

@@ -1,8 +1,15 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import { createDb, createMongo, createRedis, createRabbitMQ, logger } from './config';
-import { setupRoutes } from './router';
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import {
+  createDb,
+  createMongo,
+  createRedis,
+  createRabbitMQ,
+  logger,
+} from "./config";
+import { setupRoutes } from "./router";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -11,8 +18,12 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.json({ code: 200, message: 'healthy', timestamp: new Date().toISOString() });
+app.get("/health", (_req, res) => {
+  res.json({
+    code: 200,
+    message: "healthy",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 async function start(): Promise<void> {
@@ -28,7 +39,7 @@ async function start(): Promise<void> {
       logger.info(`Server running on :${PORT}`);
     });
   } catch (err) {
-    logger.error({ err }, 'Failed to start server');
+    logger.error({ err }, "Failed to start server");
     process.exit(1);
   }
 }

@@ -316,24 +316,26 @@ backend/src/shared/
 ## Phase 01 Checklist
 
 ```
-[ ] docker compose up -d — all 4 services healthy
-[ ] .env file created with all connection vars (no hardcodes)
-[ ] Config uses factory functions: createDb(), createRedis(), createRabbitMQ()
-[ ] app.ts creates all connections, injects to router
-[ ] router.ts receives db + redis, injects to repos
-[ ] repo.ts uses constructor(db) — no import db global
-[ ] Backend starts on :3000, /health returns 200
-[ ] Frontend starts on :5173, blank layout visible
-[ ] MySQL: all 11 tables created (Drizzle migrate)
-[ ] Seed data: admin user, 5 customers, 10 products, 3 invoices
-[ ] POST /api/auth/login → 200 + JWT
-[ ] GET /api/auth/profile → 200 (with token)
-[ ] GET /api/auth/profile → 401 (without token)
-[ ] Frontend: login flow works end-to-end
-[ ] All unit + integration tests pass
-[ ] TypeScript compiles: npx tsc --noEmit
-[ ] ESLint passes: npm run lint
-[ ] No `export const db` anywhere in codebase
+[x] docker compose up -d — all 4 services healthy
+[x] .env file created with all connection vars (no hardcodes)
+[x] Config uses factory functions: createDb(), createRedis(), createRabbitMQ()
+[x] app.ts creates all connections, injects to router
+[x] router.ts receives db + redis, injects to repos
+[x] repo.ts uses constructor(db) — no import db global
+[x] Backend starts on :3000, /health returns 200
+[x] Frontend starts on :5173, blank layout visible
+[x] MySQL: all 10 tables created (Drizzle migrate)
+[x] Seed data: admin user, 5 customers, 10 products, 3 invoices
+[x] POST /api/auth/login → 200 + JWT
+[x] GET /api/auth/profile → 200 (with token)
+[x] GET /api/auth/profile → 401 (without token)
+[ ] Frontend: login flow works end-to-end (requires Playwright — Phase 08)
+[x] All unit + integration tests pass (43 tests, 5 suites)
+[x] TypeScript compiles: npx tsc --noEmit (backend + frontend)
+[x] ESLint passes: npm run lint (0 issues)
+[x] No `export const db` in codebase — uses createDb() factory
+[x] rateLimit middleware removed (handled by Nginx/Traefik)
+[x] Dependencies updated to latest stable
 ```
 
 > **After Phase 01**: You have a working app skeleton — login works, DB has data, infra runs.

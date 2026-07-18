@@ -1,8 +1,9 @@
-import Redis from 'ioredis';
-import { logger } from './logger';
+import Redis from "ioredis";
+import { logger } from "./logger";
 
 export function createRedis(): Redis {
-  const redisUrl = process.env.REDIS_URI || 'redis://:versus_dev@localhost:6379';
+  const redisUrl =
+    process.env.REDIS_URI || "redis://:versus_dev@localhost:6379";
   const client = new Redis(redisUrl, {
     maxRetriesPerRequest: 3,
     retryStrategy(times: number) {
@@ -11,8 +12,12 @@ export function createRedis(): Redis {
     },
   });
 
-  client.on('connect', () => logger.info('Redis connected'));
-  client.on('error', (err: Error) => logger.error({ err }, 'Redis error'));
+  client.on("connect", () => {
+    logger.info("Redis connected");
+  });
+  client.on("error", (err: Error) => {
+    logger.error({ err }, "Redis error");
+  });
 
   return client;
 }

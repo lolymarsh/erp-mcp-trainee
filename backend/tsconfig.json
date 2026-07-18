@@ -16,7 +16,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": false,
-    "noImplicitReturns": true
+    "noImplicitReturns": true,
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*", "drizzle.config.ts", "jest.config.ts", "database/**/*"],
   "exclude": ["node_modules", "dist"]

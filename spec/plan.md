@@ -5,6 +5,32 @@
 > **Type**: Internal ERP พร้อม AI Chatbot
 > **Stack**: React 19 (MVC) + React Router + MUI + Tailwind / Node.js + Express 5 — ALL TypeScript
 > **Infra**: Docker Compose — MySQL, MongoDB, Redis, RabbitMQ
+> **Spec Structure**: `{YYYY-MM-DD}_{name}/` — date prefix = sortable
+
+---
+
+## Spec Convention
+
+```
+spec/
+├── plan.md                        ← Master plan (ภาพรวม)
+├── ARCHITECTURE.md                ← Architecture + templates + rules
+├── 2026-07-18_core/               ← ⭐ Core track (baseline — ทำก่อน)
+│   ├── 01_FOUNDATION.md
+│   ├── 02_CUSTOMERS.md
+│   ├── ...
+│   └── 09_DEVOPS.md
+│
+└── {YYYY-MM-DD}_{feature_name}/   ← Future tracks (date prefix = sortable)
+    ├── plan.md                    ← Brief overview
+    └── phases/
+        ├── 01_XXX.md
+        └── 02_XXX.md
+```
+
+**Rule**: `YYYY-MM-DD_` prefix → เรียงตามวันที่ + ชื่อบอก track นี้ทำอะไร
+
+**ตัวอย่าง**: `2026-08-01_expense_tracking/`, `2026-08-05_refactor_auth/`
 
 ---
 

@@ -1,7 +1,4 @@
-export function mapEntity<T, R>(
-  entity: T,
-  mapper: (source: T) => R,
-): R {
+export function mapEntity<T, R>(entity: T, mapper: (source: T) => R): R {
   return mapper(entity);
 }
 
@@ -33,5 +30,5 @@ export function omit<T extends Record<string, unknown>, K extends keyof T>(
   for (const key of keys) {
     delete result[key];
   }
-  return result as Omit<T, K>;
+  return result;
 }

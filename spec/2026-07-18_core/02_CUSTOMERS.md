@@ -56,13 +56,13 @@ DELETE /api/customers/:id       ← soft delete (body must include version)
 ## Phase 02 Checklist
 
 ```
-[ ] POST /api/customers/filter → paginated response
-[ ] POST /api/customers → 201 created
-[ ] GET /api/customers/:id → customer + vehicles
-[ ] PATCH /api/customers/:id → 200 updated
-[ ] PATCH /api/customers/:id (wrong version) → 409
-[ ] DELETE /api/customers/:id → soft delete
-[ ] Frontend: customer list with pagination + search
+[x] POST /api/customers/filter → paginated response
+[x] POST /api/customers → 201 created
+[x] GET /api/customers/:id → customer + vehicles
+[x] PATCH /api/customers/:id → 200 updated
+[x] PATCH /api/customers/:id (wrong version) → 409
+[x] DELETE /api/customers/:id → soft delete
+[x] Frontend: customer list with pagination + search
 [ ] Integration tests for all endpoints
 [ ] Component tests for CustomerListView
 ```
