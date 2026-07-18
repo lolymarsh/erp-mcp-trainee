@@ -1,4 +1,5 @@
 import { connect as amqpConnect } from "amqplib";
+import type { ChannelModel, Channel, ConsumeMessage, Options } from "amqplib";
 import { logger } from "./logger";
 
 const RABBITMQ_URI =
@@ -11,34 +12,14 @@ const QUEUES = [
   "erp.audit.log",
 ];
 
-interface RabbitChannel {
-  assertQueue(queue: string, opts: { durable: boolean }): Promise<object>;
-  close(): Promise<void>;
-}
-
-interface RabbitConnection {
-  createChannel(): Promise<RabbitChannel>;
-  close(): Promise<void>;
-}
-
 export interface RabbitMQConnection {
-  connection: RabbitConnection;
-  channel: RabbitChannel;
-}
-
-function isConnection(conn: unknown): conn is RabbitConnection {
-  return typeof conn === "object" && conn !== null && "createChannel" in conn;
-}
-
-function isChannel(ch: unknown): ch is RabbitChannel {
-  return typeof ch === "object" && ch !== null && "assertQueue" in ch;
+  connection: ChannelModel;
+  channel: Channel;
 }
 
 export async function createRabbitMQ(): Promise<RabbitMQConnection> {
   const conn = await amqpConnect(RABBITMQ_URI);
-  if (!isConnection(conn)) throw new Error("Invalid RabbitMQ connection");
   const ch = await conn.createChannel();
-  if (!isChannel(ch)) throw new Error("Invalid RabbitMQ channel");
 
   for (const q of QUEUES) {
     await ch.assertQueue(q, { durable: true });
@@ -46,4 +27,43 @@ export async function createRabbitMQ(): Promise<RabbitMQConnection> {
 
   logger.info("RabbitMQ connected");
   return { connection: conn, channel: ch };
+}
+
+export function publishToQueue(
+  rmq: RabbitMQConnection,
+  queue: string,
+  message: object,
+): void {
+  const payload = JSON.stringify(message);
+  const published = rmq.channel.sendToQueue(queue, Buffer.from(payload), {
+    persistent: true,
+  });
+  if (!published) {
+    logger.warn({ queue }, "RabbitMQ write buffer full");
+  }
+}
+
+export async function consumeFromQueue(
+  rmq: RabbitMQConnection,
+  queue: string,
+  handler: (msg: ConsumeMessage) => Promise<void>,
+): Promise<void> {
+  await rmq.channel.consume(queue, (msg: ConsumeMessage | null) => {
+    if (!msg) {
+      return;
+    }
+    handler(msg)
+      .then(() => {
+        rmq.channel.ack(msg);
+      })
+      .catch((err: unknown) => {
+        logger.error({ err, queue }, "Consumer handler failed");
+        rmq.channel.nack(msg, false, true);
+      });
+  });
+  logger.info({ queue }, "RabbitMQ consumer registered");
+}
+
+export function buildQueueConfig(durable = true): Options.AssertQueue {
+  return { durable };
 }

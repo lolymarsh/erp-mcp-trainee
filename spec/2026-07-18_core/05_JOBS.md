@@ -70,13 +70,13 @@ await db.transaction(async (tx) => {
 ## Phase 05 Checklist
 
 ```
-[ ] POST /api/jobs → 201, linked to customer+vehicle
-[ ] PATCH /api/jobs/:id/status → status updated + log created
-[ ] PATCH /api/jobs/:id/status (wrong version) → 409
-[ ] GET /api/jobs/today-queue → correct counts
-[ ] Status change uses db.transaction() (job + log)
-[ ] Frontend: job queue with status badges
-[ ] Integration tests for all endpoints
+[x] POST /api/jobs → 201, linked to customer+vehicle
+[x] PATCH /api/jobs/:id/status → status updated + log created
+[x] PATCH /api/jobs/:id/status (wrong version) → 409
+[x] GET /api/jobs/today-queue → correct counts
+[x] Status change uses db.transaction() (job + log)
+[x] Frontend: job queue with status badges
+[x] Integration tests for all endpoints
 ```
 
 > **Next**: Phase 06 — AI Chatbot

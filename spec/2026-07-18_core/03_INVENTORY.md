@@ -59,13 +59,13 @@ GET    /api/inventory/categories          ← list categories
 ## Phase 03 Checklist
 
 ```
-[ ] POST /api/inventory/products/filter → paginated with stock info
-[ ] POST /api/inventory/products → 201 created
-[ ] PATCH /api/inventory/products/:id (version mismatch) → 409
-[ ] POST /api/inventory/products/:id/stock → stock updated + movement logged
-[ ] Stock adjustment uses db.transaction()
-[ ] Frontend: product table with stock column + color coding
-[ ] Integration tests for all endpoints (including stock adjust rollback)
+[x] POST /api/inventory/products/filter → paginated with stock info
+[x] POST /api/inventory/products → 201 created
+[x] PATCH /api/inventory/products/:id (version mismatch) → 409
+[x] POST /api/inventory/products/:id/stock → stock updated + movement logged
+[x] Stock adjustment uses db.transaction()
+[x] Frontend: product table with stock column + color coding
+[x] Integration tests for all endpoints (including stock adjust rollback)
 ```
 
 > **Next**: Phase 04 — Invoices

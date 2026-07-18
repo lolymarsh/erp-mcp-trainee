@@ -10,6 +10,8 @@ import {
   logger,
 } from "./config";
 import { setupRoutes } from "./router";
+import { startAuditWorker } from "./workers/auditWorker";
+import { startAiWorker } from "./workers/aiWorker";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -28,12 +30,20 @@ app.get("/health", (_req, res) => {
 
 async function start(): Promise<void> {
   try {
-    const { db } = createDb();
+    const { db, pool } = createDb();
     const { mongoDb } = await createMongo();
     const redis = createRedis();
     const rmq = await createRabbitMQ();
 
-    setupRoutes(app, { db, redis, mongoDb, rmq });
+    setupRoutes(app, { db, pool, redis, mongoDb, rmq });
+
+    startAuditWorker(rmq, mongoDb).catch((err: unknown) => {
+      logger.error({ err }, "Audit worker failed");
+    });
+    startAiWorker(rmq, pool, redis).catch((err: unknown) => {
+      logger.error({ err }, "AI worker failed");
+    });
+    logger.info("Workers started");
 
     app.listen(PORT, () => {
       logger.info(`Server running on :${PORT}`);

@@ -1,0 +1,225 @@
+import { v4 as uuidv4 } from "uuid";
+import type Redis from "ioredis";
+import type { IInventoryRepository } from "./repo";
+import type { ProductEntity, StockMovementEntity } from "./entity";
+import type {
+  CreateProductInput,
+  UpdateProductInput,
+  DeleteProductInput,
+  StockAdjustInput,
+  ProductResponse,
+  ProductWithMovementsResponse,
+  StockMovementResponse,
+  StockAdjustResponse,
+  CategoryResponse,
+} from "./schema";
+import type { FilterRequestInput } from "../../shared/pagination/schema";
+import type { PaginationResponse } from "../../shared/response/handler";
+import { calculatePagination } from "../../shared/response/handler";
+import {
+  NotFoundError,
+  ConflictError,
+  AppError,
+  BadRequestError,
+} from "../../shared/errors/AppError";
+
+export interface IInventoryService {
+  filter(
+    input: FilterRequestInput,
+  ): Promise<{ data: ProductResponse[]; pagination: PaginationResponse }>;
+  getById(id: string): Promise<ProductWithMovementsResponse>;
+  create(input: CreateProductInput): Promise<ProductResponse>;
+  update(id: string, input: UpdateProductInput): Promise<ProductResponse>;
+  softDelete(id: string, input: DeleteProductInput): Promise<void>;
+  adjustStock(
+    productId: string,
+    input: StockAdjustInput,
+    userId: string,
+  ): Promise<StockAdjustResponse>;
+  listCategories(): Promise<CategoryResponse[]>;
+}
+
+const DASHBOARD_CACHE_KEY = "dashboard:summary";
+
+export class InventoryService implements IInventoryService {
+  constructor(
+    private repo: IInventoryRepository,
+    private redis: Redis,
+  ) {}
+
+  async filter(
+    input: FilterRequestInput,
+  ): Promise<{ data: ProductResponse[]; pagination: PaginationResponse }> {
+    const result = await this.repo.findFiltered(input);
+    const pagination = calculatePagination(
+      input.page,
+      input.pageSize,
+      result.total,
+    );
+
+    return {
+      data: result.data.map((p) => this.toProductResponse(p)),
+      pagination,
+    };
+  }
+
+  async getById(id: string): Promise<ProductWithMovementsResponse> {
+    const result = await this.repo.findByIdWithMovements(id);
+    if (!result) throw new NotFoundError("Product not found");
+
+    return {
+      ...this.toProductResponse(result.product),
+      movements: result.movements.map((m) => this.toMovementResponse(m)),
+    };
+  }
+
+  async create(input: CreateProductInput): Promise<ProductResponse> {
+    const existing = await this.repo.findBySku(input.sku);
+    if (existing) throw new AppError(409, "SKU already exists");
+
+    const entity = await this.repo.create({
+      id: uuidv4(),
+      categoryId: input.categoryId,
+      sku: input.sku,
+      name: input.name,
+      description: input.description ?? null,
+      unit: input.unit ?? "piece",
+      costPrice: String(input.costPrice),
+      sellPrice: String(input.sellPrice),
+      minStock: input.minStock,
+      currentStock: input.currentStock,
+      version: 1,
+    });
+
+    return this.toProductResponse(entity);
+  }
+
+  async update(
+    id: string,
+    input: UpdateProductInput,
+  ): Promise<ProductResponse> {
+    const { version, ...fields } = input;
+
+    if (typeof fields.sku === "string") {
+      const existing = await this.repo.findBySku(fields.sku);
+      if (existing && existing.id !== id) {
+        throw new AppError(409, "SKU already exists");
+      }
+    }
+
+    const updateData: Record<string, unknown> = { ...fields };
+    if (typeof fields.sellPrice === "number") {
+      updateData.sellPrice = String(fields.sellPrice);
+    }
+    if (typeof fields.costPrice === "number") {
+      updateData.costPrice = String(fields.costPrice);
+    }
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const updated = await this.repo.update(id, updateData as any, version);
+    if (!updated) throw new ConflictError("Version mismatch");
+
+    return this.toProductResponse(updated);
+  }
+
+  async softDelete(id: string, input: DeleteProductInput): Promise<void> {
+    const deleted = await this.repo.softDelete(id, input.version);
+    if (!deleted)
+      throw new ConflictError("Version mismatch or product not found");
+  }
+
+  async adjustStock(
+    productId: string,
+    input: StockAdjustInput,
+    userId: string,
+  ): Promise<StockAdjustResponse> {
+    if (
+      (input.type === "IN" || input.type === "OUT") &&
+      input.quantity <= 0
+    ) {
+      throw new BadRequestError(
+        "Quantity must be positive for IN/OUT movement",
+      );
+    }
+
+    try {
+      const result = await this.repo.adjustStock({
+        productId,
+        type: input.type,
+        quantity: input.quantity,
+        referenceType: input.referenceType ?? null,
+        referenceId: input.referenceId ?? null,
+        createdBy: userId,
+        note: input.note ?? null,
+      });
+
+      await this.redis.del(DASHBOARD_CACHE_KEY);
+
+      return {
+        product: this.toProductResponse(result.product),
+        movement: this.toMovementResponse(result.movement),
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "";
+      if (message === "PRODUCT_NOT_FOUND") {
+        throw new NotFoundError("Product not found");
+      }
+      if (message === "INSUFFICIENT_STOCK") {
+        throw new BadRequestError("Insufficient stock");
+      }
+      throw err;
+    }
+  }
+
+  async listCategories(): Promise<CategoryResponse[]> {
+    const categories = await this.repo.findAllCategories();
+    return categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+    }));
+  }
+
+  private toProductResponse(entity: ProductEntity): ProductResponse {
+    return {
+      id: entity.id,
+      categoryId: entity.categoryId,
+      sku: entity.sku,
+      name: entity.name,
+      description: entity.description,
+      unit: entity.unit,
+      costPrice: entity.costPrice,
+      sellPrice: entity.sellPrice,
+      minStock: entity.minStock,
+      currentStock: entity.currentStock,
+      version: entity.version,
+      createdAt:
+        entity.createdAt instanceof Date
+          ? entity.createdAt.toISOString()
+          : String(entity.createdAt),
+      updatedAt:
+        entity.updatedAt instanceof Date
+          ? entity.updatedAt.toISOString()
+          : String(entity.updatedAt),
+    };
+  }
+
+  private toMovementResponse(
+    entity: StockMovementEntity,
+  ): StockMovementResponse {
+    return {
+      id: entity.id,
+      productId: entity.productId,
+      type: entity.type,
+      quantity: entity.quantity,
+      referenceType: entity.referenceType,
+      referenceId: entity.referenceId,
+      createdBy: entity.createdBy,
+      note: entity.note,
+      createdAt:
+        entity.createdAt instanceof Date
+          ? entity.createdAt.toISOString()
+          : String(entity.createdAt),
+    };
+  }
+}
