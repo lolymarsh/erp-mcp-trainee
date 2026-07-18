@@ -48,6 +48,7 @@ export interface ICustomerRepository {
     version: number,
   ): Promise<CustomerEntity | null>;
   softDelete(id: string, version: number): Promise<boolean>;
+  findVehicleById(id: string): Promise<VehicleEntity | null>;
 }
 
 export class CustomerRepository implements ICustomerRepository {
@@ -233,6 +234,15 @@ export class CustomerRepository implements ICustomerRepository {
       default:
         return null;
     }
+  }
+
+  async findVehicleById(id: string): Promise<VehicleEntity | null> {
+    const result = await this.db
+      .select()
+      .from(vehicles)
+      .where(eq(vehicles.id, id))
+      .limit(1);
+    return result[0] ?? null;
   }
 
   private resolveSort(

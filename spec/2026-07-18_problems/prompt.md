@@ -23,4 +23,6 @@
 
 - ai chat ผมต้องเอา key จากไหน และ handle หาก api error ยังไงในยหน้า ai chat จะ return อะไรหรือ toast หรือ popup ว่าเกิดปัญหาอะไร
 
-แยก phase ลง /Users/lolymarsh/Desktop/versus_thailand_work/erp-mcp-trainee/spec/2026-07-18_problems นะคึครับ ก่อนสร้างแยก phase สร้าง plan.md ลง /Users/lolymarsh/Desktop/versus_thailand_work/erp-mcp-trainee/spec/2026-07-18_problems ก่อนนะครับ
+และ pagination หน้า ใบแจ้งหนี้งานติดตั้ง ไม่เหมือน ลูกค้าและสินค้า แก้ไขให้ด้วย
+
+สร้าง plan.md ลง /Users/lolymarsh/Desktop/versus_thailand_work/erp-mcp-trainee/spec/2026-07-18_problems ก่อนนะครับ

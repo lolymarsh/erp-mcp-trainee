@@ -76,7 +76,7 @@ describe("JobHandler", () => {
     it("should handle extractId with array params", async () => {
       svc.getById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
       const { req, res } = mockReqRes();
-      req.params = { id: ["job-1", "job-2"] as any };
+      req.params = { id: ["job-1", "job-2"] } as unknown as Record<string, string>;
       await handler.getById(req, res);
       expect(svc.getById).toHaveBeenCalledWith("job-1");
     });

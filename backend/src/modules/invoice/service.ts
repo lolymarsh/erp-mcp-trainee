@@ -14,10 +14,9 @@ import {
   NotFoundError,
   BadRequestError,
 } from "../../shared/errors/AppError";
-import type { MySql2Database } from "drizzle-orm/mysql2";
+import type { ICustomerRepository } from "../customer/repo";
+import type { IInventoryRepository } from "../inventory/repo";
 import type Redis from "ioredis";
-import { eq, and, isNull } from "drizzle-orm";
-import { customers, products } from "../../config/schema";
 
 export interface IInvoiceService {
   filter(
@@ -36,7 +35,8 @@ const DASHBOARD_CACHE_KEY = "dashboard:summary";
 export class InvoiceService implements IInvoiceService {
   constructor(
     private repo: IInvoiceRepository,
-    private db: MySql2Database,
+    private customerRepo: ICustomerRepository,
+    private inventoryRepo: IInventoryRepository,
     private redis: Redis,
   ) {}
 
@@ -72,20 +72,14 @@ export class InvoiceService implements IInvoiceService {
     input: CreateInvoiceInput,
     userId: string,
   ): Promise<InvoiceWithItemsResponse> {
-    const [customer] = await this.db
-      .select()
-      .from(customers)
-      .where(and(eq(customers.id, input.customerId), isNull(customers.deletedAt)))
-      .limit(1);
-
+    const customer = await this.customerRepo.findById(input.customerId);
     if (!customer) {
       throw new BadRequestError("Customer not found");
     }
 
-    const productRows = await this.db
-      .select()
-      .from(products)
-      .where(and(isNull(products.deletedAt)));
+    const productRows = await this.inventoryRepo.findByIds(
+      input.items.map((i) => i.productId),
+    );
 
     const productMap = new Map(productRows.map((p) => [p.id, p]));
 

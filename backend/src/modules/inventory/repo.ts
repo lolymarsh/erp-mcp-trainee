@@ -45,6 +45,7 @@ export interface IInventoryRepository {
     input: FilterRequestInput,
   ): Promise<{ data: ProductEntity[]; total: number }>;
   findById(id: string): Promise<ProductEntity | null>;
+  findByIds(ids: string[]): Promise<ProductEntity[]>;
   findByIdWithMovements(
     id: string,
   ): Promise<{ product: ProductEntity; movements: StockMovementEntity[] } | null>;
@@ -192,6 +193,13 @@ export class InventoryRepository implements IInventoryRepository {
 
     if (result.length === 0) return null;
     return result[0];
+  }
+
+  async findByIds(ids: string[]): Promise<ProductEntity[]> {
+    return this.db
+      .select()
+      .from(products)
+      .where(and(inArray(products.id, ids), isNull(products.deletedAt)));
   }
 
   async findAllCategories(): Promise<CategoryEntity[]> {

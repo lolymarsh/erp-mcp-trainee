@@ -133,4 +133,100 @@ describe('useAuth', () => {
 
     expect(result.current.error).toBe('Login failed');
   });
+
+  it('handles non-object error (isErrorWithMessage line 8)', async () => {
+    mockApi.post.mockRejectedValue('string error');
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles null error (isErrorWithMessage line 8)', async () => {
+    mockApi.post.mockRejectedValue(null);
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error without response property (isErrorWithMessage line 9)', async () => {
+    mockApi.post.mockRejectedValue({});
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error with null response (isErrorWithMessage line 11)', async () => {
+    mockApi.post.mockRejectedValue({ response: null });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error without data in response (isErrorWithMessage line 12)', async () => {
+    mockApi.post.mockRejectedValue({ response: {} });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error with null response data (isErrorWithMessage line 14)', async () => {
+    mockApi.post.mockRejectedValue({ response: { data: null } });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error without message in data (isErrorWithMessage line 15)', async () => {
+    mockApi.post.mockRejectedValue({ response: { data: {} } });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
+
+  it('handles error with non-string message (isErrorWithMessage line 16)', async () => {
+    mockApi.post.mockRejectedValue({ response: { data: { message: 123 } } });
+
+    const { result } = renderHook(() => useAuth());
+
+    await act(async () => {
+      await result.current.login({ username: 'a', password: 'b' });
+    });
+
+    expect(result.current.error).toBe('Login failed');
+  });
 });

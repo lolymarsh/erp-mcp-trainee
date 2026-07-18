@@ -60,7 +60,7 @@ describe("InvoiceHandler", () => {
         items: [],
       });
       const { req, res } = mockReqRes();
-      req.params = { id: ["inv-1", "inv-2"] as any };
+      req.params = { id: ["inv-1", "inv-2"] } as unknown as Record<string, string>;
       await handler.getById(req, res);
       expect(svc.getById).toHaveBeenCalledWith("inv-1");
     });
