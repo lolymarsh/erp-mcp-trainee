@@ -167,34 +167,27 @@ async softDelete(id: string, version: number): Promise<boolean> {
 }
 ```
 
-## 7. Transaction (repo handles internally)
+## 7. Transaction (service starts, repo receives)
 
 ```ts
-// Invoice repo — multi-table in single transaction
-async createInvoice(data: CreateInvoiceData): Promise<InvoiceEntity> {
-  return await db.transaction(async (tx) => {
-    const [inv] = await tx.insert(invoices).values(data.invoice).$returningId();
+// Repo: accept optional tx, use db as fallback
+import type { Tx } from "../../shared/transaction";
 
-    for (const item of data.items) {
-      await tx.insert(invoiceItems).values({ ...item, invoiceId: inv.id });
+async createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult> {
+  const db = tx ?? this.db;
+  // All queries use `db` — transaction-safe when tx is passed
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, item.productId))
+    .for("update");
+  // ...
+}
 
-      const [product] = await tx
-        .select()
-        .from(products)
-        .where(eq(products.id, item.productId))
-        .for('update'); // ← row-level lock — ป้องกัน race condition
-
-      if (!product || product.currentStock < item.quantity) {
-        throw new BadRequestError(`Insufficient stock for ${item.productId}`);
-      }
-
-      await tx
-        .update(products)
-        .set({ currentStock: product.currentStock - item.quantity })
-        .where(eq(products.id, item.productId));
-    }
-
-    return inv as InvoiceEntity;
+// Service: start transaction, pass tx to repo
+async create(input: CreateInvoiceInput, userId: string): Promise<InvoiceWithItemsResponse> {
+  return this.db.transaction(async (tx) => {
+    return this.repo.createInvoice(data, tx);
   });
 }
 ```

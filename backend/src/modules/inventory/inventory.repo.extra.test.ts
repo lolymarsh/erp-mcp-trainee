@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
+import type { Tx } from "../../shared/transaction";
 import { InventoryRepository } from "./repo";
 
 function createMockDb() {
@@ -153,12 +154,11 @@ describe("InventoryRepository extra coverage", () => {
       const productRow = { ...mockProduct, currentStock: 10 };
       const mockTx = createTxMock([productRow]);
       mockTx.limit = jest.fn().mockResolvedValue([{ ...mockProduct, currentStock: 50 }]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       const result = await repo.adjustStock({
         productId: "prod-1", type: "ADJUST", quantity: 50,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
-      });
+      }, mockTx as unknown as Tx);
       expect(result.product.currentStock).toBe(50);
     });
   });

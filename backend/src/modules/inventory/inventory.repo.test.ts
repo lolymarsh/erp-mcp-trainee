@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
+import type { Tx } from "../../shared/transaction";
 import { InventoryRepository } from "./repo";
 
 function createMockDb() {
@@ -168,34 +169,31 @@ describe("InventoryRepository", () => {
       const productRow = { ...mockProduct, currentStock: 10 };
       const mockTx = createTxMock([productRow]);
       mockTx.limit = jest.fn().mockResolvedValue([{ ...mockProduct, currentStock: 15 }]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       const result = await repo.adjustStock({
         productId: "prod-1", type: "IN", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
-      });
+      }, mockTx as unknown as Tx);
       expect(result.product.currentStock).toBe(15);
     });
 
     it("should throw PRODUCT_NOT_FOUND when product missing", async () => {
       const mockTx = createTxMock([]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       await expect(repo.adjustStock({
         productId: "nonexistent", type: "IN", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
-      })).rejects.toThrow("PRODUCT_NOT_FOUND");
+      }, mockTx as unknown as Tx)).rejects.toThrow("PRODUCT_NOT_FOUND");
     });
 
     it("should throw INSUFFICIENT_STOCK when stock goes negative", async () => {
       const productRow = { ...mockProduct, currentStock: 0 };
       const mockTx = createTxMock([productRow]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       await expect(repo.adjustStock({
         productId: "prod-1", type: "OUT", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
-      })).rejects.toThrow("INSUFFICIENT_STOCK");
+      }, mockTx as unknown as Tx)).rejects.toThrow("INSUFFICIENT_STOCK");
     });
   });
 });

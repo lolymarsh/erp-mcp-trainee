@@ -1,7 +1,5 @@
-import type { MySql2Database } from "drizzle-orm/mysql2";
 import type Redis from "ioredis";
-import { eq, and, isNull } from "drizzle-orm";
-import { customers, vehicles } from "../../config/schema";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import type { IJobRepository } from "./repo";
 import type { JobEntity, JobStatus, JobStatusLogEntity } from "./entity";
 import type {
@@ -19,6 +17,7 @@ import {
   NotFoundError,
   BadRequestError,
 } from "../../shared/errors/AppError";
+import type { ICustomerRepository } from "../customer/repo";
 
 const ALLOWED_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   QUEUED: ["IN_PROGRESS", "CANCELLED"],
@@ -46,6 +45,7 @@ const DASHBOARD_CACHE_KEY = "dashboard:summary";
 export class JobService implements IJobService {
   constructor(
     private repo: IJobRepository,
+    private customerRepo: ICustomerRepository,
     private db: MySql2Database,
     private redis: Redis,
   ) {}
@@ -79,22 +79,12 @@ export class JobService implements IJobService {
   }
 
   async create(input: CreateJobInput): Promise<JobWithLogsResponse> {
-    const [customer] = await this.db
-      .select()
-      .from(customers)
-      .where(and(eq(customers.id, input.customerId), isNull(customers.deletedAt)))
-      .limit(1);
-
+    const customer = await this.customerRepo.findById(input.customerId);
     if (!customer) {
       throw new BadRequestError("Customer not found");
     }
 
-    const [vehicle] = await this.db
-      .select()
-      .from(vehicles)
-      .where(eq(vehicles.id, input.vehicleId))
-      .limit(1);
-
+    const vehicle = await this.customerRepo.findVehicleById(input.vehicleId);
     if (!vehicle) {
       throw new BadRequestError("Vehicle not found");
     }
@@ -138,13 +128,16 @@ export class JobService implements IJobService {
       );
     }
 
-    const result = await this.repo.updateStatus(
-      id,
-      input.status,
-      userId,
-      input.version,
-      input.note ?? null,
-    );
+    const result = await this.db.transaction(async (tx) => {
+      return this.repo.updateStatus(
+        id,
+        input.status,
+        userId,
+        input.version,
+        input.note ?? null,
+        tx,
+      );
+    });
 
     await this.redis.del(DASHBOARD_CACHE_KEY);
 

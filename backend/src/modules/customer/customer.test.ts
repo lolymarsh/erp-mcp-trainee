@@ -41,6 +41,7 @@ describe("CustomerService", () => {
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
+      findVehicleById: jest.fn(),
     };
     svc = new CustomerService(repo);
   });

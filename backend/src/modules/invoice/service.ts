@@ -16,6 +16,7 @@ import {
 } from "../../shared/errors/AppError";
 import type { ICustomerRepository } from "../customer/repo";
 import type { IInventoryRepository } from "../inventory/repo";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import type Redis from "ioredis";
 
 export interface IInvoiceService {
@@ -37,6 +38,7 @@ export class InvoiceService implements IInvoiceService {
     private repo: IInvoiceRepository,
     private customerRepo: ICustomerRepository,
     private inventoryRepo: IInventoryRepository,
+    private db: MySql2Database,
     private redis: Redis,
   ) {}
 
@@ -120,17 +122,19 @@ export class InvoiceService implements IInvoiceService {
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const invoiceNumber = `INV-${dateStr}-${random}`;
 
-    const result = await this.repo.createInvoice({
-      invoiceNumber,
-      customerId: input.customerId,
-      vehicleId: input.vehicleId ?? null,
-      discount: String(discount),
-      tax: String(tax),
-      totalAmount: totalAmount.toFixed(2),
-      grandTotal,
-      paymentMethod: input.paymentMethod ?? null,
-      createdBy: userId,
-      items: itemsData,
+    const result = await this.db.transaction(async (tx) => {
+      return this.repo.createInvoice({
+        invoiceNumber,
+        customerId: input.customerId,
+        vehicleId: input.vehicleId ?? null,
+        discount: String(discount),
+        tax: String(tax),
+        totalAmount: totalAmount.toFixed(2),
+        grandTotal,
+        paymentMethod: input.paymentMethod ?? null,
+        createdBy: userId,
+        items: itemsData,
+      }, tx);
     });
 
     await this.redis.del(DASHBOARD_CACHE_KEY);

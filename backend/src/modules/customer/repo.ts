@@ -242,7 +242,7 @@ export class CustomerRepository implements ICustomerRepository {
       .from(vehicles)
       .where(eq(vehicles.id, id))
       .limit(1);
-    return result[0] ?? null;
+    return result[0] as unknown as VehicleEntity ?? null;
   }
 
   private resolveSort(

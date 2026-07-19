@@ -1,6 +1,7 @@
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid-product" }));
 
 import Redis from "ioredis";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import { InventoryService } from "./service";
 import type { IInventoryRepository } from "./repo";
 import {
@@ -46,6 +47,7 @@ const mockCategory = {
 
 describe("InventoryService", () => {
   let repo: jest.Mocked<IInventoryRepository>;
+  let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: InventoryService;
 
@@ -54,6 +56,7 @@ describe("InventoryService", () => {
       findFiltered: jest.fn(),
       findById: jest.fn(),
       findByIdWithMovements: jest.fn(),
+      findByIds: jest.fn(),
       findBySku: jest.fn(),
       findAllCategories: jest.fn(),
       create: jest.fn(),
@@ -61,8 +64,11 @@ describe("InventoryService", () => {
       softDelete: jest.fn(),
       adjustStock: jest.fn(),
     };
+    db = {
+      transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
+    } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InventoryService(repo, redis);
+    svc = new InventoryService(repo, db, redis);
   });
 
   describe("filter", () => {
@@ -345,7 +351,7 @@ describe("InventoryService", () => {
         referenceId: null,
         createdBy: "user-1",
         note: "เติมสต็อก",
-      });
+      }, expect.any(Object));
     });
 
     it("should adjust stock OUT successfully", async () => {

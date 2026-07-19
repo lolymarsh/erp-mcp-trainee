@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type Redis from "ioredis";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import type { IInventoryRepository } from "./repo";
 import type { ProductEntity, StockMovementEntity } from "./entity";
 import type {
@@ -44,6 +45,7 @@ const DASHBOARD_CACHE_KEY = "dashboard:summary";
 export class InventoryService implements IInventoryService {
   constructor(
     private repo: IInventoryRepository,
+    private db: MySql2Database,
     private redis: Redis,
   ) {}
 
@@ -143,14 +145,16 @@ export class InventoryService implements IInventoryService {
     }
 
     try {
-      const result = await this.repo.adjustStock({
-        productId,
-        type: input.type,
-        quantity: input.quantity,
-        referenceType: input.referenceType ?? null,
-        referenceId: input.referenceId ?? null,
-        createdBy: userId,
-        note: input.note ?? null,
+      const result = await this.db.transaction(async (tx) => {
+        return this.repo.adjustStock({
+          productId,
+          type: input.type,
+          quantity: input.quantity,
+          referenceType: input.referenceType ?? null,
+          referenceId: input.referenceId ?? null,
+          createdBy: userId,
+          note: input.note ?? null,
+        }, tx);
       });
 
       await this.redis.del(DASHBOARD_CACHE_KEY);

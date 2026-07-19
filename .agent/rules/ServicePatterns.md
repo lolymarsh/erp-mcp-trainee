@@ -61,15 +61,13 @@ async filterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[];
 }
 ```
 
-## 4. Transaction Pattern (in service)
+## 4. Transaction Pattern (service starts, repo executes)
 
 ```ts
-// Service calls repo method that uses db.transaction() internally
+// Service: validate → start transaction → pass tx to repo
 async createInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
-  // Validate customer exists
   const customer = await this.customerSvc.getById(input.customerId);
 
-  // Validate stock for all items
   for (const item of input.items) {
     const stock = await this.inventoryRepo.getStock(item.productId);
     if (stock < item.quantity) {
@@ -77,8 +75,18 @@ async createInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
     }
   }
 
-  // Create invoice — repo handles transaction internally
-  return this.repo.createInvoice(input);
+  // Service declares transaction → passes tx to repo
+  return this.db.transaction(async (tx) => {
+    return this.repo.createInvoice(input, tx);
+  });
+}
+```
+
+```ts
+// Repo: receives optional tx, uses db if not passed
+async createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceEntity> {
+  const db = tx ?? this.db;
+  // ... use db (transaction-aware or standalone)
 }
 ```
 
@@ -104,5 +112,6 @@ private applyCustomerChanges(existing: CustomerEntity, input: UpdateCustomerInpu
 - ✅ Guard clauses first — check existence, permissions early
 - ✅ Deep copy before mutation (prevent side effects on input objects)
 - ✅ Max 50 lines per public function
-- ❌ No direct DB access in service — go through repo
+- ❌ No direct DB queries in service — go through repo
+- ✅ Service may inject db for `db.transaction()` only (no query builders: select/insert/update/delete)
 - ❌ No `console.log` — use `logger`

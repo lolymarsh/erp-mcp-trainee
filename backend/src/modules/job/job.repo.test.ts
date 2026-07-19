@@ -4,6 +4,7 @@ jest.mock("uuid", () => {
   return { v4: jest.fn(() => { counter += 1; return `mocked-uuid-${counter}`; }) };
 });
 
+import type { Tx } from "../../shared/transaction";
 import { JobRepository } from "./repo";
 import type { CreateJobData } from "./repo";
 
@@ -275,9 +276,8 @@ describe("JobRepository", () => {
 
     it("should execute transaction successfully (QUEUED → IN_PROGRESS)", async () => {
       const mockTx = createTxMock([mockJob]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
-      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null);
+      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.status).toBe("IN_PROGRESS");
       expect(result.job.version).toBe(2);
@@ -289,18 +289,16 @@ describe("JobRepository", () => {
 
     it("should set startTime when moving to IN_PROGRESS", async () => {
       const mockTx = createTxMock([{ ...mockJob, startTime: null }]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
-      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null);
+      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.startTime).toBeInstanceOf(Date);
     });
 
     it("should set endTime when moving to COMPLETED", async () => {
       const mockTx = createTxMock([{ ...mockJob, status: "IN_PROGRESS" as const, endTime: null }]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
-      const result = await repo.updateStatus("job-1", "COMPLETED", "user-1", 1, null);
+      const result = await repo.updateStatus("job-1", "COMPLETED", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.endTime).toBeInstanceOf(Date);
       expect(result.job.status).toBe("COMPLETED");
@@ -308,19 +306,17 @@ describe("JobRepository", () => {
 
     it("should throw VERSION_MISMATCH when version does not match", async () => {
       const mockTx = createTxMock([{ ...mockJob, version: 5 }]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       await expect(
-        repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null),
+        repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
       ).rejects.toThrow("VERSION_MISMATCH");
     });
 
     it("should throw JOB_NOT_FOUND when job missing", async () => {
       const mockTx = createTxMock([]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       await expect(
-        repo.updateStatus("nonexistent", "IN_PROGRESS", "user-1", 1, null),
+        repo.updateStatus("nonexistent", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
       ).rejects.toThrow("JOB_NOT_FOUND");
     });
   });

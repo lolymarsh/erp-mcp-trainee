@@ -11,6 +11,8 @@ jest.mock("uuid", () => {
 import Redis from "ioredis";
 import { InvoiceService } from "./service";
 import type { IInvoiceRepository } from "./repo";
+import type { ICustomerRepository } from "../customer/repo";
+import type { IInventoryRepository } from "../inventory/repo";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { NotFoundError, BadRequestError } from "../../shared/errors/AppError";
 
@@ -42,7 +44,9 @@ const mockItem = {
 
 describe("InvoiceService", () => {
   let repo: jest.Mocked<IInvoiceRepository>;
-  let db: Partial<MySql2Database>;
+  let customerRepo: jest.Mocked<ICustomerRepository>;
+  let inventoryRepo: jest.Mocked<IInventoryRepository>;
+  let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: InvoiceService;
 
@@ -54,11 +58,33 @@ describe("InvoiceService", () => {
       createInvoice: jest.fn(),
       getTodaySummary: jest.fn(),
     };
-    db = {
-      select: jest.fn(),
+    customerRepo = {
+      findFiltered: jest.fn(),
+      findById: jest.fn(),
+      findByIdWithVehicles: jest.fn(),
+      findByPhone: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      findVehicleById: jest.fn(),
     };
+    inventoryRepo = {
+      findFiltered: jest.fn(),
+      findById: jest.fn(),
+      findByIds: jest.fn(),
+      findByIdWithMovements: jest.fn(),
+      findBySku: jest.fn(),
+      findAllCategories: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      adjustStock: jest.fn(),
+    };
+    db = {
+      transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
+    } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InvoiceService(repo, db as MySql2Database, redis);
+    svc = new InvoiceService(repo, customerRepo, inventoryRepo, db, redis);
   });
 
   describe("filter", () => {
@@ -175,31 +201,9 @@ describe("InvoiceService", () => {
       items: [mockItem],
     };
 
-    function buildDbMock(customerResult: Record<string, unknown>[], productsResult: Record<string, unknown>[]) {
-      let callCount = 0;
-      return {
-        select: jest.fn().mockReturnThis(),
-        from: jest.fn((_table: Record<string, unknown>) => {
-          callCount += 1;
-          if (callCount === 1) {
-            return {
-              where: jest.fn().mockReturnThis(),
-              limit: jest.fn().mockResolvedValue(customerResult),
-            };
-          }
-          return {
-            where: jest.fn().mockResolvedValue(productsResult),
-          };
-        }),
-      };
-    }
-
     it("should create invoice successfully", async () => {
-      const mockDb = buildDbMock(
-        [{ id: "cust-1", firstName: "สมชาย" }],
-        [{ id: "prod-1", name: "สินค้า", sku: "SKU-1", sellPrice: "5000.00", currentStock: 10, deletedAt: null }],
-      );
-      Object.assign(db, mockDb);
+      customerRepo.findById.mockResolvedValue({ id: "cust-1", firstName: "สมชาย", lastName: "ใจดี", phone: "0812345678", email: null, address: null, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null });
+      inventoryRepo.findByIds.mockResolvedValue([{ id: "prod-1", categoryId: "cat-1", sku: "SKU-1", name: "สินค้า", description: null, unit: "ชิ้น", costPrice: "3000.00", sellPrice: "5000.00", minStock: 1, currentStock: 10, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null }]);
       repo.createInvoice.mockResolvedValue(mockCreateResult);
 
       const result = await svc.create(
@@ -213,8 +217,7 @@ describe("InvoiceService", () => {
     });
 
     it("should throw BadRequestError when customer not found", async () => {
-      const mockDb = buildDbMock([], [{ id: "prod-1", sellPrice: "5000.00", currentStock: 10 }]);
-      Object.assign(db, mockDb);
+      customerRepo.findById.mockResolvedValue(null);
 
       await expect(svc.create(
         { customerId: "nonexistent", items: [{ productId: "prod-1", quantity: 1 }], discount: 0 },
@@ -223,11 +226,8 @@ describe("InvoiceService", () => {
     });
 
     it("should throw BadRequestError when product not found", async () => {
-      const mockDb = buildDbMock(
-        [{ id: "cust-1" }],
-        [{ id: "prod-2", name: "Other", sku: "SKU-2", sellPrice: "3000.00", currentStock: 5, deletedAt: null }],
-      );
-      Object.assign(db, mockDb);
+      customerRepo.findById.mockResolvedValue({ id: "cust-1", firstName: "สมชาย", lastName: "ใจดี", phone: "0812345678", email: null, address: null, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null });
+      inventoryRepo.findByIds.mockResolvedValue([{ id: "prod-2", categoryId: "cat-1", sku: "SKU-2", name: "Other", description: null, unit: "ชิ้น", costPrice: "1000.00", sellPrice: "3000.00", minStock: 1, currentStock: 5, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null }]);
 
       await expect(svc.create(
         { customerId: "cust-1", items: [{ productId: "prod-unknown", quantity: 1 }], discount: 0 },
@@ -236,11 +236,8 @@ describe("InvoiceService", () => {
     });
 
     it("should throw BadRequestError when insufficient stock", async () => {
-      const mockDb = buildDbMock(
-        [{ id: "cust-1" }],
-        [{ id: "prod-1", name: "สินค้า", sku: "SKU-1", sellPrice: "5000.00", currentStock: 0, deletedAt: null }],
-      );
-      Object.assign(db, mockDb);
+      customerRepo.findById.mockResolvedValue({ id: "cust-1", firstName: "สมชาย", lastName: "ใจดี", phone: "0812345678", email: null, address: null, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null });
+      inventoryRepo.findByIds.mockResolvedValue([{ id: "prod-1", categoryId: "cat-1", sku: "SKU-1", name: "สินค้า", description: null, unit: "ชิ้น", costPrice: "3000.00", sellPrice: "5000.00", minStock: 1, currentStock: 0, version: 1, createdAt: new Date(), updatedAt: new Date(), deletedAt: null }]);
 
       await expect(svc.create(
         { customerId: "cust-1", items: [{ productId: "prod-1", quantity: 1 }], discount: 0 },

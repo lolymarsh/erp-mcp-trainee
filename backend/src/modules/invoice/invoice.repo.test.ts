@@ -4,6 +4,7 @@ jest.mock("uuid", () => {
   return { v4: jest.fn(() => { counter += 1; return `mocked-uuid-${counter}`; }) };
 });
 
+import type { Tx } from "../../shared/transaction";
 import { InvoiceRepository } from "./repo";
 import type { CreateInvoiceData } from "./repo";
 
@@ -97,8 +98,6 @@ describe("InvoiceRepository", () => {
       const productRow = { id: "prod-1", currentStock: 10, sellPrice: "5000.00" };
       const mockTx = createTxMock([productRow]);
 
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
-
       const input: CreateInvoiceData = {
         invoiceNumber: "INV-20260101-001",
         customerId: "cust-1",
@@ -112,7 +111,7 @@ describe("InvoiceRepository", () => {
         items: [{ productId: "prod-1", quantity: 1, unitPrice: "5000.00", total: "5000.00" }],
       };
 
-      const result = await repo.createInvoice(input);
+      const result = await repo.createInvoice(input, mockTx as unknown as Tx);
       expect(result.invoice.invoiceNumber).toBe("INV-20260101-001");
       expect(result.items).toHaveLength(1);
       expect(mockTx.insert).toHaveBeenCalled();
@@ -121,7 +120,6 @@ describe("InvoiceRepository", () => {
 
     it("should throw when product not found in transaction", async () => {
       const mockTx = createTxMock([]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       const input: CreateInvoiceData = {
         invoiceNumber: "INV-001",
@@ -136,7 +134,7 @@ describe("InvoiceRepository", () => {
         items: [{ productId: "unknown-prod", quantity: 1, unitPrice: "100.00", total: "100.00" }],
       };
 
-      await expect(repo.createInvoice(input)).rejects.toThrow("PRODUCT_NOT_FOUND");
+      await expect(repo.createInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("PRODUCT_NOT_FOUND");
     });
   });
 });

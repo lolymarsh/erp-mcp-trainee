@@ -56,17 +56,17 @@ export function setupRoutes(app: Express, deps: AppDependencies): void {
   app.use("/api/customers", registerCustomerRoutes(customerHandler, auth));
 
   const inventoryRepo = new InventoryRepository(deps.db);
-  const inventorySvc = new InventoryService(inventoryRepo, deps.redis);
+  const inventorySvc = new InventoryService(inventoryRepo, deps.db, deps.redis);
   const inventoryHandler = new InventoryHandler(inventorySvc);
   app.use("/api/inventory", registerInventoryRoutes(inventoryHandler, auth));
 
   const invoiceRepo = new InvoiceRepository(deps.db);
-  const invoiceSvc = new InvoiceService(invoiceRepo, deps.db, deps.redis);
+  const invoiceSvc = new InvoiceService(invoiceRepo, customerRepo, inventoryRepo, deps.db, deps.redis);
   const invoiceHandler = new InvoiceHandler(invoiceSvc);
   app.use("/api/sales/invoices", registerInvoiceRoutes(invoiceHandler, auth));
 
   const jobRepo = new JobRepository(deps.db);
-  const jobSvc = new JobService(jobRepo, deps.db, deps.redis);
+  const jobSvc = new JobService(jobRepo, customerRepo, deps.db, deps.redis);
   const jobHandler = new JobHandler(jobSvc);
   app.use("/api/jobs", registerJobRoutes(jobHandler, auth));
 

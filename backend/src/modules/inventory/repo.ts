@@ -24,6 +24,7 @@ import type {
   StockMovementEntity,
 } from "./entity";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
+import type { Tx } from "../../shared/transaction";
 
 export interface StockAdjustData {
   productId: string;
@@ -79,7 +80,7 @@ export interface IInventoryRepository {
     version: number,
   ): Promise<ProductEntity | null>;
   softDelete(id: string, version: number): Promise<boolean>;
-  adjustStock(input: StockAdjustData): Promise<StockAdjustResult>;
+  adjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult>;
 }
 
 export class InventoryRepository implements IInventoryRepository {
@@ -273,41 +274,61 @@ export class InventoryRepository implements IInventoryRepository {
     return result[0].affectedRows > 0;
   }
 
-  async adjustStock(input: StockAdjustData): Promise<StockAdjustResult> {
-    return this.db.transaction(async (tx) => {
-      const [product] = await tx
-        .select()
-        .from(products)
-        .where(eq(products.id, input.productId))
-        .for("update");
+  async adjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult> {
+    const db = tx ?? this.db;
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, input.productId))
+      .for("update");
 
-      if (!product) {
-        throw new Error("PRODUCT_NOT_FOUND");
-      }
+    if (!product) {
+      throw new Error("PRODUCT_NOT_FOUND");
+    }
 
-      let newStock: number;
-      if (input.type === "IN") {
-        newStock = product.currentStock + input.quantity;
-      } else if (input.type === "OUT") {
-        newStock = product.currentStock - input.quantity;
-      } else {
-        newStock = input.quantity;
-      }
+    let newStock: number;
+    if (input.type === "IN") {
+      newStock = product.currentStock + input.quantity;
+    } else if (input.type === "OUT") {
+      newStock = product.currentStock - input.quantity;
+    } else {
+      newStock = input.quantity;
+    }
 
-      if (newStock < 0) {
-        throw new Error("INSUFFICIENT_STOCK");
-      }
+    if (newStock < 0) {
+      throw new Error("INSUFFICIENT_STOCK");
+    }
 
-      await tx
-        .update(products)
-        .set({
-          currentStock: sql`CAST(${newStock} AS SIGNED)`,
-          updatedAt: new Date(),
-        })
-        .where(eq(products.id, input.productId));
+    await db
+      .update(products)
+      .set({
+        currentStock: sql`CAST(${newStock} AS SIGNED)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, input.productId));
 
-      const movementId = uuidv4();
-      await tx.insert(stockMovements).values({
+    const movementId = uuidv4();
+    await db.insert(stockMovements).values({
+      id: movementId,
+      productId: input.productId,
+      type: input.type,
+      quantity: input.quantity,
+      referenceType: input.referenceType,
+      referenceId: input.referenceId,
+      createdBy: input.createdBy,
+      note: input.note,
+      createdAt: new Date(),
+    });
+
+    const [updated] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, input.productId))
+      .limit(1);
+
+    return {
+      product: updated,
+      movement: {
         id: movementId,
         productId: input.productId,
         type: input.type,
@@ -317,29 +338,8 @@ export class InventoryRepository implements IInventoryRepository {
         createdBy: input.createdBy,
         note: input.note,
         createdAt: new Date(),
-      });
-
-      const [updated] = await tx
-        .select()
-        .from(products)
-        .where(eq(products.id, input.productId))
-        .limit(1);
-
-      return {
-        product: updated,
-        movement: {
-          id: movementId,
-          productId: input.productId,
-          type: input.type,
-          quantity: input.quantity,
-          referenceType: input.referenceType,
-          referenceId: input.referenceId,
-          createdBy: input.createdBy,
-          note: input.note,
-          createdAt: new Date(),
-        },
-      };
-    });
+      },
+    };
   }
 
   private resolveColumn(field: string): Column | null {

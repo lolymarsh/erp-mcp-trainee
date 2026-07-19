@@ -4,6 +4,7 @@ jest.mock("uuid", () => {
   return { v4: jest.fn(() => { counter += 1; return `mocked-uuid-${counter}`; }) };
 });
 
+import type { Tx } from "../../shared/transaction";
 import { InvoiceRepository } from "./repo";
 import type { CreateInvoiceData } from "./repo";
 
@@ -119,7 +120,6 @@ describe("InvoiceRepository extra coverage", () => {
     it("should throw INSUFFICIENT_STOCK when stock too low", async () => {
       const productRow = { id: "prod-1", currentStock: 0, deletedAt: null };
       const mockTx = createTxMock([productRow]);
-      db.transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(mockTx));
 
       const input: CreateInvoiceData = {
         invoiceNumber: "INV-001", customerId: "cust-1", vehicleId: null,
@@ -128,7 +128,7 @@ describe("InvoiceRepository extra coverage", () => {
         items: [{ productId: "prod-1", quantity: 1, unitPrice: "100.00", total: "100.00" }],
       };
 
-      await expect(repo.createInvoice(input)).rejects.toThrow("INSUFFICIENT_STOCK");
+      await expect(repo.createInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("INSUFFICIENT_STOCK");
     });
   });
 

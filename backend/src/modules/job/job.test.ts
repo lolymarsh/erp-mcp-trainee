@@ -11,6 +11,7 @@ jest.mock("uuid", () => {
 import Redis from "ioredis";
 import { JobService } from "./service";
 import type { IJobRepository } from "./repo";
+import type { ICustomerRepository } from "../customer/repo";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import {
   NotFoundError,
@@ -46,7 +47,8 @@ const mockLog = {
 
 describe("JobService", () => {
   let repo: jest.Mocked<IJobRepository>;
-  let db: Partial<MySql2Database>;
+  let customerRepo: jest.Mocked<ICustomerRepository>;
+  let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: JobService;
 
@@ -59,11 +61,21 @@ describe("JobService", () => {
       updateStatus: jest.fn(),
       getTodayQueue: jest.fn(),
     };
-    db = {
-      select: jest.fn(),
+    customerRepo = {
+      findFiltered: jest.fn(),
+      findById: jest.fn(),
+      findByIdWithVehicles: jest.fn(),
+      findByPhone: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      findVehicleById: jest.fn(),
     };
+    db = {
+      transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
+    } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new JobService(repo, db as MySql2Database, redis);
+    svc = new JobService(repo, customerRepo, db, redis);
   });
 
   describe("filter", () => {
