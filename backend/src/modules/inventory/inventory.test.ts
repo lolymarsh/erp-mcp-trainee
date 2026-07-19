@@ -43,6 +43,7 @@ const mockCategory = {
   id: "cat-1",
   name: "ถังแก๊ส",
   description: null,
+  version: 1,
 };
 
 describe("InventoryService", () => {
@@ -61,6 +62,11 @@ describe("InventoryService", () => {
       findByIds: jest.fn(),
       findBySku: jest.fn(),
       findAllCategories: jest.fn(),
+      findCategoriesFiltered: jest.fn(),
+      findCategoryById: jest.fn(),
+      createCategory: jest.fn(),
+      updateCategory: jest.fn(),
+      deleteCategory: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),

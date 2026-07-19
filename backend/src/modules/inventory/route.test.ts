@@ -11,7 +11,11 @@ describe("Inventory routes", () => {
       update: jest.fn(),
       softDelete: jest.fn(),
       adjustStock: jest.fn(),
+      filterCategories: jest.fn(),
       listCategories: jest.fn(),
+      createCategory: jest.fn(),
+      updateCategory: jest.fn(),
+      deleteCategory: jest.fn(),
     } as any;
     const auth = (() => jest.fn()) as any;
     const router = registerInventoryRoutes(handler, auth);

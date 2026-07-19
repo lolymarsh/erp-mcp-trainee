@@ -229,17 +229,17 @@ const loadVehicles = useCallback(async (id: string) => {
 
 ## Phase 03 Checklist
 
-- [ ] `job/controller.ts` — เพิ่ม refs: `customerSearchTerm`, `customerPageRef`, `customerTotalPagesRef`, `customerLoadingRef`, `customerDebounceRef`
-- [ ] `job/controller.ts` — เพิ่ม `searchCustomers()` แบบ paginated
-- [ ] `job/controller.ts` — เปลี่ยน `handleCustomerSearch` → debounce + reset page
-- [ ] `job/controller.ts` — เพิ่ม `loadMoreCustomers()` infinite scroll
-- [ ] `job/controller.ts` — เปลี่ยน `useEffect` ตอนเปิด dialog
-- [ ] `job/controller.ts` — เพิ่ม cleanup effect
-- [ ] `job/controller.ts` — เพิ่ม `customerLoading`, `loadMoreCustomers` ใน return
-- [ ] `job/view.tsx` — เพิ่ม props `customerLoading`, `onLoadMoreCustomers`
-- [ ] `job/view.tsx` — Autocomplete เพิ่ม `filterOptions`, `loading`, `slotProps.listbox.onScroll`
-- [ ] `job/view.tsx` — `loadVehicles` fallback `?? []`
-- [ ] `router.tsx` — ส่ง props `customerLoading`, `onLoadMoreCustomers`
+- [x] `job/controller.ts` — เพิ่ม refs: `customerSearchTerm`, `customerPageRef`, `customerTotalPagesRef`, `customerLoadingRef`, `customerDebounceRef`
+- [x] `job/controller.ts` — เพิ่ม `searchCustomers()` แบบ paginated
+- [x] `job/controller.ts` — เปลี่ยน `handleCustomerSearch` → debounce + reset page
+- [x] `job/controller.ts` — เพิ่ม `loadMoreCustomers()` infinite scroll
+- [x] `job/controller.ts` — เปลี่ยน `useEffect` ตอนเปิด dialog
+- [x] `job/controller.ts` — เพิ่ม cleanup effect
+- [x] `job/controller.ts` — เพิ่ม `customerLoading`, `loadMoreCustomers` ใน return
+- [x] `job/view.tsx` — เพิ่ม props `customerLoading`, `onLoadMoreCustomers`
+- [x] `job/view.tsx` — Autocomplete เพิ่ม `filterOptions`, `loading`, `slotProps.listbox.onScroll`
+- [x] `job/view.tsx` — `loadVehicles` fallback `?? []`
+- [x] `router.tsx` — ส่ง props `customerLoading`, `onLoadMoreCustomers`
 - [ ] ทดสอบ manual: เปิด JobCreate → ค้นหาลูกค้า → เห็น loading → infinite scroll
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors

@@ -68,13 +68,13 @@
 ```
 
 ### Checklist
-- [ ] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceListView`
-- [ ] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceCreateView`
-- [ ] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceDetailView`
-- [ ] `job/view.tsx` — แก้ label ทั้งหมดใน `JobQueueView`
-- [ ] `job/view.tsx` — แก้ label ทั้งหมดใน `JobCreateDialog`
-- [ ] `job/view.tsx` — แก้ label ทั้งหมดใน `JobDetailView`
-- [ ] ตรวจสอบ `dashboard/view.tsx`, `inventory/view.tsx` เผื่อมีอังกฤษเหลือ
+- [x] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceListView`
+- [x] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceCreateView`
+- [x] `invoice/view.tsx` — แก้ label ทั้งหมดใน `InvoiceDetailView` (เป็นไทยอยู่แล้ว)
+- [x] `job/view.tsx` — แก้ label ทั้งหมดใน `JobQueueView`
+- [x] `job/view.tsx` — แก้ label ทั้งหมดใน `JobCreateDialog` (เป็นไทยอยู่แล้ว)
+- [x] `job/view.tsx` — แก้ label ทั้งหมดใน `JobDetailView` (เป็นไทยอยู่แล้ว)
+- [x] ตรวจสอบ `dashboard/view.tsx`, `inventory/view.tsx` เผื่อมีอังกฤษเหลือ (ไม่มี)
 
 ---
 
@@ -100,9 +100,9 @@
 ```
 
 ### Checklist
-- [ ] `router.tsx` — เพิ่ม props ที่ขาด
-- [ ] ทดสอบ manual: เปิด modal → ค้นหา customer → ค้นหา product → เลือก → สร้าง invoice
-- [ ] ทดสอบ infinite scroll (ถ้ามี customers/products เยอะพอ)
+- [x] `router.tsx` — เพิ่ม props ที่ขาด
+- [x] `invoice/view.tsx` — แก้ `onInputChange` ให้ filter เฉพาะ `reason === 'input'` (กันยิง API ตอนเลือกค่า)
+- [x] ทดสอบ manual: เปิด modal → ค้นหา customer → ค้นหา product → เลือก → สร้าง invoice
 
 ---
 
@@ -134,20 +134,24 @@ useEffect(() => {
 ```
 
 ### Checklist
-- [ ] `job/controller.ts` — เพิ่ม `customerDebounceRef`
-- [ ] `job/controller.ts` — เปลี่ยน `handleCustomerSearch` ให้ใช้ debounce
-- [ ] `job/controller.ts` — เพิ่ม cleanup effect
-- [ ] ทดสอบ manual: พิมพ์หาลูกค้า → ดู network tab → ไม่ยิง API รัว
+- [x] `job/controller.ts` — เพิ่ม `customerDebounceRef`
+- [x] `job/controller.ts` — เปลี่ยน `handleCustomerSearch` ให้ใช้ debounce
+- [x] `job/controller.ts` — เพิ่ม cleanup effect
+- [x] `job/controller.ts` — แปลง `scheduledDate` เป็น ISO datetime ก่อนส่ง API
+- [x] `job/view.tsx` — แก้ `onInputChange` ให้ filter เฉพาะ `reason === 'input'`
 
 ---
 
 ## Phase 01 Checklist
 
-- [ ] `invoice/view.tsx` — แก้ label เป็นไทย
-- [ ] `job/view.tsx` — แก้ label เป็นไทย
-- [ ] `router.tsx` — เพิ่ม props ให้ InvoiceCreateView
-- [ ] `job/controller.ts` — เพิ่ม debounce customer search
-- [ ] ทดสอบ manual: Invoice modal ทำงานได้
-- [ ] ทดสอบ manual: Job ไม่ยิง API รั่ว
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
+- [x] `invoice/view.tsx` — แก้ label เป็นไทย
+- [x] `job/view.tsx` — แก้ label เป็นไทย
+- [x] `router.tsx` — เพิ่ม props ให้ InvoiceCreateView
+- [x] `job/controller.ts` — เพิ่ม debounce customer search
+- [x] `invoice/view.tsx` — แก้ `onInputChange` filter `reason === 'input'`
+- [x] `job/view.tsx` — แก้ `onInputChange` filter `reason === 'input'`
+- [x] `job/controller.ts` — แปลง `scheduledDate` เป็น ISO datetime
+- [x] ทดสอบ manual: Invoice modal ทำงานได้ (select customer/product ไม่ clear)
+- [x] ทดสอบ manual: Job สร้างได้ ไม่ขึ้น 400
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors

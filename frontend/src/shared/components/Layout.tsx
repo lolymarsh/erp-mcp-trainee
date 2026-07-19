@@ -21,18 +21,10 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import BuildIcon from '@mui/icons-material/Build';
 import ChatIcon from '@mui/icons-material/Chat';
 import LoginIcon from '@mui/icons-material/Login';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useAuthStore } from '../../stores/authStore';
 
 const drawerWidth = 240;
-
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'ลูกค้า', icon: <PeopleIcon />, path: '/customers' },
-  { text: 'สินค้า', icon: <InventoryIcon />, path: '/inventory' },
-  { text: 'ใบแจ้งหนี้', icon: <ReceiptIcon />, path: '/sales/invoices' },
-  { text: 'งานติดตั้ง', icon: <BuildIcon />, path: '/jobs' },
-  { text: 'AI Chat', icon: <ChatIcon />, path: '/chat' },
-];
 
 export function Layout(): React.ReactElement {
   const navigate = useNavigate();
@@ -77,7 +69,17 @@ export function Layout(): React.ReactElement {
         >
           <Toolbar />
           <List>
-            {menuItems.map((item) => (
+            {[
+              { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+              { text: 'ลูกค้า', icon: <PeopleIcon />, path: '/customers' },
+              { text: 'สินค้า', icon: <InventoryIcon />, path: '/inventory' },
+              { text: 'ใบแจ้งหนี้', icon: <ReceiptIcon />, path: '/sales/invoices' },
+              { text: 'งานติดตั้ง', icon: <BuildIcon />, path: '/jobs' },
+              { text: 'AI Chat', icon: <ChatIcon />, path: '/chat' },
+              ...(user?.role === 'ADMIN'
+                ? [{ text: 'จัดการผู้ใช้งาน', icon: <AdminPanelSettingsIcon />, path: '/admin/users' }]
+                : []),
+            ].map((item) => (
               <ListItem key={item.text} disablePadding>
                 <ListItemButton
                   selected={location.pathname === item.path}

@@ -13,6 +13,9 @@ import type {
   StockMovementResponse,
   StockAdjustResponse,
   CategoryResponse,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+  DeleteCategoryInput,
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
@@ -54,7 +57,11 @@ export interface IInventoryService {
     userId: string,
     meta?: AuditMeta,
   ): Promise<StockAdjustResponse>;
+  filterCategories(input: FilterRequestInput): Promise<{ data: CategoryResponse[]; pagination: PaginationResponse }>;
   listCategories(): Promise<CategoryResponse[]>;
+  createCategory(input: CreateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
+  updateCategory(id: string, input: UpdateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
+  deleteCategory(id: string, input: DeleteCategoryInput, userId: string, meta?: AuditMeta): Promise<void>;
 }
 
 const DASHBOARD_CACHE_KEY = "dashboard:summary";
@@ -251,19 +258,97 @@ export class InventoryService implements IInventoryService {
     }
   }
 
+  async filterCategories(
+    input: FilterRequestInput,
+  ): Promise<{ data: CategoryResponse[]; pagination: PaginationResponse }> {
+    const result = await this.repo.findCategoriesFiltered(input);
+    const pagination = calculatePagination(input.page, input.pageSize, result.total);
+
+    return {
+      data: result.data.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        version: c.version,
+      })),
+      pagination,
+    };
+  }
+
   async listCategories(): Promise<CategoryResponse[]> {
     const categories = await this.repo.findAllCategories();
     return categories.map((c) => ({
       id: c.id,
       name: c.name,
       description: c.description,
+      version: c.version,
     }));
+  }
+
+  async createCategory(
+    input: CreateCategoryInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<CategoryResponse> {
+    const entity = await this.repo.createCategory({
+      id: uuidv4(),
+      name: input.name,
+      description: input.description ?? null,
+    });
+
+    this.auditService.insertAuditLog("CREATE", "categories", entity.id, userId, null, entity, meta);
+
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      version: entity.version,
+    };
+  }
+
+  async updateCategory(
+    id: string,
+    input: UpdateCategoryInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<CategoryResponse> {
+    const existing = await this.repo.findCategoryById(id);
+    if (!existing) throw new NotFoundError("Category not found");
+
+    const { version, ...fields } = input;
+    const updated = await this.repo.updateCategory(id, fields, version);
+    if (!updated) throw new ConflictError("Version mismatch");
+
+    this.auditService.insertAuditLog("UPDATE", "categories", id, userId, existing, updated, meta);
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      description: updated.description,
+      version: updated.version,
+    };
+  }
+
+  async deleteCategory(
+    id: string,
+    input: DeleteCategoryInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void> {
+    const existing = await this.repo.findCategoryById(id);
+    if (!existing) throw new NotFoundError("Category not found");
+
+    const deleted = await this.repo.deleteCategory(id, input.version);
+    if (!deleted) throw new ConflictError("Version mismatch");
+
+    this.auditService.insertAuditLog("DELETE", "categories", id, userId, existing, null, meta);
   }
 
   private toProductResponse(entity: ProductEntity): ProductResponse {
     return {
       id: entity.id,
       categoryId: entity.categoryId,
+      categoryName: entity.categoryName ?? '',
       sku: entity.sku,
       name: entity.name,
       description: entity.description,

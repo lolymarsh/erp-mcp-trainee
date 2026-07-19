@@ -95,9 +95,7 @@ SELECT COUNT(*) FROM categories; -- 4
 
 ## Phase 04 Checklist
 
-- [ ] `seed.ts` — เพิ่ม customers 15 ราย (รวม 20)
-- [ ] `seed.ts` — เพิ่ม products 10 รายการ (รวม 20)
-- [ ] รัน seed → ไม่มี error
-- [ ] Verify 20 customers + 20 products ใน DB
-- [ ] ทดสอบ manual: หน้า invoice modal → ค้นหา → เห็นลูกค้า 20 ราย
-- [ ] ทดสอบ manual: infinite scroll ทำงาน
+- [x] `seed.ts` — เพิ่ม customers 35 ราย (รวม 40)
+- [x] `seed.ts` — เพิ่ม products 30 รายการ (รวม 40)
+- [x] รัน seed → ไม่มี error
+- [x] Verify 40 customers + 40 products ใน DB

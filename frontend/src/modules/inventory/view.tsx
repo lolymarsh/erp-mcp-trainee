@@ -25,7 +25,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useState, useEffect } from 'react';
 import type { ProductEntity, ProductWithMovements, CategoryEntity, PaginationResponse } from './model';
 import { inventoryApi } from './model';
-import type { CreateProductFormData, StockAdjustFormData } from './controller';
+import type { CreateProductFormData, StockAdjustFormData, CreateCategoryFormData } from './controller';
 
 // ============== Stock Badge ==============
 
@@ -61,6 +61,7 @@ interface InventoryListViewProps {
   onPageChange: (page: number) => void;
   onSelectProduct: (product: ProductEntity) => void;
   onCreateClick: () => void;
+  onManageCategoriesClick?: () => void;
 }
 
 export function InventoryListView({
@@ -72,14 +73,22 @@ export function InventoryListView({
   onPageChange,
   onSelectProduct,
   onCreateClick,
+  onManageCategoriesClick,
 }: InventoryListViewProps) {
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">คลังสินค้า</Typography>
-        <Button variant="contained" onClick={onCreateClick}>
-          เพิ่มสินค้า
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {onManageCategoriesClick && (
+            <Button variant="outlined" onClick={onManageCategoriesClick}>
+              จัดการหมวดหมู่
+            </Button>
+          )}
+          <Button variant="contained" onClick={onCreateClick}>
+            เพิ่มสินค้า
+          </Button>
+        </Box>
       </Box>
 
       <TextField
@@ -265,7 +274,7 @@ export function InventoryDetailView({
         </Box>
         <Box>
           <Typography variant="subtitle2" color="text.secondary">หมวดหมู่</Typography>
-          <Typography>{product.categoryId}</Typography>
+          <Typography>{product.categoryName || product.categoryId}</Typography>
         </Box>
         <Box>
           <Typography variant="subtitle2" color="text.secondary">คำอธิบาย</Typography>
@@ -789,6 +798,323 @@ interface DeleteConfirmDialogProps {
   error: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// ============== Category Manage View (full page) ==============
+
+interface CategoryManageViewProps {
+  categories: CategoryEntity[];
+  loading: boolean;
+  error: string | null;
+  pagination: PaginationResponse | null;
+  onBack: () => void;
+  onAddClick: () => void;
+  onEditClick: (category: CategoryEntity) => void;
+  onDeleteClick: (category: CategoryEntity) => void;
+  onHistoryClick: (category: CategoryEntity) => void;
+  onSearch: (q: string) => void;
+  onPageChange: (page: number) => void;
+}
+
+export function CategoryManageView({
+  categories,
+  loading,
+  error,
+  pagination,
+  onBack,
+  onAddClick,
+  onEditClick,
+  onDeleteClick,
+  onHistoryClick,
+  onSearch,
+  onPageChange,
+}: CategoryManageViewProps) {
+  return (
+    <Paper sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button variant="outlined" onClick={onBack}>
+            กลับ
+          </Button>
+          <Typography variant="h5">จัดการหมวดหมู่</Typography>
+        </Box>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+      )}
+
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <TextField
+          label="ค้นหาหมวดหมู่"
+          variant="outlined"
+          size="small"
+          sx={{ flex: 1 }}
+          onChange={(e) => onSearch(e.target.value)}
+        />
+        <Button variant="contained" onClick={onAddClick} sx={{ flexShrink: 0 }}>
+          เพิ่มหมวดหมู่
+        </Button>
+      </Box>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : categories.length === 0 ? (
+        <Typography color="text.secondary" sx={{ py: 2 }}>ไม่พบหมวดหมู่</Typography>
+      ) : (
+        <Box>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 180px',
+              gap: 1,
+              px: 1,
+              py: 0.5,
+              bgcolor: 'grey.100',
+              borderRadius: 1,
+              mb: 1,
+            }}
+          >
+            <Typography variant="subtitle2" color="text.secondary">ชื่อหมวดหมู่</Typography>
+            <Typography variant="subtitle2" color="text.secondary">คำอธิบาย</Typography>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textAlign: 'center' }}>จัดการ</Typography>
+          </Box>
+          {categories.map((cat) => (
+            <Box
+              key={cat.id}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 180px',
+                gap: 1,
+                px: 1,
+                py: 1,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                alignItems: 'center',
+              }}
+            >
+              <Typography>{cat.name}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {cat.description || '-'}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                <Button size="small" variant="outlined" onClick={() => onEditClick(cat)}>
+                  แก้ไข
+                </Button>
+                <Button size="small" variant="outlined" color="error" onClick={() => onDeleteClick(cat)}>
+                  ลบ
+                </Button>
+                <Button size="small" variant="text" onClick={() => onHistoryClick(cat)}>
+                  ประวัติ
+                </Button>
+              </Box>
+            </Box>
+          ))}
+          {pagination && (
+            <TablePagination
+              component="div"
+              count={pagination.totalData}
+              page={pagination.page - 1}
+              onPageChange={(_, newPage) => onPageChange(newPage + 1)}
+              rowsPerPage={pagination.pageSize}
+              rowsPerPageOptions={[pagination.pageSize]}
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
+            />
+          )}
+        </Box>
+      )}
+    </Paper>
+  );
+}
+
+// ============== Category Create Dialog ==============
+
+interface CategoryCreateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  onSubmit: (data: CreateCategoryFormData) => void;
+}
+
+export function CategoryCreateDialog({
+  open,
+  onClose,
+  loading,
+  error,
+  fieldErrors,
+  onSubmit,
+}: CategoryCreateDialogProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setName('');
+      setDescription('');
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    onSubmit({
+      name,
+      description: description || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">เพิ่มหมวดหมู่</Typography>
+          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="ชื่อหมวดหมู่ *"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name}
+          />
+          <TextField
+            label="คำอธิบาย"
+            multiline
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============== Category Edit Dialog ==============
+
+interface CategoryEditDialogProps {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  initialValues: { name: string; description: string } | null;
+  onSubmit: (data: CreateCategoryFormData) => void;
+}
+
+export function CategoryEditDialog({
+  open,
+  onClose,
+  loading,
+  error,
+  fieldErrors,
+  initialValues,
+  onSubmit,
+}: CategoryEditDialogProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (open && initialValues) {
+      setName(initialValues.name);
+      setDescription(initialValues.description ?? '');
+    }
+  }, [open, initialValues]);
+
+  const handleSubmit = () => {
+    onSubmit({
+      name,
+      description: description || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">แก้ไขหมวดหมู่</Typography>
+          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="ชื่อหมวดหมู่ *"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={!!fieldErrors.name}
+            helperText={fieldErrors.name}
+          />
+          <TextField
+            label="คำอธิบาย"
+            multiline
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============== Category Delete Confirm Dialog ==============
+
+interface CategoryDeleteConfirmDialogProps {
+  open: boolean;
+  categoryName: string;
+  loading: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+export function CategoryDeleteConfirmDialog({
+  open,
+  categoryName,
+  loading,
+  error,
+  onCancel,
+  onConfirm,
+}: CategoryDeleteConfirmDialogProps) {
+  return (
+    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+      <DialogTitle>ยืนยันการลบ</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Typography>
+          คุณต้องการลบหมวดหมู่ "{categoryName}" ใช่หรือไม่?
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
+        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
+          {loading ? <CircularProgress size={20} /> : 'ลบ'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 export function ProductDeleteConfirmDialog({

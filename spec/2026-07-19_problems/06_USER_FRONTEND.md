@@ -375,12 +375,12 @@ function UserListRoute() {
 
 ## Phase 06 Checklist
 
-- [ ] `frontend/src/modules/user/model.ts` — interfaces + API calls
-- [ ] `frontend/src/modules/user/controller.ts` — hooks (list, create, update, delete, toggleActive)
-- [ ] `frontend/src/modules/user/view.tsx` — UserListView, UserCreateDialog, UserEditDialog, UserDeleteConfirmDialog
-- [ ] `router.tsx` — เพิ่ม route `/admin/users`
-- [ ] Layout sidebar — เพิ่ม link (Admin only)
-- [ ] ทุก label เป็นภาษาไทย
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
+- [x] `frontend/src/modules/user/model.ts` — interfaces + API calls
+- [x] `frontend/src/modules/user/controller.ts` — hooks (list, create, update, delete, toggleActive)
+- [x] `frontend/src/modules/user/view.tsx` — UserListView, UserCreateDialog, UserEditDialog, UserDeleteConfirmDialog
+- [x] `router.tsx` — เพิ่ม route `/admin/users`
+- [x] Layout sidebar — เพิ่ม link (Admin only)
+- [x] ทุก label เป็นภาษาไทย
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors
 - [ ] ทดสอบ manual: Login as admin → /admin/users → list, create, edit, deactivate, delete

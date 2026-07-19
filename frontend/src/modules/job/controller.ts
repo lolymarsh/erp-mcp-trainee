@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { z } from "zod";
 import {
   jobApi,
@@ -10,7 +10,7 @@ import {
   type CreateJobInput,
 } from "./model";
 import { customerApi } from "../customer/model";
-import type { CustomerEntity, VehicleEntity, FilterParams } from "../customer/model";
+import type { CustomerEntity, VehicleEntity } from "../customer/model";
 
 const createJobSchema = z.object({
   customerId: z.string().min(1, "กรุณาเลือกลูกค้า"),
@@ -221,6 +221,8 @@ interface UseJobCreateReturn {
   setTechnicianId: (t: string) => void;
   setNotes: (n: string) => void;
   handleCustomerSearch: (q: string) => void;
+  loadMoreCustomers: () => void;
+  customerLoading: boolean;
   submit: () => Promise<void>;
 }
 
@@ -239,29 +241,48 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
 
   const [customers, setCustomers] = useState<CustomerEntity[]>([]);
   const [vehicles, setVehicles] = useState<VehicleEntity[]>([]);
+  const [customerLoading, setCustomerLoading] = useState(false);
 
-  const loadCustomers = useCallback(async (search?: string) => {
+  const customerSearchTerm = useRef('');
+  const customerPageRef = useRef(1);
+  const customerTotalPagesRef = useRef(1);
+  const customerLoadingRef = useRef(false);
+  const customerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const searchCustomers = useCallback(async (search: string, page: number, append: boolean) => {
+    if (customerLoadingRef.current) return;
+    customerLoadingRef.current = true;
+    setCustomerLoading(true);
     try {
-      const params: FilterParams = {
-        page: 1,
-        pageSize: 100,
-        sortName: "firstName",
-        sortBy: "asc",
-      };
-      if (search) {
-        params.filters = [{ field: "firstName", operator: "contains", value: search }];
+      const filters = search
+        ? [{ field: 'firstName', operator: 'contains' as const, value: search }]
+        : [];
+      const result = await customerApi.filter({
+        page,
+        pageSize: 10,
+        sortBy: 'asc',
+        sortName: 'firstName',
+        filters,
+      });
+      if (append) {
+        setCustomers(prev => [...prev, ...result.data]);
+      } else {
+        setCustomers(result.data);
       }
-      const result = await customerApi.filter(params);
-      setCustomers(result.data);
+      customerTotalPagesRef.current = result.pagination.totalPage;
+      customerPageRef.current = page;
     } catch {
-      setCustomers([]);
+      // silent
+    } finally {
+      customerLoadingRef.current = false;
+      setCustomerLoading(false);
     }
   }, []);
 
   const loadVehicles = useCallback(async (id: string) => {
     try {
       const result = await customerApi.getById(id);
-      setVehicles(result.data.vehicles);
+      setVehicles(result.data.vehicles ?? []);
     } catch {
       setVehicles([]);
     }
@@ -278,8 +299,18 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
   }, [loadVehicles]);
 
   const handleCustomerSearch = useCallback((q: string) => {
-    void loadCustomers(q);
-  }, [loadCustomers]);
+    customerSearchTerm.current = q;
+    if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    customerDebounceRef.current = setTimeout(() => {
+      void searchCustomers(q, 1, false);
+    }, 300);
+  }, [searchCustomers]);
+
+  const loadMoreCustomers = useCallback(() => {
+    if (customerPageRef.current < customerTotalPagesRef.current && !customerLoadingRef.current) {
+      void searchCustomers(customerSearchTerm.current, customerPageRef.current + 1, true);
+    }
+  }, [searchCustomers]);
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -296,9 +327,17 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
 
   useEffect(() => {
     if (open) {
-      void loadCustomers();
+      customerSearchTerm.current = '';
+      customerPageRef.current = 1;
+      void searchCustomers('', 1, false);
     }
-  }, [open, loadCustomers]);
+  }, [open, searchCustomers]);
+
+  useEffect(() => {
+    return () => {
+      if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    };
+  }, []);
 
   const submit = useCallback(async () => {
     const parsed = createJobSchema.safeParse({
@@ -328,7 +367,9 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
         customerId: parsed.data.customerId,
         vehicleId: parsed.data.vehicleId ?? "",
         jobType: parsed.data.jobType,
-        scheduledDate: parsed.data.scheduledDate ?? null,
+        scheduledDate: parsed.data.scheduledDate
+        ? `${parsed.data.scheduledDate}T00:00:00.000Z`
+        : null,
         technicianId: parsed.data.technicianId ?? null,
         notes: parsed.data.notes ?? null,
       };
@@ -365,6 +406,8 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
     setTechnicianId,
     setNotes,
     handleCustomerSearch,
+    loadMoreCustomers,
+    customerLoading,
     submit,
   };
 }

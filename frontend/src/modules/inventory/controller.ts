@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isAxiosError } from 'axios';
 import { z } from 'zod';
-import type { ProductEntity, ProductWithMovements, PaginationResponse, FilterParams } from './model';
+import type { ProductEntity, ProductWithMovements, PaginationResponse, FilterParams, CategoryEntity } from './model';
 import { inventoryApi } from './model';
 import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
 
@@ -417,4 +417,266 @@ export function useProductDelete(
   }, [id, onSuccess, onConflict, handleClose]);
 
   return { open, setOpen, handleClose, loading, error, submit };
+}
+
+// ====== Category List ======
+
+export interface UseCategoryListReturn {
+  categories: CategoryEntity[];
+  loading: boolean;
+  error: string | null;
+  pagination: PaginationResponse | null;
+  refetch: () => void;
+  setPage: (page: number) => void;
+  setSearch: (search: string) => void;
+}
+
+export function useCategoryList(): UseCategoryListReturn {
+  const [categories, setCategories] = useState<CategoryEntity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationResponse | null>(null);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 400);
+
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: FilterParams = {
+        page,
+        pageSize: 10,
+        sortBy: 'asc',
+        sortName: 'name',
+      };
+
+      if (debouncedSearch.length > 0) {
+        params.filters = [
+          { field: 'name', operator: 'contains', value: debouncedSearch },
+        ];
+      }
+
+      const result = await inventoryApi.filterCategories(params);
+      setCategories(result.data);
+      setPagination(result.pagination);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load categories';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  return { categories, loading, error, pagination, refetch: fetch, setPage, setSearch };
+}
+
+// ====== Category Create ======
+
+const createCategorySchema = z.object({
+  name: z.string().min(1, 'กรุณากรอกชื่อหมวดหมู่'),
+  description: z.string().optional(),
+});
+
+export type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
+
+export interface UseCategoryCreateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  submit: (input: CreateCategoryFormData) => Promise<void>;
+}
+
+export function useCategoryCreate(onSuccess: () => void): UseCategoryCreateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setFieldErrors({});
+  }, []);
+
+  const submit = useCallback(async (input: CreateCategoryFormData) => {
+    const parsed = createCategorySchema.safeParse(input);
+    if (!parsed.success) {
+      const errMap: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errMap[field]) {
+          errMap[field] = issue.message;
+        }
+      }
+      setFieldErrors(errMap);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await inventoryApi.createCategory(parsed.data);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create category';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, fieldErrors, submit };
+}
+
+// ====== Category Update ======
+
+export interface UseCategoryUpdateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  openWithData: (category: CategoryEntity) => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  initialValues: { name: string; description: string } | null;
+  version: number;
+  submit: (input: CreateCategoryFormData) => Promise<void>;
+}
+
+export function useCategoryUpdate(onSuccess: () => void): UseCategoryUpdateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [initialValues, setInitialValues] = useState<{ name: string; description: string } | null>(null);
+  const [version, setVersion] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setFieldErrors({});
+    setEditingId(null);
+  }, []);
+
+  const openWithData = useCallback((category: CategoryEntity) => {
+    setInitialValues({
+      name: category.name,
+      description: category.description ?? '',
+    });
+    setVersion(category.version);
+    setEditingId(category.id);
+    setError(null);
+    setFieldErrors({});
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(async (input: CreateCategoryFormData) => {
+    const parsed = createCategorySchema.safeParse(input);
+    if (!parsed.success) {
+      const errMap: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errMap[field]) {
+          errMap[field] = issue.message;
+        }
+      }
+      setFieldErrors(errMap);
+      return;
+    }
+    if (!editingId) return;
+    setLoading(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await inventoryApi.updateCategory(editingId, { ...parsed.data, version });
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        onSuccess();
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to update category';
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [editingId, version, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, openWithData, loading, error, fieldErrors, initialValues, version, submit };
+}
+
+// ====== Category Delete ======
+
+export interface UseCategoryDeleteReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  openWithData: (category: CategoryEntity) => void;
+  loading: boolean;
+  error: string | null;
+  categoryName: string;
+  version: number;
+  submit: () => Promise<void>;
+}
+
+export function useCategoryDelete(onSuccess: () => void): UseCategoryDeleteReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [version, setVersion] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setDeletingId(null);
+  }, []);
+
+  const openWithData = useCallback((category: CategoryEntity) => {
+    setCategoryName(category.name);
+    setVersion(category.version);
+    setDeletingId(category.id);
+    setError(null);
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(async () => {
+    if (!deletingId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await inventoryApi.deleteCategory(deletingId, { version });
+      handleClose();
+      onSuccess();
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        onSuccess();
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to delete category';
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [deletingId, version, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, openWithData, loading, error, categoryName, version, submit };
 }

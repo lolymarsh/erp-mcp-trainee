@@ -12,6 +12,8 @@ function createMockDb() {
     values: jest.fn().mockReturnThis(),
     update: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
   } as any;
 }
 
@@ -96,6 +98,57 @@ describe("UserRepository", () => {
       db.where = mockWhere;
       const result = await repo.update("user-1", { displayName: "Updated" }, 99);
       expect(result).toBeNull();
+    });
+  });
+
+  describe("findFiltered", () => {
+    it("should return filtered data with total", async () => {
+      const countDb = {
+        select: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockResolvedValue([{ count: 1 }]),
+      };
+      db.select = jest.fn((fields?: any) =>
+        fields?.count
+          ? countDb
+          : {
+              from: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              limit: jest.fn().mockReturnThis(),
+              offset: jest.fn().mockResolvedValue([mockUserEntity]),
+            },
+      );
+
+      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc" });
+      expect(result.total).toBe(1);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe("user-1");
+    });
+  });
+
+  describe("softDelete", () => {
+    it("should return true when affectedRows > 0", async () => {
+      const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 1 }]);
+      db.where = mockWhere;
+      const result = await repo.softDelete("user-1", 1);
+      expect(result).toBe(true);
+    });
+
+    it("should return false when affectedRows === 0", async () => {
+      const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
+      db.where = mockWhere;
+      const result = await repo.softDelete("user-1", 99);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("findAll", () => {
+    it("should return all non-deleted users", async () => {
+      db.where = jest.fn().mockResolvedValue([mockUserEntity]);
+      const result = await repo.findAll();
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("user-1");
     });
   });
 });

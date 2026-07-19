@@ -3,6 +3,7 @@ import { api } from '../../config/api';
 export interface ProductEntity {
   id: string;
   categoryId: string;
+  categoryName: string;
   sku: string;
   name: string;
   description: string | null;
@@ -20,6 +21,7 @@ export interface CategoryEntity {
   id: string;
   name: string;
   description: string | null;
+  version: number;
 }
 
 export interface StockMovementEntity {
@@ -172,12 +174,50 @@ export const inventoryApi = {
     return data;
   },
 
+  filterCategories: async (
+    params: FilterParams,
+  ): Promise<{
+    code: number;
+    message: string;
+    data: CategoryEntity[];
+    pagination: PaginationResponse;
+  }> => {
+    const { data } = await api.post('/inventory/categories/filter', params);
+    return data;
+  },
+
   listCategories: async (): Promise<{
     code: number;
     message: string;
     data: CategoryEntity[];
   }> => {
     const { data } = await api.get('/inventory/categories');
+    return data;
+  },
+
+  createCategory: async (input: { name: string; description?: string | null }): Promise<{
+    code: number;
+    message: string;
+    data: CategoryEntity;
+  }> => {
+    const { data } = await api.post('/inventory/categories', input);
+    return data;
+  },
+
+  updateCategory: async (id: string, input: { name?: string; description?: string | null; version: number }): Promise<{
+    code: number;
+    message: string;
+    data: CategoryEntity;
+  }> => {
+    const { data } = await api.patch(`/inventory/categories/${id}`, input);
+    return data;
+  },
+
+  deleteCategory: async (id: string, input: { version: number }): Promise<{
+    code: number;
+    message: string;
+  }> => {
+    const { data } = await api.delete(`/inventory/categories/${id}`, { data: input });
     return data;
   },
 };

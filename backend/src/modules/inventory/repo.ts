@@ -26,6 +26,23 @@ import type {
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { Tx } from "../../shared/transaction";
 
+const productColumns = {
+  id: products.id,
+  categoryId: products.categoryId,
+  sku: products.sku,
+  name: products.name,
+  description: products.description,
+  unit: products.unit,
+  costPrice: products.costPrice,
+  sellPrice: products.sellPrice,
+  minStock: products.minStock,
+  currentStock: products.currentStock,
+  version: products.version,
+  createdAt: products.createdAt,
+  updatedAt: products.updatedAt,
+  deletedAt: products.deletedAt,
+};
+
 export interface StockAdjustData {
   productId: string;
   type: "IN" | "OUT" | "ADJUST";
@@ -51,6 +68,11 @@ export interface IInventoryRepository {
     id: string,
   ): Promise<{ product: ProductEntity; movements: StockMovementEntity[] } | null>;
   findBySku(sku: string): Promise<ProductEntity | null>;
+  findCategoriesFiltered(input: FilterRequestInput): Promise<{ data: CategoryEntity[]; total: number }>;
+  findCategoryById(id: string): Promise<CategoryEntity | null>;
+  createCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity>;
+  updateCategory(id: string, data: Partial<{ name: string; description: string | null }>, version: number): Promise<CategoryEntity | null>;
+  deleteCategory(id: string, version: number): Promise<boolean>;
   findAllCategories(): Promise<CategoryEntity[]>;
   create(data: {
     id: string;
@@ -103,8 +125,12 @@ export class InventoryRepository implements IInventoryRepository {
     const offset = (input.page - 1) * input.pageSize;
 
     const rows = await this.db
-      .select()
+      .select({
+        ...productColumns,
+        categoryName: sql<string>`COALESCE(${categories.name}, '')`,
+      })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(whereClause)
       .orderBy(orderClause)
       .limit(input.pageSize)
@@ -158,13 +184,17 @@ export class InventoryRepository implements IInventoryRepository {
 
   async findById(id: string): Promise<ProductEntity | null> {
     const result = await this.db
-      .select()
+      .select({
+        ...productColumns,
+        categoryName: sql<string>`COALESCE(${categories.name}, '')`,
+      })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(and(eq(products.id, id), isNull(products.deletedAt)))
       .limit(1);
 
     if (result.length === 0) return null;
-    return result[0];
+    return result[0] as unknown as ProductEntity;
   }
 
   async findByIdWithMovements(
@@ -187,25 +217,106 @@ export class InventoryRepository implements IInventoryRepository {
 
   async findBySku(sku: string): Promise<ProductEntity | null> {
     const result = await this.db
-      .select()
+      .select({
+        ...productColumns,
+        categoryName: sql<string>`COALESCE(${categories.name}, '')`,
+      })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(and(eq(products.sku, sku), isNull(products.deletedAt)))
       .limit(1);
 
     if (result.length === 0) return null;
-    return result[0];
+    return result[0] as unknown as ProductEntity;
   }
 
   async findByIds(ids: string[]): Promise<ProductEntity[]> {
-    return this.db
-      .select()
+    const rows = await this.db
+      .select({
+        ...productColumns,
+        categoryName: sql<string>`COALESCE(${categories.name}, '')`,
+      })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(and(inArray(products.id, ids), isNull(products.deletedAt)));
+
+    return rows as unknown as ProductEntity[];
   }
 
   async findAllCategories(): Promise<CategoryEntity[]> {
     const result = await this.db.select().from(categories);
-    return result;
+    return result as CategoryEntity[];
+  }
+
+  async findCategoriesFiltered(
+    input: FilterRequestInput,
+  ): Promise<{ data: CategoryEntity[]; total: number }> {
+    const conditions: SQL[] = [];
+
+    if (input.filters) {
+      for (const f of input.filters) {
+        if (f.field === "name" && f.operator === "contains") {
+          conditions.push(like(categories.name, `%${String(f.value)}%`));
+        }
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const totalResult = await this.db
+      .select({ count: count() })
+      .from(categories)
+      .where(whereClause);
+
+    const total = totalResult[0]?.count ?? 0;
+
+    const sortFn = input.sortBy === "asc" ? asc : desc;
+    const orderClause = input.sortName === "name" ? sortFn(categories.name) : sortFn(categories.name);
+
+    const offset = (input.page - 1) * input.pageSize;
+
+    const rows = await this.db
+      .select()
+      .from(categories)
+      .where(whereClause)
+      .orderBy(orderClause)
+      .limit(input.pageSize)
+      .offset(offset);
+
+    return { data: rows as CategoryEntity[], total };
+  }
+
+  async findCategoryById(id: string): Promise<CategoryEntity | null> {
+    const result = await this.db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    return (result[0] as CategoryEntity) ?? null;
+  }
+
+  async createCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity> {
+    await this.db.insert(categories).values({ ...data, version: 1 });
+    const created = await this.findCategoryById(data.id);
+    return created as CategoryEntity;
+  }
+
+  async updateCategory(
+    id: string,
+    data: Partial<{ name: string; description: string | null }>,
+    version: number,
+  ): Promise<CategoryEntity | null> {
+    const result = await this.db
+      .update(categories)
+      .set({ ...data, version: version + 1 })
+      .where(and(eq(categories.id, id), eq(categories.version, version)));
+
+    if (result[0].affectedRows === 0) return null;
+    return this.findCategoryById(id);
+  }
+
+  async deleteCategory(id: string, version: number): Promise<boolean> {
+    const result = await this.db
+      .delete(categories)
+      .where(and(eq(categories.id, id), eq(categories.version, version)));
+
+    return result[0].affectedRows > 0;
   }
 
   async create(data: {

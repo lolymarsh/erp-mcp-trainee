@@ -11,6 +11,10 @@ export function registerUserRoutes(
   router.post("/login", handler.login);
   router.get("/profile", auth(), handler.getProfile);
   router.post("/", auth("ADMIN"), handler.createUser);
+  router.post("/filter", auth("ADMIN"), handler.filter);
+  router.patch("/:id", auth("ADMIN"), handler.update);
+  router.delete("/:id", auth("ADMIN"), handler.softDelete);
+  router.patch("/:id/deactivate", auth("ADMIN"), handler.deactivate);
 
   return router;
 }

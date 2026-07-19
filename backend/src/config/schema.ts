@@ -74,6 +74,7 @@ export const categories = mysqlTable("categories", {
   id: varchar("id", { length: 36 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
+  version: int("version").notNull().default(1),
 });
 
 export const products = mysqlTable(

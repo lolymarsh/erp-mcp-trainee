@@ -36,14 +36,33 @@ export const stockAdjustSchema = z.object({
   note: z.string().optional().nullable(),
 });
 
+export const createCategorySchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().optional().nullable(),
+});
+
+export const updateCategorySchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional().nullable(),
+  version: z.number().int().min(1),
+});
+
+export const deleteCategorySchema = z.object({
+  version: z.number().int().min(1),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type DeleteProductInput = z.infer<typeof deleteProductSchema>;
 export type StockAdjustInput = z.infer<typeof stockAdjustSchema>;
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+export type DeleteCategoryInput = z.infer<typeof deleteCategorySchema>;
 
 export interface ProductResponse {
   id: string;
   categoryId: string;
+  categoryName: string;
   sku: string;
   name: string;
   description: string | null;
@@ -61,6 +80,7 @@ export interface CategoryResponse {
   id: string;
   name: string;
   description: string | null;
+  version: number;
 }
 
 export interface StockMovementResponse {

@@ -1,6 +1,7 @@
 export interface ProductEntity {
   id: string;
   categoryId: string;
+  categoryName?: string;
   sku: string;
   name: string;
   description: string | null;
@@ -19,6 +20,7 @@ export interface CategoryEntity {
   id: string;
   name: string;
   description: string | null;
+  version: number;
 }
 
 export interface StockMovementEntity {

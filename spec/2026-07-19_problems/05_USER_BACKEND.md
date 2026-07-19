@@ -292,14 +292,14 @@ router.patch("/:id/deactivate", auth("ADMIN"), handler.deactivate);
 
 ## Phase 05 Checklist
 
-- [ ] `user/schema.ts` — เพิ่ม `updateUserSchema`, `deleteUserSchema`
-- [ ] `user/repo.ts` — เพิ่ม `findFiltered()` with pagination
-- [ ] `user/repo.ts` — เพิ่ม `softDelete()`
-- [ ] `user/service.ts` — เพิ่ม `filter()`, `update()`, `softDelete()`, `deactivate()`
-- [ ] `user/handler.ts` — เพิ่ม `filter`, `update`, `softDelete`, `deactivate` methods
-- [ ] `user/route.ts` — เพิ่ม routes
-- [ ] `npm run typecheck` — pass
-- [ ] `npm test` — all pass
+- [x] `user/schema.ts` — เพิ่ม `updateUserSchema`, `deleteUserSchema`
+- [x] `user/repo.ts` — เพิ่ม `findFiltered()` with pagination
+- [x] `user/repo.ts` — เพิ่ม `softDelete()`
+- [x] `user/service.ts` — เพิ่ม `filter()`, `update()`, `softDelete()`, `deactivate()`
+- [x] `user/handler.ts` — เพิ่ม `filter`, `update`, `softDelete`, `deactivate` methods
+- [x] `user/route.ts` — เพิ่ม routes
+- [x] `npm run typecheck` — pass
+- [x] `npm test` — all pass
 - [ ] ทดสอบ manual: `POST /users/filter` → returns 200 with pagination
 - [ ] ทดสอบ manual: `PATCH /users/:id` → updates + version check
 - [ ] ทดสอบ manual: `DELETE /users/:id` → soft delete

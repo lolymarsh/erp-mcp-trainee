@@ -102,8 +102,8 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
   const productPageRef = useRef(1);
   const customerLoadingRef = useRef(false);
   const productLoadingRef = useRef(false);
-  const customerDebounceRef = useRef<ReturnType<typeof setTimeout>>();
-  const productDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const customerDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const productDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const grandTotal = items.reduce((sum, item) => {
     const product = products.find((p) => p.id === item.productId);

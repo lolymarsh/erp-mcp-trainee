@@ -21,13 +21,17 @@ describe("UserHandler", () => {
       login: jest.fn(),
       getProfile: jest.fn(),
       createUser: jest.fn(),
+      filter: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+      deactivate: jest.fn(),
     };
     handler = new UserHandler(svc);
   });
 
   describe("login", () => {
     it("should return 200 on success", async () => {
-      svc.login.mockResolvedValue({ token: "t1", user: { id: "u1", username: "admin", displayName: "Admin", role: "ADMIN", isActive: true, createdAt: "2026-01-01" } });
+      svc.login.mockResolvedValue({ token: "t1", user: { id: "u1", username: "admin", displayName: "Admin", role: "ADMIN", isActive: true, version: 1, createdAt: "2026-01-01" } });
       const { req, res } = mockReqRes();
       req.body = { username: "admin", password: "pass" };
       await handler.login(req, res);
@@ -61,7 +65,7 @@ describe("UserHandler", () => {
 
   describe("getProfile", () => {
     it("should return 200 on success", async () => {
-      svc.getProfile.mockResolvedValue({ id: "u1", username: "admin", displayName: "Admin", role: "ADMIN", isActive: true, createdAt: "2026-01-01" });
+      svc.getProfile.mockResolvedValue({ id: "u1", username: "admin", displayName: "Admin", role: "ADMIN", isActive: true, version: 1, createdAt: "2026-01-01" });
       const { req, res } = mockReqRes();
       req.user = { userId: "u1", role: "ADMIN" };
       await handler.getProfile(req, res);
@@ -87,7 +91,7 @@ describe("UserHandler", () => {
 
   describe("createUser", () => {
     it("should return 201 on success", async () => {
-      svc.createUser.mockResolvedValue({ id: "u2", username: "newuser", displayName: "New", role: "STAFF", isActive: true, createdAt: "2026-01-01" });
+      svc.createUser.mockResolvedValue({ id: "u2", username: "newuser", displayName: "New", role: "STAFF", isActive: true, version: 1, createdAt: "2026-01-01" });
       const { req, res } = mockReqRes();
       req.body = { username: "newuser", password: "pass123", displayName: "New", role: "STAFF" };
       await handler.createUser(req, res);

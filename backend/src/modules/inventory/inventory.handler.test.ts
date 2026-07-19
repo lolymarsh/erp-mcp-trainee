@@ -16,6 +16,7 @@ function mockReqRes() {
 const mockProduct = {
   id: "prod-1",
   categoryId: "cat-1",
+  categoryName: "",
   sku: "GS-001",
   name: "ถังแก๊ส",
   description: null,
@@ -53,7 +54,11 @@ describe("InventoryHandler", () => {
       update: jest.fn(),
       softDelete: jest.fn(),
       adjustStock: jest.fn(),
+      filterCategories: jest.fn(),
       listCategories: jest.fn(),
+      createCategory: jest.fn(),
+      updateCategory: jest.fn(),
+      deleteCategory: jest.fn(),
     };
     handler = new InventoryHandler(svc);
   });
@@ -134,7 +139,7 @@ describe("InventoryHandler", () => {
 
   describe("listCategories", () => {
     it("should return 200 with categories", async () => {
-      svc.listCategories.mockResolvedValue([{ id: "cat-1", name: "ถังแก๊ส", description: null }]);
+      svc.listCategories.mockResolvedValue([{ id: "cat-1", name: "ถังแก๊ส", description: null, version: 1 }]);
       const { req, res } = mockReqRes();
       await handler.listCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(200);

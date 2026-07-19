@@ -6,6 +6,9 @@ import {
   updateProductSchema,
   deleteProductSchema,
   stockAdjustSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  deleteCategorySchema,
 } from "./schema";
 import { filterRequestSchema } from "../../shared/pagination/schema";
 import { sendSuccess, sendError } from "../../shared/response/handler";
@@ -150,6 +153,28 @@ export class InventoryHandler {
     }
   };
 
+  filterCategories = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const input = filterRequestSchema.parse(req.body);
+      const result = await this.svc.filterCategories(input);
+      sendSuccess(res, 200, "success", {
+        data: result.data,
+        pagination: result.pagination,
+      });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Inventory filterCategories failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
   listCategories = async (_req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.svc.listCategories();
@@ -160,6 +185,71 @@ export class InventoryHandler {
         return;
       }
       logger.error({ err }, "Inventory listCategories failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  createCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const input = createCategorySchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const result = await this.svc.createCategory(input, userId, meta);
+      sendSuccess(res, 201, "created", { data: result });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Inventory createCategory failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  updateCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractId(req.params.id);
+      const input = updateCategorySchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const result = await this.svc.updateCategory(id, input, userId, meta);
+      sendSuccess(res, 200, "success", { data: result });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Inventory updateCategory failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  deleteCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractId(req.params.id);
+      const input = deleteCategorySchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      await this.svc.deleteCategory(id, input, userId, meta);
+      sendSuccess(res, 200, "deleted");
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Inventory deleteCategory failed");
       sendError(res, 500, "Internal server error");
     }
   };

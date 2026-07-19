@@ -8,6 +8,18 @@ async function seed(): Promise<void> {
   logger.info('Seeding database...');
   const { db } = createDb();
 
+  // Clear existing data in FK-safe order
+  await db.delete(schema.invoiceItems);
+  await db.delete(schema.invoices);
+  await db.delete(schema.stockMovements);
+  await db.delete(schema.jobStatusLogs);
+  await db.delete(schema.jobs);
+  await db.delete(schema.vehicles);
+  await db.delete(schema.products);
+  await db.delete(schema.categories);
+  await db.delete(schema.customers);
+  await db.delete(schema.users);
+
   const adminId = uuidv4();
   const hash = await bcrypt.hash('admin123', 12);
 
@@ -57,6 +69,36 @@ async function seed(): Promise<void> {
     { categoryId: cat4Id, sku: 'HOSE-1M', name: 'สายท่อ 1 เมตร', unit: 'เส้น', costPrice: '150', sellPrice: '350', minStock: 20, currentStock: 50 },
     { categoryId: cat4Id, sku: 'HOSE-2M', name: 'สายท่อ 2 เมตร', unit: 'เส้น', costPrice: '250', sellPrice: '550', minStock: 15, currentStock: 40 },
     { categoryId: cat4Id, sku: 'FIT-SET', name: 'ชุดข้อต่อ', unit: 'ชุด', costPrice: '450', sellPrice: '850', minStock: 10, currentStock: 25 },
+    { categoryId: catId, sku: 'TNK-120L', name: 'ถังแก๊ส 120L', unit: 'ใบ', costPrice: '6500', sellPrice: '9500', minStock: 2, currentStock: 6 },
+    { categoryId: cat2Id, sku: 'INJ-8CYL', name: 'หัวฉีด 8 สูบ', unit: 'ชุด', costPrice: '5200', sellPrice: '7800', minStock: 2, currentStock: 5 },
+    { categoryId: cat3Id, sku: 'ECU-GEN5', name: 'ECU รุ่น 5', unit: 'ตัว', costPrice: '8500', sellPrice: '12000', minStock: 2, currentStock: 3 },
+    { categoryId: cat4Id, sku: 'HOSE-3M', name: 'สายท่อ 3 เมตร', unit: 'เส้น', costPrice: '350', sellPrice: '750', minStock: 10, currentStock: 30 },
+    { categoryId: catId, sku: 'BRK-01', name: 'ชุดขายึดถัง', unit: 'ชุด', costPrice: '250', sellPrice: '550', minStock: 10, currentStock: 20 },
+    { categoryId: cat2Id, sku: 'REG-01', name: 'ชุดเรกูเลเตอร์', unit: 'ชุด', costPrice: '1800', sellPrice: '3200', minStock: 5, currentStock: 12 },
+    { categoryId: cat3Id, sku: 'WIR-01', name: 'ชุดสายไฟ ECU', unit: 'ชุด', costPrice: '1200', sellPrice: '2200', minStock: 5, currentStock: 15 },
+    { categoryId: cat4Id, sku: 'VAL-01', name: 'วาล์วถังแก๊ส', unit: 'ตัว', costPrice: '800', sellPrice: '1500', minStock: 5, currentStock: 10 },
+    { categoryId: catId, sku: 'GAS-01', name: 'มิเตอร์วัดแก๊ส', unit: 'ตัว', costPrice: '600', sellPrice: '1200', minStock: 5, currentStock: 8 },
+    { categoryId: cat2Id, sku: 'MAP-01', name: 'เซ็นเซอร์ MAP', unit: 'ตัว', costPrice: '900', sellPrice: '1800', minStock: 5, currentStock: 10 },
+    { categoryId: catId, sku: 'TNK-150L', name: 'ถังแก๊ส 150L', unit: 'ใบ', costPrice: '7500', sellPrice: '11000', minStock: 2, currentStock: 4 },
+    { categoryId: catId, sku: 'TNK-200L', name: 'ถังแก๊ส 200L', unit: 'ใบ', costPrice: '9500', sellPrice: '14000', minStock: 1, currentStock: 3 },
+    { categoryId: catId, sku: 'BRK-02', name: 'ชุดขายึดถังเสริม', unit: 'ชุด', costPrice: '180', sellPrice: '400', minStock: 15, currentStock: 25 },
+    { categoryId: catId, sku: 'GAS-02', name: 'ชุดท่อแก๊ส', unit: 'ชุด', costPrice: '350', sellPrice: '700', minStock: 10, currentStock: 18 },
+    { categoryId: catId, sku: 'GAS-FIL', name: 'ไส้กรองแก๊ส', unit: 'ตัว', costPrice: '250', sellPrice: '550', minStock: 10, currentStock: 15 },
+    { categoryId: cat2Id, sku: 'INJ-SGL', name: 'หัวฉีดเดี่ยว', unit: 'ตัว', costPrice: '750', sellPrice: '1400', minStock: 10, currentStock: 20 },
+    { categoryId: cat2Id, sku: 'INJ-FIL', name: 'ไส้กรองหัวฉีด', unit: 'ตัว', costPrice: '200', sellPrice: '450', minStock: 20, currentStock: 35 },
+    { categoryId: cat2Id, sku: 'INJ-RAIL', name: 'ชุดรางหัวฉีด', unit: 'ชุด', costPrice: '1500', sellPrice: '2800', minStock: 5, currentStock: 8 },
+    { categoryId: cat2Id, sku: 'INJ-SEL', name: 'ชุดซีลหัวฉีด', unit: 'ชุด', costPrice: '120', sellPrice: '300', minStock: 15, currentStock: 30 },
+    { categoryId: cat2Id, sku: 'REG-HP', name: 'เรกูเลเตอร์แรงดันสูง', unit: 'ตัว', costPrice: '2200', sellPrice: '3800', minStock: 3, currentStock: 7 },
+    { categoryId: cat3Id, sku: 'ECU-GEN2', name: 'ECU รุ่น 2', unit: 'ตัว', costPrice: '3200', sellPrice: '5500', minStock: 3, currentStock: 6 },
+    { categoryId: cat3Id, sku: 'ECU-CBL', name: 'สายต่อ ECU', unit: 'เส้น', costPrice: '350', sellPrice: '700', minStock: 10, currentStock: 15 },
+    { categoryId: cat3Id, sku: 'ECU-SEN', name: 'ชุดเซ็นเซอร์ ECU', unit: 'ชุด', costPrice: '2800', sellPrice: '4800', minStock: 3, currentStock: 7 },
+    { categoryId: cat3Id, sku: 'ECU-LAM', name: 'เซ็นเซอร์แลมบ์ดา', unit: 'ตัว', costPrice: '1500', sellPrice: '2800', minStock: 5, currentStock: 9 },
+    { categoryId: cat3Id, sku: 'ECU-DIS', name: 'จอแสดงผล ECU', unit: 'ตัว', costPrice: '1800', sellPrice: '3500', minStock: 3, currentStock: 5 },
+    { categoryId: cat4Id, sku: 'HOSE-05M', name: 'สายท่อ 0.5 เมตร', unit: 'เส้น', costPrice: '100', sellPrice: '200', minStock: 25, currentStock: 60 },
+    { categoryId: cat4Id, sku: 'HOSE-ELB', name: 'ข้องอสายท่อ', unit: 'ตัว', costPrice: '80', sellPrice: '180', minStock: 20, currentStock: 45 },
+    { categoryId: cat4Id, sku: 'HOSE-CLP', name: 'ที่หนีบสายท่อ', unit: 'ตัว', costPrice: '30', sellPrice: '80', minStock: 50, currentStock: 100 },
+    { categoryId: cat4Id, sku: 'HOSE-TEE', name: 'ข้อต่อสามทาง', unit: 'ตัว', costPrice: '60', sellPrice: '150', minStock: 20, currentStock: 35 },
+    { categoryId: cat4Id, sku: 'VAL-SAF', name: 'วาล์วนิรภัย', unit: 'ตัว', costPrice: '600', sellPrice: '1200', minStock: 5, currentStock: 10 },
   ];
 
   const productIds: string[] = [];
@@ -76,6 +118,41 @@ async function seed(): Promise<void> {
     { firstName: 'มานะ', lastName: 'ตั้งใจ', phone: '0834567890', email: null, address: '789 ถ.รัชดา กรุงเทพฯ' },
     { firstName: 'วิไล', lastName: 'สุขใจ', phone: '0845678901', email: 'wilai@email.com', address: '12 ถ.เจริญกรุง กรุงเทพฯ' },
     { firstName: 'ประสิทธิ์', lastName: 'เก่งงาน', phone: '0856789012', email: null, address: '56 ถ.พระราม 2 กรุงเทพฯ' },
+    { firstName: 'ประยุทธ', lastName: 'ตั้งใจ', phone: '0867890123', email: 'prayut@email.com', address: '78 ถ.ศรีอยุธยา กรุงเทพฯ' },
+    { firstName: 'นภาพร', lastName: 'สุขสวัสดิ์', phone: '0878901234', email: null, address: '99 ถ.วิภาวดี กรุงเทพฯ' },
+    { firstName: 'อดุลย์', lastName: 'เดชา', phone: '0889012345', email: 'adun@email.com', address: '111 ถ.รามคำแหง กรุงเทพฯ' },
+    { firstName: 'กนกพร', lastName: 'รักเรียน', phone: '0890123456', email: 'kanokporn@email.com', address: '222 ถ.ลาดพร้าว กรุงเทพฯ' },
+    { firstName: 'สมศักดิ์', lastName: 'ศรีวิไล', phone: '0901234567', email: null, address: '333 ถ.บางนา กรุงเทพฯ' },
+    { firstName: 'รัตนา', lastName: 'มั่งคั่ง', phone: '0912345678', email: 'rattana@email.com', address: '444 ถ.เพชรบุรี กรุงเทพฯ' },
+    { firstName: 'ธนากร', lastName: 'กล้าหาญ', phone: '0923456789', email: null, address: '555 ถ.รัชดาภิเษก กรุงเทพฯ' },
+    { firstName: 'สุภาพร', lastName: 'มีสุข', phone: '0934567890', email: 'supaporn@email.com', address: '666 ถ.สาทร กรุงเทพฯ' },
+    { firstName: 'พิชัย', lastName: 'สง่า', phone: '0945678901', email: null, address: '777 ถ.นราธิวาส กรุงเทพฯ' },
+    { firstName: 'อารีย์', lastName: 'วัฒนา', phone: '0956789012', email: 'aree@email.com', address: '888 ถ.พระราม 3 กรุงเทพฯ' },
+    { firstName: 'ดำรง', lastName: 'มั่นคง', phone: '0967890123', email: null, address: '999 ถ.สุขสวัสดิ์ กรุงเทพฯ' },
+    { firstName: 'ผกามาศ', lastName: 'จันทร์แจ่ม', phone: '0978901234', email: 'pkamas@email.com', address: '100 ถ.จันทน์ กรุงเทพฯ' },
+    { firstName: 'บรรจบ', lastName: 'เจริญสุข', phone: '0989012345', email: 'banjob@email.com', address: '200 ถ.เจริญราษฎร์ กรุงเทพฯ' },
+    { firstName: 'สุนีย์', lastName: 'เรืองศรี', phone: '0990123456', email: null, address: '300 ถ.ประชาชื่น กรุงเทพฯ' },
+    { firstName: 'ทวี', lastName: 'ชัยชนะ', phone: '0800123456', email: 'tawee@email.com', address: '400 ถ.บางแค กรุงเทพฯ' },
+    { firstName: 'ชลิต', lastName: 'ก้องเกียรติ', phone: '0612345678', email: 'chalit@email.com', address: '500 ถ.ศรีนครินทร์ กรุงเทพฯ' },
+    { firstName: 'รุ่งนภา', lastName: 'แจ่มจันทร์', phone: '0623456789', email: null, address: '600 ถ.พัฒนาการ กรุงเทพฯ' },
+    { firstName: 'ธวัชชัย', lastName: 'บุญมา', phone: '0634567890', email: 'thawatchai@email.com', address: '700 ถ.ประดิษฐ์มนูญธรรม กรุงเทพฯ' },
+    { firstName: 'ปราณี', lastName: 'ทองดี', phone: '0645678901', email: 'pranee@email.com', address: '800 ถ.ร่มเกล้า กรุงเทพฯ' },
+    { firstName: 'มณฑล', lastName: 'ไชยศรี', phone: '0656789012', email: null, address: '900 ถ.เสรีไทย กรุงเทพฯ' },
+    { firstName: 'สายฝน', lastName: 'บุญช่วย', phone: '0667890123', email: 'saifon@email.com', address: '1000 ถ.นวมินทร์ กรุงเทพฯ' },
+    { firstName: 'ประเสริฐ', lastName: 'ศักดิ์ศรี', phone: '0678901234', email: null, address: '1100 ถ.รามอินทรา กรุงเทพฯ' },
+    { firstName: 'วันเพ็ญ', lastName: 'จันทร์เพ็ญ', phone: '0689012345', email: 'wanpen@email.com', address: '1200 ถ.ห้วยขวาง กรุงเทพฯ' },
+    { firstName: 'สมพร', lastName: 'ทรัพย์ทวี', phone: '0690123456', email: 'somporn@email.com', address: '1300 ถ.ประชาสงเคราะห์ กรุงเทพฯ' },
+    { firstName: 'ชูเกียรติ', lastName: 'เดชะ', phone: '0601234567', email: null, address: '1400 ถ.สุทธิสาร กรุงเทพฯ' },
+    { firstName: 'กัลยา', lastName: 'ศรีสกุล', phone: '0611122334', email: 'kanya@email.com', address: '1500 ถ.ลาดปลาเค้า กรุงเทพฯ' },
+    { firstName: 'วรวุฒิ', lastName: 'ชำนาญ', phone: '0622233445', email: 'worrawut@email.com', address: '1600 ถ.พหลโยธิน เขตจตุจักร กรุงเทพฯ' },
+    { firstName: 'จินตนา', lastName: 'พรหมมา', phone: '0633344556', email: null, address: '1700 ถ.วิภาวดีรังสิต กรุงเทพฯ' },
+    { firstName: 'ไพโรจน์', lastName: 'แก้ววิไล', phone: '0644455667', email: 'pairoj@email.com', address: '1800 ถ.แจ้งวัฒนะ กรุงเทพฯ' },
+    { firstName: 'พิมพา', lastName: 'วงศ์คำ', phone: '0655566778', email: 'pimpa@email.com', address: '1900 ถ.รัตนาธิเบศร์ นนทบุรี' },
+    { firstName: 'คำรณ', lastName: 'สว่างศรี', phone: '0666677889', email: null, address: '2000 ถ.ติวานนท์ นนทบุรี' },
+    { firstName: 'รัชดา', lastName: 'มงคล', phone: '0677788990', email: 'ratchada@email.com', address: '2100 ถ.พระราม 5 กรุงเทพฯ' },
+    { firstName: 'บุญเลิศ', lastName: 'ชูช่วย', phone: '0688899001', email: 'boonlert@email.com', address: '2200 ถ.จรัญสนิทวงศ์ กรุงเทพฯ' },
+    { firstName: 'สายชล', lastName: 'วัฒนะ', phone: '0699900112', email: null, address: '2300 ถ.เพชรเกษม กรุงเทพฯ' },
+    { firstName: 'ธีรพล', lastName: 'ศิริวัฒน์', phone: '0600112233', email: 'teerapol@email.com', address: '2400 ถ.บางขุนเทียน กรุงเทพฯ' },
   ];
 
   const customerIds: string[] = [];

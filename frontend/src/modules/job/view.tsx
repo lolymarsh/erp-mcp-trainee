@@ -39,10 +39,10 @@ const STATUS_COLORS: Record<string, "default" | "primary" | "success" | "error">
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  QUEUED: "Queued",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
+  QUEUED: "รอดำเนินการ",
+  IN_PROGRESS: "กำลังดำเนินการ",
+  COMPLETED: "เสร็จแล้ว",
+  CANCELLED: "ยกเลิก",
 };
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -53,9 +53,9 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 };
 
 const JOB_TYPE_LABELS: Record<string, string> = {
-  INSTALL: "Install",
-  REPAIR: "Repair",
-  INSPECT: "Inspect",
+  INSTALL: "ติดตั้ง",
+  REPAIR: "ซ่อม",
+  INSPECT: "ตรวจสอบ",
 };
 
 function formatDate(dateStr: string | null): string {
@@ -104,26 +104,26 @@ export function JobQueueView({
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Typography variant="h5">Job Queue</Typography>
+          <Typography variant="h5">คิวงาน</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
             สร้างงาน
           </Button>
         </Box>
 
         <FormControl sx={{ minWidth: 180 }} size="small">
-          <InputLabel>Status Filter</InputLabel>
+          <InputLabel>กรองสถานะ</InputLabel>
           <Select
             value={statusFilter ?? ""}
-            label="Status Filter"
+            label="กรองสถานะ"
             onChange={(e) =>
               onStatusFilterChange(e.target.value || null)
             }
           >
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="QUEUED">Queued</MenuItem>
-            <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
-            <MenuItem value="COMPLETED">Completed</MenuItem>
-            <MenuItem value="CANCELLED">Cancelled</MenuItem>
+            <MenuItem value="">ทั้งหมด</MenuItem>
+            <MenuItem value="QUEUED">รอดำเนินการ</MenuItem>
+            <MenuItem value="IN_PROGRESS">กำลังดำเนินการ</MenuItem>
+            <MenuItem value="COMPLETED">เสร็จแล้ว</MenuItem>
+            <MenuItem value="CANCELLED">ยกเลิก</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -138,13 +138,13 @@ export function JobQueueView({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Customer</TableCell>
-              <TableCell>Job Type</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Scheduled</TableCell>
-              <TableCell>Technician</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Change Status</TableCell>
+              <TableCell>ลูกค้า</TableCell>
+              <TableCell>ประเภทงาน</TableCell>
+              <TableCell>สถานะ</TableCell>
+              <TableCell>วันที่นัดหมาย</TableCell>
+              <TableCell>ช่าง</TableCell>
+              <TableCell>สร้างเมื่อ</TableCell>
+              <TableCell>เปลี่ยนสถานะ</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -163,7 +163,7 @@ export function JobQueueView({
             ) : jobs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  No jobs found
+                  ไม่พบงาน
                 </TableCell>
               </TableRow>
             ) : (
@@ -199,7 +199,7 @@ export function JobQueueView({
                             }}
                           >
                             <MenuItem value="" disabled>
-                              Change...
+                              เปลี่ยน...
                             </MenuItem>
                             {transitions.map((s) => (
                               <MenuItem key={s} value={s}>
@@ -210,7 +210,7 @@ export function JobQueueView({
                         </FormControl>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
-                          Terminal
+                          สถานะสิ้นสุด
                         </Typography>
                       )}
                     </TableCell>
@@ -273,6 +273,8 @@ interface JobCreateDialogProps {
   onTechnicianChange: (t: string) => void;
   onNotesChange: (n: string) => void;
   onCustomerSearch: (q: string) => void;
+  customerLoading: boolean;
+  onLoadMoreCustomers: () => void;
   onSubmit: () => void;
 }
 
@@ -297,6 +299,8 @@ export function JobCreateDialog({
   onTechnicianChange,
   onNotesChange,
   onCustomerSearch,
+  customerLoading,
+  onLoadMoreCustomers,
   onSubmit,
 }: JobCreateDialogProps) {
   const selectedCustomer = customers.find((c) => c.id === customerId) ?? null;
@@ -313,7 +317,21 @@ export function JobCreateDialog({
             getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
             value={selectedCustomer}
             onChange={(_, val) => onCustomerChange(val?.id ?? "")}
-            onInputChange={(_, val) => onCustomerSearch(val)}
+            onInputChange={(_, val, reason) => {
+              if (reason === 'input') onCustomerSearch(val);
+            }}
+            filterOptions={(x) => x}
+            loading={customerLoading}
+            slotProps={{
+              listbox: {
+                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
+                  const listbox = e.currentTarget;
+                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
+                    onLoadMoreCustomers();
+                  }
+                },
+              },
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -405,6 +423,8 @@ export function JobDetailView({
   onStatusChange,
   onHistory,
 }: JobDetailViewProps) {
+  const [selectedStatus, setSelectedStatus] = useState("");
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
@@ -422,7 +442,6 @@ export function JobDetailView({
   }
 
   const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
-  const [selectedStatus, setSelectedStatus] = useState("");
 
   const handleStatusSubmit = () => {
     if (selectedStatus) {

@@ -287,19 +287,43 @@ ALTER TABLE categories ADD COLUMN version INT NOT NULL DEFAULT 1;
 
 ## Phase 02 Checklist
 
-- [ ] `backend/inventory/entity.ts` — เพิ่ม `categoryName?: string`
-- [ ] `backend/inventory/schema.ts` — เพิ่ม `categoryName` ใน ProductResponse + CRUD schemas
-- [ ] `backend/inventory/repo.ts` — findFiltered/findById/findByIds JOIN categories
-- [ ] `backend/inventory/repo.ts` — เพิ่ม findCategoryById, createCategory, updateCategory, deleteCategory
-- [ ] `backend/inventory/service.ts` — เพิ่ม createCategory, updateCategory, deleteCategory
-- [ ] `backend/inventory/handler.ts` — เพิ่ม createCategory, updateCategory, deleteCategory
-- [ ] `backend/inventory/route.ts` — เพิ่ม POST/PATCH/DELETE /categories
-- [ ] `backend/database/` — เพิ่ม version column ใน categories (ถ้าไม่มี)
-- [ ] `frontend/inventory/model.ts` — เพิ่ม categoryName + CRUD API calls
-- [ ] `frontend/inventory/controller.ts` — เพิ่ม useCategoryList/Create/Update/Delete
-- [ ] `frontend/inventory/view.tsx` — CategoryManageDialog + Create/Edit/Delete dialogs
-- [ ] `frontend/inventory/view.tsx` — InventoryListView เพิ่มปุ่ม "จัดการหมวดหมู่"
-- [ ] `frontend/router.tsx` — เชื่อมต่อ CategoryManageDialog
-- [ ] `npm run typecheck` — pass
-- [ ] `npm test` — backend tests pass
-- [ ] ทดสอบ manual: สร้างหมวดหมู่ → แก้ไข → ลบ → เห็นผลใน product create/edit dialog
+### Task 2.1 — Backend: categoryName in ProductResponse
+- [x] `backend/inventory/entity.ts` — เพิ่ม `categoryName?: string`
+- [x] `backend/inventory/schema.ts` — เพิ่ม `categoryName` ใน `ProductResponse`
+- [x] `backend/inventory/repo.ts` — `findFiltered`/`findById`/`findByIds`/`findBySku` JOIN categories → `categoryName`
+- [x] `backend/inventory/service.ts` — `toProductResponse` รวม `categoryName`
+
+### Task 2.2 — Frontend: Show categoryName
+- [x] `frontend/inventory/model.ts` — เพิ่ม `categoryName` ใน `ProductEntity`
+- [x] `frontend/inventory/view.tsx` — `InventoryDetailView` ใช้ `product.categoryName` แทน UUID (`product.categoryId` fallback)
+
+### Task 2.3 — Backend: Category CRUD Endpoints
+- [x] `backend/inventory/schema.ts` — `createCategorySchema`, `updateCategorySchema`, `deleteCategorySchema`
+- [x] `backend/inventory/repo.ts` — `findCategoryById`, `createCategory`, `updateCategory`, `deleteCategory`
+- [x] `backend/inventory/service.ts` — `createCategory`, `updateCategory`, `deleteCategory` (audit log + version check)
+- [x] `backend/inventory/handler.ts` — `createCategory`, `updateCategory`, `deleteCategory` handlers
+- [x] `backend/inventory/route.ts` — `POST /categories`, `PATCH /categories/:id`, `DELETE /categories/:id`
+
+### Task 2.4 — Frontend: Category Management UI
+- [x] `frontend/inventory/model.ts` — `createCategory`, `updateCategory`, `deleteCategory` + `filterCategories` API calls
+- [x] `frontend/inventory/controller.ts` — `useCategoryList` (pagination + search debounce), `useCategoryCreate`, `useCategoryUpdate`, `useCategoryDelete`
+- [x] `frontend/inventory/view.tsx` — `CategoryManageView` (full page) + `CategoryCreateDialog` + `CategoryEditDialog` + `CategoryDeleteConfirmDialog`
+- [x] `frontend/inventory/view.tsx` — `InventoryListView` เพิ่มปุ่ม "จัดการหมวดหมู่" → navigate `/inventory/categories`
+- [x] `frontend/router.tsx` — `/inventory/categories` route (before `inventory/:id`) + `InventoryCategoryRoute` component
+
+### Task 2.5 — version column
+- [x] `backend/config/schema.ts` — เพิ่ม `version` column ใน Drizzle schema
+- [x] `backend/drizzle/0001_add_version_to_categories.sql` — migration SQL
+- [ ] **⚠️ ต้องรัน migration: `ALTER TABLE categories ADD COLUMN version INT NOT NULL DEFAULT 1;`**
+
+### เพิ่มเติม (ตาม user feedback)
+- [x] Pagination + search สำหรับ category list (`POST /categories/filter`)
+- [x] `backend/inventory/route.ts` — `POST /categories/filter`
+- [x] `frontend/inventory/view.tsx` — `CategoryManageView` (เปลี่ยนจาก Dialog → Paper full page)
+- [x] `frontend/inventory/view.tsx` — ปุ่ม "ประวัติ" ต่อแถว → `AuditLogDialog` (`tableName="categories"`)
+- [x] `frontend/router.tsx` — `AuditLogDialog` เชื่อมกับ `InventoryCategoryRoute`
+
+### Verification
+- [x] `npm run typecheck` (backend + frontend) — pass
+- [x] `npm test` (backend) — 43 suites, 402 tests — pass
+- [ ] ทดสอบ manual: รัน migration → สร้างหมวดหมู่ → แก้ไข → ลบ → ดูประวัติ → เห็นผลใน product create/edit dialog

@@ -8,6 +8,7 @@ function createMockDb() {
   return {
     select: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     offset: jest.fn().mockReturnThis(),
@@ -56,7 +57,7 @@ describe("InventoryRepository", () => {
   describe("findFiltered", () => {
     it("should return filtered data with total", async () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
-      db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) });
+      db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) });
 
       const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "sku", operator: "eq", value: "GS-001" }] });
       expect(result.total).toBe(1);

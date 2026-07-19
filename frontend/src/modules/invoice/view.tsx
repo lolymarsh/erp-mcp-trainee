@@ -76,9 +76,9 @@ export function InvoiceListView({
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">Invoices</Typography>
+        <Typography variant="h5">ใบแจ้งหนี้</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
-          New Invoice
+          สร้างใบแจ้งหนี้
         </Button>
       </Box>
 
@@ -88,11 +88,11 @@ export function InvoiceListView({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Invoice Number</TableCell>
-              <TableCell>Total</TableCell>
-              <TableCell>Payment Status</TableCell>
-              <TableCell>Payment Method</TableCell>
-              <TableCell>Date</TableCell>
+              <TableCell>เลขที่ใบแจ้งหนี้</TableCell>
+              <TableCell>ยอดรวม</TableCell>
+              <TableCell>สถานะชำระเงิน</TableCell>
+              <TableCell>วิธีการชำระ</TableCell>
+              <TableCell>วันที่</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -109,7 +109,7 @@ export function InvoiceListView({
             ) : invoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">
-                  No invoices found
+                  ไม่พบใบแจ้งหนี้
                 </TableCell>
               </TableRow>
             ) : (
@@ -233,7 +233,7 @@ export function InvoiceCreateView({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ transition: { onEnter: handleOpen } }}>
-      <DialogTitle>Create Invoice</DialogTitle>
+      <DialogTitle>สร้างใบแจ้งหนี้</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -244,7 +244,9 @@ export function InvoiceCreateView({
             getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
             value={customers.find((c) => c.id === selectedCustomerId) ?? null}
             onChange={(_, val) => onCustomerChange(val?.id ?? '')}
-            onInputChange={(_, val) => onCustomerSearch(val)}
+            onInputChange={(_, val, reason) => {
+              if (reason === 'input') onCustomerSearch(val);
+            }}
             filterOptions={(x) => x}
             loading={customerLoading}
             slotProps={{
@@ -257,20 +259,20 @@ export function InvoiceCreateView({
                 },
               },
             }}
-            renderInput={(params) => <TextField {...params} label="Customer" />}
+            renderInput={(params) => <TextField {...params} label="ลูกค้า" />}
           />
           <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>Payment Method</InputLabel>
+            <InputLabel>วิธีการชำระ</InputLabel>
             <Select
               value={selectedPaymentMethod}
-              label="Payment Method"
+              label="วิธีการชำระ"
               onChange={(e) => onPaymentMethodChange(e.target.value)}
             >
-              <MenuItem value="">None</MenuItem>
-              <MenuItem value="CASH">Cash</MenuItem>
-              <MenuItem value="BANK_TRANSFER">Bank Transfer</MenuItem>
-              <MenuItem value="CREDIT">Credit</MenuItem>
-              <MenuItem value="PROMPTPAY">PromptPay</MenuItem>
+              <MenuItem value="">ไม่มี</MenuItem>
+              <MenuItem value="CASH">เงินสด</MenuItem>
+              <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
+              <MenuItem value="CREDIT">เครดิต</MenuItem>
+              <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -282,7 +284,9 @@ export function InvoiceCreateView({
             getOptionLabel={(p) => `${p.name} (${p.sku}) - ${p.sellPrice} THB`}
             value={products.find((p) => p.id === selectedProductId) ?? null}
             onChange={(_, val) => setSelectedProductId(val?.id ?? '')}
-            onInputChange={(_, val) => onProductSearch(val)}
+            onInputChange={(_, val, reason) => {
+              if (reason === 'input') onProductSearch(val);
+            }}
             filterOptions={(x) => x}
             loading={productLoading}
             slotProps={{
@@ -295,18 +299,18 @@ export function InvoiceCreateView({
                 },
               },
             }}
-            renderInput={(params) => <TextField {...params} label="Product" />}
+            renderInput={(params) => <TextField {...params} label="สินค้า" />}
           />
           <TextField
             type="number"
-            label="Qty"
+            label="จำนวน"
             value={itemQty}
             onChange={(e) => setItemQty(Math.max(1, parseInt(e.target.value) || 1))}
             sx={{ width: 100 }}
             slotProps={{ htmlInput: { min: 1 } }}
           />
           <Button variant="outlined" onClick={handleAddItem} sx={{ whiteSpace: 'nowrap' }}>
-            Add Item
+            เพิ่มสินค้า
           </Button>
         </Box>
 
@@ -315,8 +319,8 @@ export function InvoiceCreateView({
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell>สินค้า</TableCell>
+                  <TableCell align="right">ราคาต่อหน่วย</TableCell>
                   <TableCell align="right">Qty</TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell />
@@ -354,7 +358,7 @@ export function InvoiceCreateView({
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
           <TextField
-            label="Discount"
+            label="ส่วนลด"
             type="number"
             value={discount}
             onChange={(e) => onDiscountChange(Math.max(0, parseFloat(e.target.value) || 0))}
@@ -367,13 +371,13 @@ export function InvoiceCreateView({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>Cancel</Button>
+        <Button onClick={onClose} disabled={submitting}>ยกเลิก</Button>
         <Button
           variant="contained"
           onClick={onSubmit}
           disabled={submitting || items.length === 0 || !selectedCustomerId}
         >
-          {submitting ? <CircularProgress size={20} /> : 'Create Invoice'}
+          {submitting ? <CircularProgress size={20} /> : 'สร้างใบแจ้งหนี้'}
         </Button>
       </DialogActions>
     </Dialog>

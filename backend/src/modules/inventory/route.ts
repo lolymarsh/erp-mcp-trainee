@@ -14,7 +14,11 @@ export function registerInventoryRoutes(
   router.patch("/products/:id", auth(), handler.update);
   router.delete("/products/:id", auth(), handler.softDelete);
   router.post("/products/:id/stock", auth(), handler.adjustStock);
+  router.post("/categories/filter", auth(), handler.filterCategories);
   router.get("/categories", auth(), handler.listCategories);
+  router.post("/categories", auth(), handler.createCategory);
+  router.patch("/categories/:id", auth(), handler.updateCategory);
+  router.delete("/categories/:id", auth(), handler.deleteCategory);
 
   return router;
 }

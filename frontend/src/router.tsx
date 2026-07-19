@@ -26,6 +26,10 @@ import {
   ProductEditDialog,
   StockAdjustDialog,
   ProductDeleteConfirmDialog,
+  CategoryManageView,
+  CategoryCreateDialog,
+  CategoryEditDialog,
+  CategoryDeleteConfirmDialog,
 } from './modules/inventory/view';
 import {
   useInventoryList,
@@ -34,12 +38,29 @@ import {
   useProductUpdate,
   useProductDelete,
   useStockAdjust,
+  useCategoryList,
+  useCategoryCreate,
+  useCategoryUpdate,
+  useCategoryDelete,
 } from './modules/inventory/controller';
 import { InvoiceListView, InvoiceCreateView, InvoiceDetailView } from './modules/invoice/view';
 import { useInvoiceList, useInvoiceCreate, useInvoiceDetail } from './modules/invoice/controller';
 import { JobQueueView, JobCreateDialog, JobDetailView } from './modules/job/view';
 import { useJobQueue, useStatusUpdate, useJobCreate, useJobDetail } from './modules/job/controller';
 import { ChatPanel } from './modules/chat/view';
+import {
+  UserListView,
+  UserCreateDialog,
+  UserEditDialog,
+  UserDeleteConfirmDialog,
+} from './modules/user/view';
+import {
+  useUserList,
+  useUserCreate,
+  useUserUpdate,
+  useUserDelete,
+  useUserToggleActive,
+} from './modules/user/controller';
 import { AuditLogDialog } from './shared/components/AuditLogDialog';
 import { useState, useCallback } from 'react';
 import type { CustomerWithVehicles } from './modules/customer/model';
@@ -184,6 +205,7 @@ function InventoryListRoute() {
           navigate(`/inventory/${product.id}`);
         }}
         onCreateClick={() => createCtl.setOpen(true)}
+        onManageCategoriesClick={() => navigate('/inventory/categories')}
       />
       <ProductCreateDialog
         open={createCtl.open}
@@ -193,6 +215,74 @@ function InventoryListRoute() {
         fieldErrors={createCtl.fieldErrors}
         onSubmit={createCtl.submit}
       />
+    </>
+  );
+}
+
+function InventoryCategoryRoute() {
+  const navigate = useNavigate();
+  const { categories, loading, error, pagination, setPage, setSearch, refetch } =
+    useCategoryList();
+  const createCtl = useCategoryCreate(refetch);
+  const updateCtl = useCategoryUpdate(refetch);
+  const deleteCtl = useCategoryDelete(refetch);
+  const [historyCategory, setHistoryCategory] = useState<CategoryEntity | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handleHistoryClick = useCallback((cat: CategoryEntity) => {
+    setHistoryCategory(cat);
+    setHistoryOpen(true);
+  }, []);
+
+  return (
+    <>
+      <CategoryManageView
+        categories={categories}
+        loading={loading}
+        error={error}
+        pagination={pagination}
+        onBack={() => navigate('/inventory')}
+        onAddClick={() => createCtl.setOpen(true)}
+        onEditClick={(cat) => updateCtl.openWithData(cat)}
+        onDeleteClick={(cat) => deleteCtl.openWithData(cat)}
+        onHistoryClick={handleHistoryClick}
+        onSearch={setSearch}
+        onPageChange={setPage}
+      />
+      <CategoryCreateDialog
+        open={createCtl.open}
+        onClose={createCtl.handleClose}
+        loading={createCtl.loading}
+        error={createCtl.error}
+        fieldErrors={createCtl.fieldErrors}
+        onSubmit={createCtl.submit}
+      />
+      <CategoryEditDialog
+        open={updateCtl.open}
+        onClose={updateCtl.handleClose}
+        loading={updateCtl.loading}
+        error={updateCtl.error}
+        fieldErrors={updateCtl.fieldErrors}
+        initialValues={updateCtl.initialValues}
+        onSubmit={updateCtl.submit}
+      />
+      <CategoryDeleteConfirmDialog
+        open={deleteCtl.open}
+        categoryName={deleteCtl.categoryName}
+        loading={deleteCtl.loading}
+        error={deleteCtl.error}
+        onCancel={deleteCtl.handleClose}
+        onConfirm={deleteCtl.submit}
+      />
+      {historyCategory && (
+        <AuditLogDialog
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          tableName="categories"
+          recordId={historyCategory.id}
+          entityLabel={historyCategory.name}
+        />
+      )}
     </>
   );
 }
@@ -320,6 +410,12 @@ function InvoiceListRoute() {
           }
         }}
         onLoadLookups={createCtl.loadLookups}
+        customerLoading={createCtl.customerLoading}
+        productLoading={createCtl.productLoading}
+        onCustomerSearch={createCtl.handleCustomerSearch}
+        onProductSearch={createCtl.handleProductSearch}
+        onLoadMoreCustomers={createCtl.loadMoreCustomers}
+        onLoadMoreProducts={createCtl.loadMoreProducts}
       />
     </>
   );
@@ -376,6 +472,8 @@ function JobListRoute() {
         onTechnicianChange={createCtl.setTechnicianId}
         onNotesChange={createCtl.setNotes}
         onCustomerSearch={createCtl.handleCustomerSearch}
+        customerLoading={createCtl.customerLoading}
+        onLoadMoreCustomers={createCtl.loadMoreCustomers}
         onSubmit={createCtl.submit}
       />
     </>
@@ -445,6 +543,69 @@ function InvoiceDetailRoute() {
   );
 }
 
+function UserListRoute() {
+  const { users, loading, error, pagination, setPage, setRoleFilter, roleFilter, refetch } =
+    useUserList();
+  const createCtl = useUserCreate(refetch);
+  const updateCtl = useUserUpdate(refetch);
+  const deleteCtl = useUserDelete(refetch);
+  const toggleCtl = useUserToggleActive(refetch);
+  const [historyUser, setHistoryUser] = useState<UserEntity | null>(null);
+
+  return (
+    <>
+      <UserListView
+        users={users}
+        loading={loading}
+        error={error}
+        pagination={pagination}
+        roleFilter={roleFilter}
+        onPageChange={setPage}
+        onRoleFilterChange={setRoleFilter}
+        onEdit={(user) => updateCtl.openWithData(user)}
+        onDelete={(user) => deleteCtl.openWithData(user)}
+        onToggleActive={(id) => toggleCtl.toggle(id)}
+        onHistory={(user) => setHistoryUser(user)}
+        onCreateClick={() => createCtl.setOpen(true)}
+      />
+      <UserCreateDialog
+        open={createCtl.open}
+        onClose={createCtl.handleClose}
+        loading={createCtl.loading}
+        error={createCtl.error}
+        fieldErrors={createCtl.fieldErrors}
+        onSubmit={createCtl.submit}
+      />
+      <UserEditDialog
+        open={updateCtl.open}
+        onClose={updateCtl.handleClose}
+        loading={updateCtl.loading}
+        error={updateCtl.error}
+        fieldErrors={updateCtl.fieldErrors}
+        initialValues={updateCtl.initialValues}
+        onSubmit={updateCtl.submit}
+      />
+      <UserDeleteConfirmDialog
+        open={deleteCtl.open}
+        userName={deleteCtl.userName}
+        loading={deleteCtl.loading}
+        error={deleteCtl.error}
+        onCancel={deleteCtl.handleClose}
+        onConfirm={deleteCtl.submit}
+      />
+      {historyUser && (
+        <AuditLogDialog
+          open={!!historyUser}
+          onClose={() => setHistoryUser(null)}
+          tableName="users"
+          recordId={historyUser.id}
+          entityLabel={historyUser.displayName}
+        />
+      )}
+    </>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -455,12 +616,14 @@ export const router = createBrowserRouter([
       { path: 'customers', element: <CustomerListRoute /> },
       { path: 'customers/:id', element: <CustomerDetailRoute /> },
       { path: 'inventory', element: <InventoryListRoute /> },
+      { path: 'inventory/categories', element: <InventoryCategoryRoute /> },
       { path: 'inventory/:id', element: <InventoryDetailRoute /> },
       { path: 'sales/invoices', element: <InvoiceListRoute /> },
       { path: 'sales/invoices/:id', element: <InvoiceDetailRoute /> },
       { path: 'jobs', element: <JobListRoute /> },
       { path: 'jobs/:id', element: <JobDetailRoute /> },
       { path: 'chat', element: <ChatPanel /> },
+      { path: 'admin/users', element: <UserListRoute /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
