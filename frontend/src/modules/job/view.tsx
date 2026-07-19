@@ -77,8 +77,12 @@ interface JobQueueViewProps {
   error: string | null;
   pagination: PaginationInfo | null;
   statusFilter: string | null;
+  jobTypeFilter: string | null;
   onPageChange: (page: number) => void;
   onStatusFilterChange: (status: string | null) => void;
+  onJobTypeFilterChange: (jobType: string | null) => void;
+  onSearch: (q: string) => void;
+  search: string;
   onStatusChange: (jobId: string, newStatus: string, version: number) => void;
   statusChangeError: string | null;
   onClearStatusError: () => void;
@@ -92,8 +96,12 @@ export function JobQueueView({
   error,
   pagination,
   statusFilter,
+  jobTypeFilter,
   onPageChange,
   onStatusFilterChange,
+  onJobTypeFilterChange,
+  onSearch,
+  search,
   onStatusChange,
   statusChangeError,
   onClearStatusError,
@@ -109,8 +117,18 @@ export function JobQueueView({
             สร้างงาน
           </Button>
         </Box>
+      </Box>
 
-        <FormControl sx={{ minWidth: 180 }} size="small">
+      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <TextField
+          label="ค้นหาลูกค้า"
+          variant="outlined"
+          size="small"
+          sx={{ flex: 1 }}
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+        />
+        <FormControl sx={{ minWidth: 160 }} size="small">
           <InputLabel>กรองสถานะ</InputLabel>
           <Select
             value={statusFilter ?? ""}
@@ -124,6 +142,21 @@ export function JobQueueView({
             <MenuItem value="IN_PROGRESS">กำลังดำเนินการ</MenuItem>
             <MenuItem value="COMPLETED">เสร็จแล้ว</MenuItem>
             <MenuItem value="CANCELLED">ยกเลิก</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl sx={{ minWidth: 160 }} size="small">
+          <InputLabel>ประเภทงาน</InputLabel>
+          <Select
+            value={jobTypeFilter ?? ""}
+            label="ประเภทงาน"
+            onChange={(e) =>
+              onJobTypeFilterChange(e.target.value || null)
+            }
+          >
+            <MenuItem value="">ทั้งหมด</MenuItem>
+            <MenuItem value="INSTALL">ติดตั้ง</MenuItem>
+            <MenuItem value="REPAIR">ซ่อม</MenuItem>
+            <MenuItem value="INSPECT">ตรวจสอบ</MenuItem>
           </Select>
         </FormControl>
       </Box>

@@ -46,6 +46,9 @@ describe("CustomerHandler", () => {
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
+      createVehicle: jest.fn(),
+      updateVehicle: jest.fn(),
+      deleteVehicle: jest.fn(),
     };
     handler = new CustomerHandler(svc);
   });

@@ -14,5 +14,9 @@ export function registerCustomerRoutes(
   router.patch("/:id", auth(), handler.update);
   router.delete("/:id", auth(), handler.softDelete);
 
+  router.post("/vehicles", auth(), handler.createVehicle);
+  router.patch("/vehicles/:id", auth(), handler.updateVehicle);
+  router.delete("/vehicles/:id", auth(), handler.deleteVehicle);
+
   return router;
 }

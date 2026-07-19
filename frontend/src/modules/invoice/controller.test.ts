@@ -70,6 +70,7 @@ describe('useInvoiceList', () => {
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
+      filters: [],
     });
     expect(result.current.invoices).toHaveLength(1);
     expect(result.current.invoices[0].invoiceNumber).toBe('INV-2025-001');

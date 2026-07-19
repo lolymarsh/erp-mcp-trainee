@@ -71,6 +71,25 @@ export interface DeleteCustomerInput {
   version: number;
 }
 
+export interface CreateVehicleInput {
+  customerId: string;
+  licensePlate: string;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  engineType?: string | null;
+  fuelType?: string | null;
+}
+
+export interface UpdateVehicleInput {
+  licensePlate?: string;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  engineType?: string | null;
+  fuelType?: string | null;
+}
+
 export const customerApi = {
   filter: async (
     params: FilterParams,
@@ -126,6 +145,28 @@ export const customerApi = {
     message: string;
   }> => {
     const { data } = await api.delete(`/customers/${id}`, { data: input });
+    return data;
+  },
+
+  createVehicle: async (
+    input: CreateVehicleInput,
+  ): Promise<{ code: number; message: string; data: VehicleEntity }> => {
+    const { data } = await api.post('/customers/vehicles', input);
+    return data;
+  },
+
+  updateVehicle: async (
+    id: string,
+    input: UpdateVehicleInput,
+  ): Promise<{ code: number; message: string; data: VehicleEntity }> => {
+    const { data } = await api.patch(`/customers/vehicles/${id}`, input);
+    return data;
+  },
+
+  deleteVehicle: async (
+    id: string,
+  ): Promise<{ code: number; message: string }> => {
+    const { data } = await api.delete(`/customers/vehicles/${id}`);
     return data;
   },
 };

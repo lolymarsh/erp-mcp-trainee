@@ -21,8 +21,11 @@ import {
   Skeleton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useState, useEffect } from 'react';
-import type { CustomerEntity, CustomerWithVehicles, PaginationResponse } from './model';
+import type { CustomerEntity, CustomerWithVehicles, PaginationResponse, VehicleEntity } from './model';
 
 // ============== Customer List ==============
 
@@ -158,6 +161,9 @@ interface CustomerDetailViewProps {
   onEdit: (customer: CustomerWithVehicles) => void;
   onDelete: () => void;
   onHistory: () => void;
+  onAddVehicle: () => void;
+  onEditVehicle: (vehicle: VehicleEntity) => void;
+  onDeleteVehicle: (vehicle: VehicleEntity) => void;
 }
 
 export function CustomerDetailView({
@@ -168,6 +174,9 @@ export function CustomerDetailView({
   onEdit,
   onDelete,
   onHistory,
+  onAddVehicle,
+  onEditVehicle,
+  onDeleteVehicle,
 }: CustomerDetailViewProps) {
   if (loading) {
     return (
@@ -232,7 +241,12 @@ export function CustomerDetailView({
         </Box>
       </Box>
 
-      <Typography variant="h6" gutterBottom>รถที่ลงทะเบียน</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6">รถที่ลงทะเบียน</Typography>
+        <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={onAddVehicle}>
+          เพิ่มรถ
+        </Button>
+      </Box>
       {customer.vehicles.length === 0 ? (
         <Typography color="text.secondary">ไม่พบข้อมูลรถ</Typography>
       ) : (
@@ -245,6 +259,7 @@ export function CustomerDetailView({
                 <TableCell>รุ่น</TableCell>
                 <TableCell>ปี</TableCell>
                 <TableCell>ประเภทเครื่องยนต์</TableCell>
+                <TableCell>จัดการ</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -255,6 +270,14 @@ export function CustomerDetailView({
                   <TableCell>{v.model || '-'}</TableCell>
                   <TableCell>{v.year ?? '-'}</TableCell>
                   <TableCell>{v.engineType || '-'}</TableCell>
+                  <TableCell>
+                    <IconButton size="small" onClick={() => onEditVehicle(v)} title="แก้ไข">
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => onDeleteVehicle(v)} title="ลบ" color="error">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -511,6 +534,248 @@ export function DeleteConfirmDialog({
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Typography>
           คุณต้องการลบลูกค้า "{customerName}" ใช่หรือไม่?
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
+        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
+          {loading ? <CircularProgress size={20} /> : 'ลบ'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============== Vehicle Create Dialog ==============
+
+interface VehicleCreateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  customerId: string;
+  onSubmit: (data: {
+    customerId: string;
+    licensePlate: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => void;
+}
+
+export function VehicleCreateDialog({
+  open, onClose, loading, error, customerId, onSubmit,
+}: VehicleCreateDialogProps) {
+  const [licensePlate, setLicensePlate] = useState('');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState<number | ''>('');
+  const [engineType, setEngineType] = useState('');
+  const [fuelType, setFuelType] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setLicensePlate('');
+      setBrand('');
+      setModel('');
+      setYear('');
+      setEngineType('');
+      setFuelType('');
+    }
+  }, [open]);
+
+  const handleSubmit = () => {
+    onSubmit({
+      customerId,
+      licensePlate,
+      brand: brand || null,
+      model: model || null,
+      year: year || null,
+      engineType: engineType || null,
+      fuelType: fuelType || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>เพิ่มรถ</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="ทะเบียนรถ *"
+            required
+            value={licensePlate}
+            onChange={(e) => setLicensePlate(e.target.value)}
+          />
+          <TextField
+            label="ยี่ห้อ"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+          <TextField
+            label="รุ่น"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+          <TextField
+            label="ปี"
+            type="number"
+            value={year}
+            onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : '')}
+          />
+          <TextField
+            label="ประเภทเครื่องยนต์"
+            value={engineType}
+            onChange={(e) => setEngineType(e.target.value)}
+          />
+          <TextField
+            label="ประเภทเชื้อเพลิง"
+            value={fuelType}
+            onChange={(e) => setFuelType(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !licensePlate}>
+          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============== Vehicle Edit Dialog ==============
+
+interface VehicleEditDialogProps {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  initialValues: {
+    licensePlate: string;
+    brand: string;
+    model: string;
+    year: number | null;
+    engineType: string;
+    fuelType: string;
+  } | null;
+  onSubmit: (data: {
+    licensePlate?: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => void;
+}
+
+export function VehicleEditDialog({
+  open, onClose, loading, error, initialValues, onSubmit,
+}: VehicleEditDialogProps) {
+  const [licensePlate, setLicensePlate] = useState('');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState<number | ''>('');
+  const [engineType, setEngineType] = useState('');
+  const [fuelType, setFuelType] = useState('');
+
+  useEffect(() => {
+    if (open && initialValues) {
+      setLicensePlate(initialValues.licensePlate);
+      setBrand(initialValues.brand);
+      setModel(initialValues.model);
+      setYear(initialValues.year ?? '');
+      setEngineType(initialValues.engineType);
+      setFuelType(initialValues.fuelType);
+    }
+  }, [open, initialValues]);
+
+  const handleSubmit = () => {
+    onSubmit({
+      licensePlate,
+      brand: brand || null,
+      model: model || null,
+      year: year || null,
+      engineType: engineType || null,
+      fuelType: fuelType || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>แก้ไขรถ</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="ทะเบียนรถ *"
+            required
+            value={licensePlate}
+            onChange={(e) => setLicensePlate(e.target.value)}
+          />
+          <TextField
+            label="ยี่ห้อ"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+          <TextField
+            label="รุ่น"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+          <TextField
+            label="ปี"
+            type="number"
+            value={year}
+            onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : '')}
+          />
+          <TextField
+            label="ประเภทเครื่องยนต์"
+            value={engineType}
+            onChange={(e) => setEngineType(e.target.value)}
+          />
+          <TextField
+            label="ประเภทเชื้อเพลิง"
+            value={fuelType}
+            onChange={(e) => setFuelType(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !licensePlate}>
+          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ============== Vehicle Delete Confirm Dialog ==============
+
+interface VehicleDeleteConfirmDialogProps {
+  open: boolean;
+  licensePlate: string;
+  loading: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+export function VehicleDeleteConfirmDialog({
+  open, licensePlate, loading, error, onCancel, onConfirm,
+}: VehicleDeleteConfirmDialogProps) {
+  return (
+    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+      <DialogTitle>ยืนยันการลบ</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Typography>
+          คุณต้องการลบรถทะเบียน "{licensePlate}" ใช่หรือไม่?
         </Typography>
       </DialogContent>
       <DialogActions>

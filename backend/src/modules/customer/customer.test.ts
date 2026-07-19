@@ -44,6 +44,9 @@ describe("CustomerService", () => {
       update: jest.fn(),
       softDelete: jest.fn(),
       findVehicleById: jest.fn(),
+      createVehicle: jest.fn(),
+      updateVehicle: jest.fn(),
+      deleteVehicle: jest.fn(),
     };
     svc = new CustomerService(repo, mockAuditService as any);
   });
@@ -277,6 +280,119 @@ describe("CustomerService", () => {
       ).resolves.toBeUndefined();
 
       expect(repo.softDelete).toHaveBeenCalledWith("cust-1", 1);
+    });
+  });
+
+  describe("createVehicle", () => {
+    it("should throw NotFoundError when customer not found", async () => {
+      repo.findById.mockResolvedValue(null);
+
+      await expect(
+        svc.createVehicle(
+          { customerId: "nonexistent", licensePlate: "กข 1234" },
+          "user-1",
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should create vehicle for existing customer", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
+      repo.createVehicle.mockResolvedValue(mockVehicle);
+
+      const result = await svc.createVehicle(
+        {
+          customerId: "cust-1",
+          licensePlate: "กข 1234",
+          brand: "Toyota",
+          model: "Vios",
+          year: 2020,
+          engineType: "GASOLINE",
+          fuelType: "GASOLINE",
+        },
+        "user-1",
+      );
+
+      expect(result.licensePlate).toBe("กข 1234");
+      expect(repo.createVehicle).toHaveBeenCalledWith(
+        expect.objectContaining({ customerId: "cust-1", licensePlate: "กข 1234" }),
+      );
+    });
+
+    it("should create vehicle with null optional fields", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
+      repo.createVehicle.mockResolvedValue({
+        ...mockVehicle,
+        brand: null,
+        model: null,
+        year: null,
+        engineType: null,
+        fuelType: null,
+      });
+
+      const result = await svc.createVehicle(
+        { customerId: "cust-1", licensePlate: "กข 1234" },
+        "user-1",
+      );
+
+      expect(result.brand).toBeNull();
+      expect(result.model).toBeNull();
+    });
+  });
+
+  describe("updateVehicle", () => {
+    it("should throw NotFoundError when vehicle not found", async () => {
+      repo.findVehicleById.mockResolvedValue(null);
+
+      await expect(
+        svc.updateVehicle("nonexistent", { licensePlate: " updated" }, "user-1"),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should update vehicle successfully", async () => {
+      repo.findVehicleById.mockResolvedValue(mockVehicle);
+      const updatedVehicle = { ...mockVehicle, licensePlate: "กข 5678" };
+      repo.updateVehicle.mockResolvedValue(updatedVehicle);
+
+      const result = await svc.updateVehicle(
+        "veh-1",
+        { licensePlate: "กข 5678" },
+        "user-1",
+      );
+
+      expect(result.licensePlate).toBe("กข 5678");
+      expect(repo.updateVehicle).toHaveBeenCalledWith("veh-1", {
+        licensePlate: "กข 5678",
+      });
+    });
+
+    it("should throw NotFoundError when update returns null", async () => {
+      repo.findVehicleById.mockResolvedValue(mockVehicle);
+      repo.updateVehicle.mockResolvedValue(null);
+
+      await expect(
+        svc.updateVehicle("veh-1", { licensePlate: "กข 5678" }, "user-1"),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("deleteVehicle", () => {
+    it("should throw NotFoundError when vehicle not found", async () => {
+      repo.findVehicleById.mockResolvedValue(null);
+
+      await expect(
+        svc.deleteVehicle("nonexistent", {}, "user-1"),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it("should delete vehicle successfully", async () => {
+      repo.findVehicleById.mockResolvedValue(mockVehicle);
+      repo.deleteVehicle.mockResolvedValue(true);
+
+      await expect(
+        svc.deleteVehicle("veh-1", {}, "user-1"),
+      ).resolves.toBeUndefined();
+
+      expect(repo.deleteVehicle).toHaveBeenCalledWith("veh-1");
     });
   });
 });

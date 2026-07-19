@@ -9,6 +9,7 @@ describe("Invoice routes", () => {
       getById: jest.fn(),
       create: jest.fn(),
       todaySummary: jest.fn(),
+      updatePaymentStatus: jest.fn(),
     } as any;
     const auth = (() => jest.fn()) as any;
     const router = registerInvoiceRoutes(handler, auth);

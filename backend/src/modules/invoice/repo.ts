@@ -62,6 +62,11 @@ export interface IInvoiceRepository {
   ): Promise<InvoiceWithItemsResult | null>;
   createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult>;
   getTodaySummary(): Promise<{ totalAmount: string; count: number }>;
+  updatePaymentStatus(
+    id: string,
+    data: { paymentStatus: string; paymentMethod: string | null },
+    version: number,
+  ): Promise<InvoiceEntity | null>;
 }
 
 export class InvoiceRepository implements IInvoiceRepository {
@@ -325,6 +330,25 @@ export class InvoiceRepository implements IInvoiceRepository {
       totalAmount: result[0]?.totalAmount ?? "0.00",
       count: result[0]?.count ?? 0,
     };
+  }
+
+  async updatePaymentStatus(
+    id: string,
+    data: { paymentStatus: string; paymentMethod: string | null },
+    version: number,
+  ): Promise<InvoiceEntity | null> {
+    const result = await this.db
+      .update(invoices)
+      .set({
+        paymentStatus: data.paymentStatus as 'PENDING' | 'PAID' | 'PARTIAL' | 'REFUNDED',
+        paymentMethod: data.paymentMethod as 'CASH' | 'BANK_TRANSFER' | 'CREDIT' | 'PROMPTPAY' | null,
+        version: version + 1,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(invoices.id, id), eq(invoices.version, version)));
+
+    if (result[0].affectedRows === 0) return null;
+    return this.findById(id);
   }
 
   private resolveColumn(field: string): Column | null {

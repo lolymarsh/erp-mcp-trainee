@@ -5,6 +5,9 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   deleteCustomerSchema,
+  createVehicleSchema,
+  updateVehicleSchema,
+  deleteVehicleSchema,
 } from "./schema";
 import { filterRequestSchema } from "../../shared/pagination/schema";
 import { sendSuccess, sendError } from "../../shared/response/handler";
@@ -123,6 +126,71 @@ export class CustomerHandler {
         return;
       }
       logger.error({ err }, "Customer softDelete failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  createVehicle = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const input = createVehicleSchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const result = await this.svc.createVehicle(input, userId, meta);
+      sendSuccess(res, 201, "created", { data: result });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Customer createVehicle failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  updateVehicle = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractId(req.params.id);
+      const input = updateVehicleSchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const result = await this.svc.updateVehicle(id, input, userId, meta);
+      sendSuccess(res, 200, "success", { data: result });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Customer updateVehicle failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  deleteVehicle = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractId(req.params.id);
+      const input = deleteVehicleSchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      await this.svc.deleteVehicle(id, input, userId, meta);
+      sendSuccess(res, 200, "deleted");
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message, err.details);
+        return;
+      }
+      if (err instanceof ZodError) {
+        sendError(res, 400, formatZodError(err));
+        return;
+      }
+      logger.error({ err }, "Customer deleteVehicle failed");
       sendError(res, 500, "Internal server error");
     }
   };

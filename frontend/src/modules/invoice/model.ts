@@ -90,4 +90,13 @@ export const invoiceApi = {
     const { data } = await api.get('/sales/invoices/today-summary');
     return data.data;
   },
+
+  updatePaymentStatus: async (id: string, input: {
+    paymentStatus: string;
+    paymentMethod?: string | null;
+    version: number;
+  }): Promise<InvoiceResponse> => {
+    const { data } = await api.patch(`/sales/invoices/${id}/payment-status`, input);
+    return data.data;
+  },
 };

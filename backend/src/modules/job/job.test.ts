@@ -70,6 +70,9 @@ describe("JobService", () => {
       update: jest.fn(),
       softDelete: jest.fn(),
       findVehicleById: jest.fn(),
+      createVehicle: jest.fn(),
+      updateVehicle: jest.fn(),
+      deleteVehicle: jest.fn(),
     };
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
     svc = new JobService(repo, customerRepo, redis, mockAuditService as any);

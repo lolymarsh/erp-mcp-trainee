@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import type { IInvoiceService } from "./service";
-import { createInvoiceSchema } from "./schema";
+import { createInvoiceSchema, updatePaymentStatusSchema } from "./schema";
 import { filterRequestSchema } from "../../shared/pagination/schema";
 import { sendSuccess, sendError } from "../../shared/response/handler";
 import { AppError } from "../../shared/errors/AppError";
@@ -77,6 +77,22 @@ export class InvoiceHandler {
         return;
       }
       logger.error({ err }, "Invoice create failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
+  updatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractId(req.params.id);
+      const input = updatePaymentStatusSchema.parse(req.body);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const result = await this.svc.updatePaymentStatus(id, input, userId, meta);
+      sendSuccess(res, 200, "success", { data: result });
+    } catch (err: unknown) {
+      if (err instanceof AppError) { sendError(res, err.statusCode, err.message, err.details); return; }
+      if (err instanceof ZodError) { sendError(res, 400, formatZodError(err)); return; }
+      logger.error({ err }, "Invoice updatePaymentStatus failed");
       sendError(res, 500, "Internal server error");
     }
   };

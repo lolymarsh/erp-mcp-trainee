@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useDebouncedValue } from "../../shared/hooks/useDebouncedValue";
 import { z } from "zod";
 import {
   jobApi,
@@ -30,6 +31,10 @@ interface UseJobQueueReturn {
   setPage: (page: number) => void;
   setStatusFilter: (status: string | null) => void;
   statusFilter: string | null;
+  setJobTypeFilter: (jobType: string | null) => void;
+  jobTypeFilter: string | null;
+  setSearch: (search: string) => void;
+  search: string;
 }
 
 export function useJobQueue(): UseJobQueueReturn {
@@ -41,22 +46,33 @@ export function useJobQueue(): UseJobQueueReturn {
   >(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [jobTypeFilter, setJobTypeFilter] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const _debouncedSearch = useDebouncedValue(search, 400);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const filters: { field: string; operator: string; value: unknown }[] =
+        [];
+      if (statusFilter) {
+        filters.push({ field: "status", operator: "eq", value: statusFilter });
+      }
+      if (jobTypeFilter) {
+        filters.push({
+          field: "jobType",
+          operator: "eq",
+          value: jobTypeFilter,
+        });
+      }
+
       const filter: FilterRequest = {
         page,
         pageSize: 20,
         sortBy: "desc",
-        filters: [],
+        filters,
       };
-      if (statusFilter) {
-        filter.filters = [
-          { field: "status", operator: "eq", value: statusFilter },
-        ];
-      }
       const result = await jobApi.filter(filter);
       setJobs(result.data);
       setPagination(result.pagination);
@@ -67,11 +83,15 @@ export function useJobQueue(): UseJobQueueReturn {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, jobTypeFilter]);
 
   useEffect(() => {
     void fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, jobTypeFilter]);
 
   return {
     jobs,
@@ -82,6 +102,10 @@ export function useJobQueue(): UseJobQueueReturn {
     setPage,
     setStatusFilter,
     statusFilter,
+    setJobTypeFilter,
+    jobTypeFilter,
+    setSearch,
+    search,
   };
 }
 

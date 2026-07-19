@@ -10,6 +10,9 @@ describe("Customer routes", () => {
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
+      createVehicle: jest.fn(),
+      updateVehicle: jest.fn(),
+      deleteVehicle: jest.fn(),
     } as any;
     const auth = (() => jest.fn()) as any;
     const router = registerCustomerRoutes(handler, auth);

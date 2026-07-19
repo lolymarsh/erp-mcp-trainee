@@ -37,6 +37,31 @@ export interface CustomerResponse {
   updatedAt: string;
 }
 
+export const createVehicleSchema = z.object({
+  customerId: z.string().min(1).max(36),
+  licensePlate: z.string().min(1).max(50),
+  brand: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  year: z.number().int().optional().nullable(),
+  engineType: z.string().optional().nullable(),
+  fuelType: z.string().optional().nullable(),
+});
+
+export const updateVehicleSchema = z.object({
+  licensePlate: z.string().min(1).max(50).optional(),
+  brand: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  year: z.number().int().optional().nullable(),
+  engineType: z.string().optional().nullable(),
+  fuelType: z.string().optional().nullable(),
+});
+
+export const deleteVehicleSchema = z.object({});
+
+export type CreateVehicleInput = z.infer<typeof createVehicleSchema>;
+export type UpdateVehicleInput = z.infer<typeof updateVehicleSchema>;
+export type DeleteVehicleInput = z.infer<typeof deleteVehicleSchema>;
+
 export interface VehicleResponse {
   id: string;
   customerId: string;

@@ -19,6 +19,14 @@ export const createInvoiceSchema = z.object({
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type CreateInvoiceItemInput = z.infer<typeof createInvoiceItemSchema>;
 
+export const updatePaymentStatusSchema = z.object({
+  paymentStatus: z.enum(["PENDING", "PAID", "PARTIAL", "REFUNDED"]),
+  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CREDIT", "PROMPTPAY"]).optional().nullable(),
+  version: z.number().int().min(1),
+});
+
+export type UpdatePaymentStatusInput = z.infer<typeof updatePaymentStatusSchema>;
+
 export interface InvoiceResponse {
   id: string;
   invoiceNumber: string;

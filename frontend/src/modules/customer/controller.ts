@@ -298,3 +298,194 @@ export function useCustomerDelete(
 
   return { open, setOpen, handleClose, loading, error, submit };
 }
+
+// ====== Vehicle Create ======
+
+export interface UseVehicleCreateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  submit: (input: {
+    customerId: string;
+    licensePlate: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => Promise<void>;
+}
+
+export function useVehicleCreate(onSuccess: () => void): UseVehicleCreateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+  }, []);
+
+  const submit = useCallback(async (input: {
+    customerId: string;
+    licensePlate: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await customerApi.createVehicle(input);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create vehicle';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, submit };
+}
+
+// ====== Vehicle Update ======
+
+export interface UseVehicleUpdateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  openWithData: (vehicle: VehicleEntity) => void;
+  loading: boolean;
+  error: string | null;
+  initialValues: {
+    licensePlate: string;
+    brand: string;
+    model: string;
+    year: number | null;
+    engineType: string;
+    fuelType: string;
+  } | null;
+  vehicleId: string | null;
+  submit: (input: {
+    licensePlate?: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => Promise<void>;
+}
+
+export function useVehicleUpdate(onSuccess: () => void): UseVehicleUpdateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
+  const [initialValues, setInitialValues] = useState<{
+    licensePlate: string;
+    brand: string;
+    model: string;
+    year: number | null;
+    engineType: string;
+    fuelType: string;
+  } | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setVehicleId(null);
+  }, []);
+
+  const openWithData = useCallback((vehicle: VehicleEntity) => {
+    setVehicleId(vehicle.id);
+    setInitialValues({
+      licensePlate: vehicle.licensePlate,
+      brand: vehicle.brand ?? '',
+      model: vehicle.model ?? '',
+      year: vehicle.year,
+      engineType: vehicle.engineType ?? '',
+      fuelType: vehicle.fuelType ?? '',
+    });
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(async (input: {
+    licensePlate?: string;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    engineType?: string | null;
+    fuelType?: string | null;
+  }) => {
+    if (!vehicleId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await customerApi.updateVehicle(vehicleId, input);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update vehicle';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [vehicleId, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, openWithData, loading, error, initialValues, vehicleId, submit };
+}
+
+// ====== Vehicle Delete ======
+
+export interface UseVehicleDeleteReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  vehicleInfo: { id: string; licensePlate: string } | null;
+  openWithData: (vehicle: VehicleEntity) => void;
+  submit: () => Promise<void>;
+}
+
+export function useVehicleDelete(onSuccess: () => void): UseVehicleDeleteReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [vehicleInfo, setVehicleInfo] = useState<{ id: string; licensePlate: string } | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setVehicleInfo(null);
+  }, []);
+
+  const openWithData = useCallback((vehicle: VehicleEntity) => {
+    setVehicleInfo({ id: vehicle.id, licensePlate: vehicle.licensePlate });
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(async () => {
+    if (!vehicleInfo) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await customerApi.deleteVehicle(vehicleInfo.id);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete vehicle';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [vehicleInfo, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, vehicleInfo, openWithData, submit };
+}

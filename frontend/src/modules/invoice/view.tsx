@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -42,6 +42,11 @@ interface InvoiceListViewProps {
   onPageChange: (page: number) => void;
   onCreateClick: () => void;
   onSelectInvoice: (invoice: InvoiceResponse) => void;
+  onSearch: (q: string) => void;
+  onStatusFilterChange: (status: string | null) => void;
+  onPaymentMethodFilterChange: (method: string | null) => void;
+  statusFilter: string | null;
+  paymentMethodFilter: string | null;
 }
 
 export function InvoiceListView({
@@ -52,6 +57,11 @@ export function InvoiceListView({
   onPageChange,
   onCreateClick,
   onSelectInvoice,
+  onSearch,
+  onStatusFilterChange,
+  onPaymentMethodFilterChange,
+  statusFilter,
+  paymentMethodFilter,
 }: InvoiceListViewProps) {
   const formatCurrency = (value: string) => {
     return parseFloat(value).toLocaleString('th-TH', {
@@ -80,6 +90,44 @@ export function InvoiceListView({
         <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
           สร้างใบแจ้งหนี้
         </Button>
+      </Box>
+
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <TextField
+          label="ค้นหาเลขที่ใบแจ้งหนี้"
+          variant="outlined"
+          size="small"
+          sx={{ flex: 1 }}
+          onChange={(e) => onSearch(e.target.value)}
+        />
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>สถานะชำระเงิน</InputLabel>
+          <Select
+            value={statusFilter ?? ''}
+            label="สถานะชำระเงิน"
+            onChange={(e) => onStatusFilterChange(e.target.value || null)}
+          >
+            <MenuItem value="">ทั้งหมด</MenuItem>
+            <MenuItem value="PENDING">รอชำระ</MenuItem>
+            <MenuItem value="PAID">ชำระแล้ว</MenuItem>
+            <MenuItem value="PARTIAL">ชำระบางส่วน</MenuItem>
+            <MenuItem value="REFUNDED">คืนเงิน</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>วิธีการชำระ</InputLabel>
+          <Select
+            value={paymentMethodFilter ?? ''}
+            label="วิธีการชำระ"
+            onChange={(e) => onPaymentMethodFilterChange(e.target.value || null)}
+          >
+            <MenuItem value="">ทั้งหมด</MenuItem>
+            <MenuItem value="CASH">เงินสด</MenuItem>
+            <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
+            <MenuItem value="CREDIT">เครดิต</MenuItem>
+            <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -390,6 +438,7 @@ interface InvoiceDetailViewProps {
   error: string | null;
   onBack: () => void;
   onHistory: () => void;
+  onUpdatePayment: () => void;
 }
 
 export function InvoiceDetailView({
@@ -398,6 +447,7 @@ export function InvoiceDetailView({
   error,
   onBack,
   onHistory,
+  onUpdatePayment,
 }: InvoiceDetailViewProps) {
   const formatCurrency = (value: string) => {
     return parseFloat(value).toLocaleString("th-TH", {
@@ -442,9 +492,14 @@ export function InvoiceDetailView({
             size="small"
           />
         </Box>
-        <Button variant="outlined" onClick={onHistory}>
-          ประวัติการแก้ไข
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="contained" onClick={onUpdatePayment}>
+            อัพเดทสถานะชำระเงิน
+          </Button>
+          <Button variant="outlined" onClick={onHistory}>
+            ประวัติการแก้ไข
+          </Button>
+        </Box>
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
@@ -513,5 +568,84 @@ export function InvoiceDetailView({
         </Box>
       </Box>
     </Paper>
+  );
+}
+
+interface InvoicePaymentUpdateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  invoice: InvoiceWithItemsResponse | null;
+  submitting: boolean;
+  error: string | null;
+  onSubmit: (data: { paymentStatus: string; paymentMethod: string | null; version: number }) => void;
+}
+
+export function InvoicePaymentUpdateDialog({
+  open, onClose, invoice, submitting, error, onSubmit,
+}: InvoicePaymentUpdateDialogProps) {
+  const [paymentStatus, setPaymentStatus] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+
+  useEffect(() => {
+    if (open && invoice) {
+      setPaymentStatus(invoice.paymentStatus);
+      setPaymentMethod(invoice.paymentMethod ?? '');
+    }
+  }, [open, invoice]);
+
+  const handleSubmit = () => {
+    if (!invoice) return;
+    onSubmit({
+      paymentStatus,
+      paymentMethod: paymentMethod || null,
+      version: invoice.version,
+    });
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>อัพเดทสถานะชำระเงิน</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>สถานะชำระเงิน *</InputLabel>
+            <Select
+              value={paymentStatus}
+              label="สถานะชำระเงิน *"
+              onChange={(e) => setPaymentStatus(e.target.value)}
+            >
+              <MenuItem value="PENDING">รอชำระ</MenuItem>
+              <MenuItem value="PAID">ชำระแล้ว</MenuItem>
+              <MenuItem value="PARTIAL">ชำระบางส่วน</MenuItem>
+              <MenuItem value="REFUNDED">คืนเงิน</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>วิธีการชำระ</InputLabel>
+            <Select
+              value={paymentMethod}
+              label="วิธีการชำระ"
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <MenuItem value="">ไม่มี</MenuItem>
+              <MenuItem value="CASH">เงินสด</MenuItem>
+              <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
+              <MenuItem value="CREDIT">เครดิต</MenuItem>
+              <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography variant="caption" color="text.secondary">
+            Invoice: {invoice?.invoiceNumber}
+          </Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={submitting}>ยกเลิก</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={submitting || !paymentStatus}>
+          {submitting ? <CircularProgress size={20} /> : 'บันทึก'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

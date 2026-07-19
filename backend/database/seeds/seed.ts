@@ -166,13 +166,67 @@ async function seed(): Promise<void> {
     });
   }
 
-  const vehicleData = [
-    { customerId: customerIds[0], licensePlate: 'กข1234', brand: 'Toyota', model: 'Hilux Revo', year: 2022, engineType: 'VVT-i', fuelType: 'Gasoline' },
-    { customerId: customerIds[0], licensePlate: 'คง5678', brand: 'Honda', model: 'Civic', year: 2021, engineType: 'i-VTEC', fuelType: 'Gasoline' },
-    { customerId: customerIds[1], licensePlate: 'ซฌ9012', brand: 'Isuzu', model: 'D-Max', year: 2023, engineType: '4JJ1', fuelType: 'Diesel' },
-    { customerId: customerIds[2], licensePlate: 'ตถ3456', brand: 'Mitsubishi', model: 'Triton', year: 2022, engineType: '4N15', fuelType: 'Diesel' },
-    { customerId: customerIds[3], licensePlate: 'ทน7890', brand: 'Ford', model: 'Ranger', year: 2023, engineType: '2.0L TDCi', fuelType: 'Diesel' },
+  const vehicleTemplates = [
+    { brand: 'Toyota', models: ['Hilux Revo', 'Fortuner', 'Camry', 'Yaris', 'Corolla'] },
+    { brand: 'Honda', models: ['Civic', 'CR-V', 'HR-V', 'Accord', 'Jazz'] },
+    { brand: 'Isuzu', models: ['D-Max', 'MU-X'] },
+    { brand: 'Mitsubishi', models: ['Triton', 'Pajero Sport', 'Attrage'] },
+    { brand: 'Ford', models: ['Ranger', 'Everest', 'Focus'] },
+    { brand: 'Nissan', models: ['Navara', 'Almera', 'Terra'] },
+    { brand: 'Mazda', models: ['CX-5', 'BT-50', 'Mazda 2'] },
+    { brand: 'MG', models: ['ZS', 'MG5', 'MG4'] },
+    { brand: 'Hyundai', models: ['Elantra', 'Tucson', 'H-1'] },
+    { brand: 'BYD', models: ['Atto 3', 'Dolphin', 'Seal'] },
   ];
+
+  const engineTypes = ['VVT-i', 'i-VTEC', '4JJ1', '4N15', '2.0L TDCi', 'BluePower', 'SkyActiv', 'eMotion', 'Smartstream', 'Blade'];
+  const fuelTypes = ['Gasoline', 'Diesel', 'Gasoline', 'Gasoline', 'Diesel', 'Electric'];
+
+  const usedPlates = new Set<string>();
+
+  function randomLicensePlate(): string {
+    const consonants = 'กขคงจชซดตถทนบปพยรลวสหอ';
+    const numbers = '0123456789';
+    let plate: string;
+    do {
+      const c1 = consonants[Math.floor(Math.random() * consonants.length)];
+      const c2 = consonants[Math.floor(Math.random() * consonants.length)];
+      const n1 = numbers[Math.floor(Math.random() * numbers.length)];
+      const n2 = numbers[Math.floor(Math.random() * numbers.length)];
+      const n3 = numbers[Math.floor(Math.random() * numbers.length)];
+      const n4 = numbers[Math.floor(Math.random() * numbers.length)];
+      plate = `${c1}${c2}${n1}${n2}${n3}${n4}`;
+    } while (usedPlates.has(plate));
+    usedPlates.add(plate);
+    return plate;
+  }
+
+  const vehicleData: {
+    customerId: string;
+    licensePlate: string;
+    brand: string;
+    model: string;
+    year: number;
+    engineType: string;
+    fuelType: string;
+  }[] = [];
+
+  for (let i = 0; i < customerData.length; i++) {
+    const vehicleCount = 2 + (i % 4);
+    for (let j = 0; j < vehicleCount; j++) {
+      const template = vehicleTemplates[Math.floor(Math.random() * vehicleTemplates.length)];
+      const model = template.models[Math.floor(Math.random() * template.models.length)];
+      vehicleData.push({
+        customerId: customerIds[i],
+        licensePlate: randomLicensePlate(),
+        brand: template.brand,
+        model,
+        year: 2018 + Math.floor(Math.random() * 7),
+        engineType: engineTypes[Math.floor(Math.random() * engineTypes.length)],
+        fuelType: fuelTypes[Math.floor(Math.random() * fuelTypes.length)],
+      });
+    }
+  }
 
   for (const v of vehicleData) {
     await db.insert(schema.vehicles).values({ id: uuidv4(), ...v });
@@ -227,7 +281,7 @@ async function seed(): Promise<void> {
     id: invoiceId3,
     invoiceNumber: 'INV-202607-003',
     customerId: customerIds[2],
-    vehicleId: vehicleData[3].licensePlate,
+    vehicleId: vehicleData[5].licensePlate,
     totalAmount: '9000',
     discount: '0',
     tax: '630',

@@ -57,6 +57,7 @@ describe("InvoiceService", () => {
       findByIdWithItems: jest.fn(),
       createInvoice: jest.fn(),
       getTodaySummary: jest.fn(),
+      updatePaymentStatus: jest.fn(),
     };
     customerRepo = {
       findFiltered: jest.fn(),
@@ -67,6 +68,9 @@ describe("InvoiceService", () => {
       update: jest.fn(),
       softDelete: jest.fn(),
       findVehicleById: jest.fn(),
+      createVehicle: jest.fn(),
+      updateVehicle: jest.fn(),
+      deleteVehicle: jest.fn(),
     };
     inventoryRepo = {
       findFiltered: jest.fn(),

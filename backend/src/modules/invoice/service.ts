@@ -6,6 +6,7 @@ import type {
   InvoiceItemResponse,
   InvoiceWithItemsResponse,
   TodaySummaryResponse,
+  UpdatePaymentStatusInput,
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
@@ -13,6 +14,7 @@ import { calculatePagination } from "../../shared/response/handler";
 import {
   NotFoundError,
   BadRequestError,
+  ConflictError,
 } from "../../shared/errors/AppError";
 import type { ICustomerRepository } from "../customer/repo";
 import type { IInventoryRepository } from "../inventory/repo";
@@ -31,6 +33,12 @@ export interface IInvoiceService {
     meta?: AuditMeta,
   ): Promise<InvoiceWithItemsResponse>;
   getTodaySummary(): Promise<TodaySummaryResponse>;
+  updatePaymentStatus(
+    id: string,
+    input: UpdatePaymentStatusInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<InvoiceResponse>;
 }
 
 const DASHBOARD_CACHE_KEY = "dashboard:summary";
@@ -158,6 +166,35 @@ export class InvoiceService implements IInvoiceService {
 
   async getTodaySummary(): Promise<TodaySummaryResponse> {
     return this.repo.getTodaySummary();
+  }
+
+  async updatePaymentStatus(
+    id: string,
+    input: UpdatePaymentStatusInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<InvoiceResponse> {
+    const existing = await this.repo.findById(id);
+    if (!existing) throw new NotFoundError("Invoice not found");
+
+    const updated = await this.repo.updatePaymentStatus(id, {
+      paymentStatus: input.paymentStatus,
+      paymentMethod: input.paymentMethod ?? null,
+    }, input.version);
+
+    if (!updated) throw new ConflictError("Version mismatch");
+
+    this.auditService.insertAuditLog(
+      "UPDATE",
+      "invoices",
+      id,
+      userId,
+      existing,
+      updated,
+      meta,
+    );
+
+    return this.toInvoiceResponse(updated);
   }
 
   private toInvoiceResponse(entity: InvoiceEntity): InvoiceResponse {

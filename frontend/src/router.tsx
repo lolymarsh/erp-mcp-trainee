@@ -11,6 +11,9 @@ import {
   CustomerCreateDialog,
   CustomerEditDialog,
   DeleteConfirmDialog,
+  VehicleCreateDialog,
+  VehicleEditDialog,
+  VehicleDeleteConfirmDialog,
 } from './modules/customer/view';
 import {
   useCustomerList,
@@ -18,6 +21,9 @@ import {
   useCustomerCreate,
   useCustomerUpdate,
   useCustomerDelete,
+  useVehicleCreate,
+  useVehicleUpdate,
+  useVehicleDelete,
 } from './modules/customer/controller';
 import {
   InventoryListView,
@@ -43,8 +49,8 @@ import {
   useCategoryUpdate,
   useCategoryDelete,
 } from './modules/inventory/controller';
-import { InvoiceListView, InvoiceCreateView, InvoiceDetailView } from './modules/invoice/view';
-import { useInvoiceList, useInvoiceCreate, useInvoiceDetail } from './modules/invoice/controller';
+import { InvoiceListView, InvoiceCreateView, InvoiceDetailView, InvoicePaymentUpdateDialog } from './modules/invoice/view';
+import { useInvoiceList, useInvoiceCreate, useInvoiceDetail, useInvoicePaymentUpdate } from './modules/invoice/controller';
 import { JobQueueView, JobCreateDialog, JobDetailView } from './modules/job/view';
 import { useJobQueue, useStatusUpdate, useJobCreate, useJobDetail } from './modules/job/controller';
 import { ChatPanel } from './modules/chat/view';
@@ -127,6 +133,9 @@ function CustomerDetailRoute() {
     () => navigate('/customers'),
     refetch,
   );
+  const vehicleCreateCtl = useVehicleCreate(refetch);
+  const vehicleUpdateCtl = useVehicleUpdate(refetch);
+  const vehicleDeleteCtl = useVehicleDelete(refetch);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleEdit = useCallback(
@@ -151,6 +160,9 @@ function CustomerDetailRoute() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onHistory={() => setHistoryOpen(true)}
+        onAddVehicle={() => vehicleCreateCtl.setOpen(true)}
+        onEditVehicle={(v) => vehicleUpdateCtl.openWithData(v)}
+        onDeleteVehicle={(v) => vehicleDeleteCtl.openWithData(v)}
       />
       <CustomerEditDialog
         open={updateCtl.open}
@@ -172,6 +184,30 @@ function CustomerDetailRoute() {
             deleteCtl.submit(customer.version);
           }
         }}
+      />
+      <VehicleCreateDialog
+        open={vehicleCreateCtl.open}
+        onClose={vehicleCreateCtl.handleClose}
+        loading={vehicleCreateCtl.loading}
+        error={vehicleCreateCtl.error}
+        customerId={id!}
+        onSubmit={vehicleCreateCtl.submit}
+      />
+      <VehicleEditDialog
+        open={vehicleUpdateCtl.open}
+        onClose={vehicleUpdateCtl.handleClose}
+        loading={vehicleUpdateCtl.loading}
+        error={vehicleUpdateCtl.error}
+        initialValues={vehicleUpdateCtl.initialValues}
+        onSubmit={vehicleUpdateCtl.submit}
+      />
+      <VehicleDeleteConfirmDialog
+        open={vehicleDeleteCtl.open}
+        licensePlate={vehicleDeleteCtl.vehicleInfo?.licensePlate ?? ''}
+        loading={vehicleDeleteCtl.loading}
+        error={vehicleDeleteCtl.error}
+        onCancel={vehicleDeleteCtl.handleClose}
+        onConfirm={vehicleDeleteCtl.submit}
       />
       {id && (
         <AuditLogDialog
@@ -360,7 +396,7 @@ function InventoryDetailRoute() {
 
 function InvoiceListRoute() {
   const navigate = useNavigate();
-  const { invoices, loading, error, pagination, setPage, refetch } =
+  const { invoices, loading, error, pagination, setPage, refetch, setSearch, setStatusFilter, setPaymentMethodFilter, search, statusFilter, paymentMethodFilter } =
     useInvoiceList();
   const createCtl = useInvoiceCreate();
   const [createOpen, setCreateOpen] = useState(false);
@@ -381,6 +417,11 @@ function InvoiceListRoute() {
         onPageChange={setPage}
         onCreateClick={() => setCreateOpen(true)}
         onSelectInvoice={(inv) => navigate(`/sales/invoices/${inv.id}`)}
+        onSearch={setSearch}
+        onStatusFilterChange={setStatusFilter}
+        onPaymentMethodFilterChange={setPaymentMethodFilter}
+        statusFilter={statusFilter}
+        paymentMethodFilter={paymentMethodFilter}
       />
       <InvoiceCreateView
         open={createOpen}
@@ -423,7 +464,7 @@ function InvoiceListRoute() {
 
 function JobListRoute() {
   const navigate = useNavigate();
-  const { jobs, loading, error, pagination, setPage, setStatusFilter, refetch, statusFilter } =
+  const { jobs, loading, error, pagination, setPage, setStatusFilter, setJobTypeFilter, setSearch, refetch, statusFilter, jobTypeFilter, search } =
     useJobQueue();
   const statusUpdate = useStatusUpdate(() => refetch());
   const createCtl = useJobCreate(() => refetch());
@@ -443,8 +484,12 @@ function JobListRoute() {
         error={error}
         pagination={pagination}
         statusFilter={statusFilter}
+        jobTypeFilter={jobTypeFilter}
         onPageChange={setPage}
         onStatusFilterChange={setStatusFilter}
+        onJobTypeFilterChange={setJobTypeFilter}
+        onSearch={setSearch}
+        search={search}
         onStatusChange={handleStatusChange}
         statusChangeError={statusUpdate.error}
         onClearStatusError={statusUpdate.resetError}
@@ -519,8 +564,13 @@ function JobDetailRoute() {
 function InvoiceDetailRoute() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { invoice, loading, error } = useInvoiceDetail(id!);
+  const { invoice, loading, error, refetch } = useInvoiceDetail(id!);
+  const paymentCtl = useInvoicePaymentUpdate(() => refetch());
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handlePaymentUpdate = useCallback(async (data: { paymentStatus: string; paymentMethod: string | null; version: number }) => {
+    await paymentCtl.submit(id!, data);
+  }, [id, paymentCtl]);
 
   return (
     <>
@@ -530,6 +580,15 @@ function InvoiceDetailRoute() {
         error={error}
         onBack={() => navigate('/sales/invoices')}
         onHistory={() => setHistoryOpen(true)}
+        onUpdatePayment={() => paymentCtl.setOpen(true)}
+      />
+      <InvoicePaymentUpdateDialog
+        open={paymentCtl.open}
+        onClose={() => paymentCtl.setOpen(false)}
+        invoice={invoice}
+        submitting={paymentCtl.submitting}
+        error={paymentCtl.error}
+        onSubmit={handlePaymentUpdate}
       />
       {id && (
         <AuditLogDialog
@@ -544,7 +603,7 @@ function InvoiceDetailRoute() {
 }
 
 function UserListRoute() {
-  const { users, loading, error, pagination, setPage, setRoleFilter, roleFilter, refetch } =
+  const { users, loading, error, pagination, setPage, setRoleFilter, roleFilter, refetch, setSearch, search } =
     useUserList();
   const createCtl = useUserCreate(refetch);
   const updateCtl = useUserUpdate(refetch);
@@ -554,20 +613,22 @@ function UserListRoute() {
 
   return (
     <>
-      <UserListView
-        users={users}
-        loading={loading}
-        error={error}
-        pagination={pagination}
-        roleFilter={roleFilter}
-        onPageChange={setPage}
-        onRoleFilterChange={setRoleFilter}
-        onEdit={(user) => updateCtl.openWithData(user)}
-        onDelete={(user) => deleteCtl.openWithData(user)}
-        onToggleActive={(id) => toggleCtl.toggle(id)}
-        onHistory={(user) => setHistoryUser(user)}
-        onCreateClick={() => createCtl.setOpen(true)}
-      />
+        <UserListView
+          users={users}
+          loading={loading}
+          error={error}
+          pagination={pagination}
+          roleFilter={roleFilter}
+          onPageChange={setPage}
+          onRoleFilterChange={setRoleFilter}
+          onEdit={(user) => updateCtl.openWithData(user)}
+          onDelete={(user) => deleteCtl.openWithData(user)}
+          onToggleActive={(id) => toggleCtl.toggle(id)}
+          onHistory={(user) => setHistoryUser(user)}
+          onCreateClick={() => createCtl.setOpen(true)}
+          onSearch={setSearch}
+          search={search}
+        />
       <UserCreateDialog
         open={createCtl.open}
         onClose={createCtl.handleClose}

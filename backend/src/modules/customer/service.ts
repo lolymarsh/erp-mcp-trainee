@@ -5,6 +5,9 @@ import type {
   CreateCustomerInput,
   UpdateCustomerInput,
   DeleteCustomerInput,
+  CreateVehicleInput,
+  UpdateVehicleInput,
+  DeleteVehicleInput,
   CustomerResponse,
   CustomerWithVehiclesResponse,
   VehicleResponse,
@@ -39,6 +42,23 @@ export interface ICustomerService {
   softDelete(
     id: string,
     input: DeleteCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void>;
+  createVehicle(
+    input: CreateVehicleInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<VehicleResponse>;
+  updateVehicle(
+    id: string,
+    input: UpdateVehicleInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<VehicleResponse>;
+  deleteVehicle(
+    id: string,
+    input: DeleteVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void>;
@@ -162,6 +182,89 @@ export class CustomerService implements ICustomerService {
       userId,
       before,
       after ?? before,
+      meta,
+    );
+  }
+
+  async createVehicle(
+    input: CreateVehicleInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<VehicleResponse> {
+    const customer = await this.repo.findById(input.customerId);
+    if (!customer) throw new NotFoundError("Customer not found");
+
+    const entity = await this.repo.createVehicle({
+      id: uuidv4(),
+      customerId: input.customerId,
+      licensePlate: input.licensePlate,
+      brand: input.brand ?? null,
+      model: input.model ?? null,
+      year: input.year ?? null,
+      engineType: input.engineType ?? null,
+      fuelType: input.fuelType ?? null,
+    });
+
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "vehicles",
+      entity.id,
+      userId,
+      null,
+      entity,
+      meta,
+    );
+    return this.toVehicleResponse(entity);
+  }
+
+  async updateVehicle(
+    id: string,
+    input: UpdateVehicleInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<VehicleResponse> {
+    const existing = await this.repo.findVehicleById(id);
+    if (!existing) throw new NotFoundError("Vehicle not found");
+
+    const updated = await this.repo.updateVehicle(id, {
+      licensePlate: input.licensePlate,
+      brand: input.brand,
+      model: input.model,
+      year: input.year,
+      engineType: input.engineType,
+      fuelType: input.fuelType,
+    });
+    if (!updated) throw new NotFoundError("Vehicle not found after update");
+
+    this.auditService.insertAuditLog(
+      "UPDATE",
+      "vehicles",
+      id,
+      userId,
+      existing,
+      updated,
+      meta,
+    );
+    return this.toVehicleResponse(updated);
+  }
+
+  async deleteVehicle(
+    id: string,
+    _input: DeleteVehicleInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void> {
+    const existing = await this.repo.findVehicleById(id);
+    if (!existing) throw new NotFoundError("Vehicle not found");
+
+    await this.repo.deleteVehicle(id);
+    this.auditService.insertAuditLog(
+      "DELETE",
+      "vehicles",
+      id,
+      userId,
+      existing,
+      null,
       meta,
     );
   }

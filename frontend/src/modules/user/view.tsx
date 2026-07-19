@@ -26,11 +26,8 @@ import {
   FormControl,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HistoryIcon from '@mui/icons-material/History';
 import { useState, useEffect } from 'react';
 import type { UserEntity, PaginationResponse } from './model';
 import { getRoleLabel } from './model';
@@ -50,6 +47,8 @@ interface UserListViewProps {
   onToggleActive: (id: string) => void;
   onHistory: (user: UserEntity) => void;
   onCreateClick: () => void;
+  onSearch: (q: string) => void;
+  search: string;
 }
 
 export function UserListView({
@@ -65,6 +64,8 @@ export function UserListView({
   onToggleActive,
   onHistory,
   onCreateClick,
+  onSearch,
+  search,
 }: UserListViewProps) {
   return (
     <Paper sx={{ p: 3 }}>
@@ -76,6 +77,14 @@ export function UserListView({
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+        <TextField
+          label="ค้นหาชื่อผู้ใช้หรือชื่อที่แสดง"
+          variant="outlined"
+          size="small"
+          sx={{ flex: 1 }}
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+        />
         <FormControl size="small" sx={{ minWidth: 200 }}>
           <InputLabel>บทบาท</InputLabel>
           <Select
@@ -135,22 +144,25 @@ export function UserListView({
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => onHistory(user)} title="ประวัติการแก้ไข">
-                      <HistoryIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => onEdit(user)} title="แก้ไข">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => onToggleActive(user.id)}
-                      title={user.isActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}
-                    >
-                      {user.isActive ? <BlockIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
-                    </IconButton>
-                    <IconButton size="small" onClick={() => onDelete(user)} title="ลบ" color="error">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                      <Button size="small" variant="outlined" onClick={() => onHistory(user)}>
+                        ประวัติ
+                      </Button>
+                      <Button size="small" variant="contained" onClick={() => onEdit(user)}>
+                        แก้ไข
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color={user.isActive ? 'warning' : 'success'}
+                        onClick={() => onToggleActive(user.id)}
+                      >
+                        {user.isActive ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                      </Button>
+                      <Button size="small" variant="outlined" color="error" onClick={() => onDelete(user)}>
+                        ลบ
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}

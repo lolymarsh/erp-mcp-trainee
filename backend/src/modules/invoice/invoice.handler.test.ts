@@ -22,6 +22,7 @@ describe("InvoiceHandler", () => {
       getById: jest.fn(),
       create: jest.fn(),
       getTodaySummary: jest.fn(),
+      updatePaymentStatus: jest.fn(),
     };
     handler = new InvoiceHandler(svc);
   });

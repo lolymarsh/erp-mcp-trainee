@@ -49,6 +49,28 @@ export interface ICustomerRepository {
   ): Promise<CustomerEntity | null>;
   softDelete(id: string, version: number): Promise<boolean>;
   findVehicleById(id: string): Promise<VehicleEntity | null>;
+  createVehicle(data: {
+    id: string;
+    customerId: string;
+    licensePlate: string;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    engineType: string | null;
+    fuelType: string | null;
+  }): Promise<VehicleEntity>;
+  updateVehicle(
+    id: string,
+    data: {
+      licensePlate?: string;
+      brand?: string | null;
+      model?: string | null;
+      year?: number | null;
+      engineType?: string | null;
+      fuelType?: string | null;
+    },
+  ): Promise<VehicleEntity | null>;
+  deleteVehicle(id: string): Promise<boolean>;
 }
 
 export class CustomerRepository implements ICustomerRepository {
@@ -242,7 +264,64 @@ export class CustomerRepository implements ICustomerRepository {
       .from(vehicles)
       .where(eq(vehicles.id, id))
       .limit(1);
-    return result[0] as unknown as VehicleEntity ?? null;
+    return (result[0] as VehicleEntity) ?? null;
+  }
+
+  async createVehicle(data: {
+    id: string;
+    customerId: string;
+    licensePlate: string;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    engineType: string | null;
+    fuelType: string | null;
+  }): Promise<VehicleEntity> {
+    await this.db.insert(vehicles).values({
+      id: data.id,
+      customerId: data.customerId,
+      licensePlate: data.licensePlate,
+      brand: data.brand ?? "",
+      model: data.model ?? "",
+      year: data.year,
+      engineType: data.engineType,
+      fuelType: data.fuelType,
+    });
+    return this.findVehicleById(data.id) as Promise<VehicleEntity>;
+  }
+
+  async updateVehicle(
+    id: string,
+    data: {
+      licensePlate?: string;
+      brand?: string | null;
+      model?: string | null;
+      year?: number | null;
+      engineType?: string | null;
+      fuelType?: string | null;
+    },
+  ): Promise<VehicleEntity | null> {
+    const updateData: Record<string, unknown> = {};
+    if (data.licensePlate !== undefined) updateData.licensePlate = data.licensePlate;
+    if (data.brand !== undefined) updateData.brand = data.brand ?? "";
+    if (data.model !== undefined) updateData.model = data.model ?? "";
+    if (data.year !== undefined) updateData.year = data.year;
+    if (data.engineType !== undefined) updateData.engineType = data.engineType;
+    if (data.fuelType !== undefined) updateData.fuelType = data.fuelType;
+
+    await this.db
+      .update(vehicles)
+      .set(updateData)
+      .where(eq(vehicles.id, id));
+
+    return this.findVehicleById(id);
+  }
+
+  async deleteVehicle(id: string): Promise<boolean> {
+    const result = await this.db
+      .delete(vehicles)
+      .where(eq(vehicles.id, id));
+    return result[0].affectedRows > 0;
   }
 
   private resolveSort(

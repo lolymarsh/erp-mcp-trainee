@@ -13,6 +13,7 @@ import type { CustomerEntity } from '../customer/model';
 import type { ProductEntity } from '../inventory/model';
 import { customerApi } from '../customer/model';
 import { inventoryApi } from '../inventory/model';
+import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
 
 interface UseInvoiceListReturn {
   invoices: InvoiceResponse[];
@@ -21,6 +22,12 @@ interface UseInvoiceListReturn {
   pagination: PaginatedInvoices['pagination'] | null;
   refetch: () => void;
   setPage: (page: number) => void;
+  setSearch: (search: string) => void;
+  setStatusFilter: (status: string | null) => void;
+  setPaymentMethodFilter: (method: string | null) => void;
+  search: string;
+  statusFilter: string | null;
+  paymentMethodFilter: string | null;
 }
 
 export function useInvoiceList(): UseInvoiceListReturn {
@@ -29,12 +36,26 @@ export function useInvoiceList(): UseInvoiceListReturn {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginatedInvoices['pagination'] | null>(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string | null>(null);
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const filter: FilterRequest = { page, pageSize: 20, sortBy: 'desc' };
+      const filters: { field: string; operator: string; value: unknown }[] = [];
+      if (debouncedSearch) {
+        filters.push({ field: 'invoiceNumber', operator: 'contains', value: debouncedSearch });
+      }
+      if (statusFilter) {
+        filters.push({ field: 'paymentStatus', operator: 'eq', value: statusFilter });
+      }
+      if (paymentMethodFilter) {
+        filters.push({ field: 'paymentMethod', operator: 'eq', value: paymentMethodFilter });
+      }
+      const filter: FilterRequest = { page, pageSize: 20, sortBy: 'desc', filters };
       const result = await invoiceApi.filter(filter);
       setInvoices(result.data);
       setPagination(result.pagination);
@@ -44,13 +65,22 @@ export function useInvoiceList(): UseInvoiceListReturn {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, debouncedSearch, statusFilter, paymentMethodFilter]);
 
   useEffect(() => {
     void fetchInvoices();
   }, [fetchInvoices]);
 
-  return { invoices, loading, error, pagination, refetch: fetchInvoices, setPage };
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, paymentMethodFilter]);
+
+  return {
+    invoices, loading, error, pagination,
+    refetch: fetchInvoices, setPage,
+    setSearch, setStatusFilter, setPaymentMethodFilter,
+    search, statusFilter, paymentMethodFilter,
+  };
 }
 
 interface UseInvoiceCreateReturn {
@@ -382,4 +412,40 @@ export function useInvoiceDetail(id: string | null): UseInvoiceDetailReturn {
   }, [fetch]);
 
   return { invoice, loading, error, refetch: fetch };
+}
+
+interface UseInvoicePaymentUpdateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  submitting: boolean;
+  error: string | null;
+  submit: (id: string, data: { paymentStatus: string; paymentMethod: string | null; version: number }) => Promise<boolean>;
+}
+
+export function useInvoicePaymentUpdate(onSuccess: () => void): UseInvoicePaymentUpdateReturn {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = useCallback(async (
+    id: string,
+    data: { paymentStatus: string; paymentMethod: string | null; version: number },
+  ): Promise<boolean> => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await invoiceApi.updatePaymentStatus(id, data);
+      onSuccess();
+      setOpen(false);
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update payment status';
+      setError(message);
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [onSuccess]);
+
+  return { open, setOpen, submitting, error, submit };
 }

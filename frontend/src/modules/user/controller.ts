@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { isAxiosError } from 'axios';
 import { z } from 'zod';
 import { userApi, type UserEntity, type PaginationResponse, type FilterParams } from './model';
+import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'กรุณากรอกชื่อผู้ใช้'),
@@ -27,15 +28,21 @@ export function useUserList() {
   const [pagination, setPagination] = useState<PaginationResponse | null>(null);
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params: FilterParams = { page, pageSize: 20, sortBy: 'asc', sortName: 'displayName' };
+      const filters: { field: string; operator: string; value: unknown }[] = [];
       if (roleFilter) {
-        params.filters = [{ field: 'role', operator: 'eq', value: roleFilter }];
+        filters.push({ field: 'role', operator: 'eq', value: roleFilter });
       }
+      if (debouncedSearch) {
+        filters.push({ field: 'username', operator: 'contains', value: debouncedSearch });
+      }
+      const params: FilterParams = { page, pageSize: 20, sortBy: 'asc', sortName: 'displayName', filters };
       const result = await userApi.filter(params);
       setUsers(result.data);
       setPagination(result.pagination);
@@ -44,11 +51,12 @@ export function useUserList() {
     } finally {
       setLoading(false);
     }
-  }, [page, roleFilter]);
+  }, [page, roleFilter, debouncedSearch]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, roleFilter]);
 
-  return { users, loading, error, pagination, refetch: fetchUsers, setPage, setRoleFilter, roleFilter };
+  return { users, loading, error, pagination, refetch: fetchUsers, setPage, setRoleFilter, roleFilter, setSearch, search };
 }
 
 export function useUserCreate(onSuccess: () => void) {
