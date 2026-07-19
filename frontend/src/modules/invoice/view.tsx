@@ -157,6 +157,8 @@ interface InvoiceCreateViewProps {
   grandTotal: number;
   submitting: boolean;
   error: string | null;
+  customerLoading: boolean;
+  productLoading: boolean;
   onCustomerChange: (id: string) => void;
   onPaymentMethodChange: (method: string) => void;
   onDiscountChange: (d: number) => void;
@@ -165,6 +167,10 @@ interface InvoiceCreateViewProps {
   onUpdateItemQuantity: (index: number, quantity: number) => void;
   onSubmit: () => void;
   onLoadLookups: () => void;
+  onCustomerSearch: (search: string) => void;
+  onProductSearch: (search: string) => void;
+  onLoadMoreCustomers: () => void;
+  onLoadMoreProducts: () => void;
 }
 
 export function InvoiceCreateView({
@@ -179,6 +185,8 @@ export function InvoiceCreateView({
   grandTotal,
   submitting,
   error,
+  customerLoading,
+  productLoading,
   onCustomerChange,
   onPaymentMethodChange,
   onDiscountChange,
@@ -187,6 +195,10 @@ export function InvoiceCreateView({
   onUpdateItemQuantity,
   onSubmit,
   onLoadLookups,
+  onCustomerSearch,
+  onProductSearch,
+  onLoadMoreCustomers,
+  onLoadMoreProducts,
 }: InvoiceCreateViewProps) {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [itemQty, setItemQty] = useState(1);
@@ -232,6 +244,19 @@ export function InvoiceCreateView({
             getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
             value={customers.find((c) => c.id === selectedCustomerId) ?? null}
             onChange={(_, val) => onCustomerChange(val?.id ?? '')}
+            onInputChange={(_, val) => onCustomerSearch(val)}
+            filterOptions={(x) => x}
+            loading={customerLoading}
+            slotProps={{
+              listbox: {
+                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
+                  const listbox = e.currentTarget;
+                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
+                    onLoadMoreCustomers();
+                  }
+                },
+              },
+            }}
             renderInput={(params) => <TextField {...params} label="Customer" />}
           />
           <FormControl sx={{ minWidth: 180 }}>
@@ -257,6 +282,19 @@ export function InvoiceCreateView({
             getOptionLabel={(p) => `${p.name} (${p.sku}) - ${p.sellPrice} THB`}
             value={products.find((p) => p.id === selectedProductId) ?? null}
             onChange={(_, val) => setSelectedProductId(val?.id ?? '')}
+            onInputChange={(_, val) => onProductSearch(val)}
+            filterOptions={(x) => x}
+            loading={productLoading}
+            slotProps={{
+              listbox: {
+                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
+                  const listbox = e.currentTarget;
+                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
+                    onLoadMoreProducts();
+                  }
+                },
+              },
+            }}
             renderInput={(params) => <TextField {...params} label="Product" />}
           />
           <TextField

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   invoiceApi,
   type InvoiceResponse,
@@ -63,6 +63,10 @@ interface UseInvoiceCreateReturn {
   selectedPaymentMethod: string;
   discount: number;
   grandTotal: number;
+  customerLoading: boolean;
+  productLoading: boolean;
+  customerTotalPages: number;
+  productTotalPages: number;
   submit: () => Promise<InvoiceWithItemsResponse | null>;
   reset: () => void;
   setSelectedCustomerId: (id: string) => void;
@@ -72,6 +76,10 @@ interface UseInvoiceCreateReturn {
   removeItem: (index: number) => void;
   updateItemQuantity: (index: number, quantity: number) => void;
   loadLookups: () => Promise<void>;
+  handleCustomerSearch: (search: string) => void;
+  handleProductSearch: (search: string) => void;
+  loadMoreCustomers: () => void;
+  loadMoreProducts: () => void;
 }
 
 export function useInvoiceCreate(): UseInvoiceCreateReturn {
@@ -84,6 +92,19 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [discount, setDiscount] = useState(0);
 
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [productLoading, setProductLoading] = useState(false);
+  const [customerTotalPages, setCustomerTotalPages] = useState(1);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const customerSearchTerm = useRef('');
+  const productSearchTerm = useRef('');
+  const customerPageRef = useRef(1);
+  const productPageRef = useRef(1);
+  const customerLoadingRef = useRef(false);
+  const productLoadingRef = useRef(false);
+  const customerDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const productDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+
   const grandTotal = items.reduce((sum, item) => {
     const product = products.find((p) => p.id === item.productId);
     if (!product) {
@@ -92,31 +113,102 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
     return sum + parseFloat(product.sellPrice) * item.quantity;
   }, 0) - discount;
 
-  const loadLookups = useCallback(async () => {
+  const searchCustomers = useCallback(async (search: string, page: number, append: boolean) => {
+    customerLoadingRef.current = true;
+    setCustomerLoading(true);
     try {
-      const custResult = await customerApi.filter({
-        page: 1,
-        pageSize: 200,
+      const filters = search
+        ? [{ field: 'firstName', operator: 'contains' as const, value: search }]
+        : [];
+      const result = await customerApi.filter({
+        page,
+        pageSize: 10,
         sortBy: 'asc',
         sortName: 'firstName',
-        filters: [],
+        filters,
       });
-
-      const prodResult = await inventoryApi.filter({
-        page: 1,
-        pageSize: 200,
-        sortBy: 'asc',
-        sortName: 'name',
-        filters: [],
-      });
-
-      setCustomers(custResult.data);
-      setProducts(prodResult.data);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load data';
-      setError(message);
+      if (append) {
+        setCustomers(prev => [...prev, ...result.data]);
+      } else {
+        setCustomers(result.data);
+      }
+      setCustomerTotalPages(result.pagination.totalPage);
+      customerPageRef.current = page;
+    } catch {
+      // silent
+    } finally {
+      customerLoadingRef.current = false;
+      setCustomerLoading(false);
     }
   }, []);
+
+  const searchProducts = useCallback(async (search: string, page: number, append: boolean) => {
+    productLoadingRef.current = true;
+    setProductLoading(true);
+    try {
+      const filters = search
+        ? [{ field: 'name', operator: 'contains' as const, value: search }]
+        : [];
+      const result = await inventoryApi.filter({
+        page,
+        pageSize: 10,
+        sortBy: 'asc',
+        sortName: 'name',
+        filters,
+      });
+      if (append) {
+        setProducts(prev => [...prev, ...result.data]);
+      } else {
+        setProducts(result.data);
+      }
+      setProductTotalPages(result.pagination.totalPage);
+      productPageRef.current = page;
+    } catch {
+      // silent
+    } finally {
+      productLoadingRef.current = false;
+      setProductLoading(false);
+    }
+  }, []);
+
+  const handleCustomerSearch = useCallback((search: string) => {
+    customerSearchTerm.current = search;
+    if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    customerDebounceRef.current = setTimeout(() => {
+      void searchCustomers(search, 1, false);
+    }, 300);
+  }, [searchCustomers]);
+
+  const handleProductSearch = useCallback((search: string) => {
+    productSearchTerm.current = search;
+    if (productDebounceRef.current) clearTimeout(productDebounceRef.current);
+    productDebounceRef.current = setTimeout(() => {
+      void searchProducts(search, 1, false);
+    }, 300);
+  }, [searchProducts]);
+
+  const loadMoreCustomers = useCallback(() => {
+    if (customerPageRef.current < customerTotalPages && !customerLoadingRef.current) {
+      void searchCustomers(customerSearchTerm.current, customerPageRef.current + 1, true);
+    }
+  }, [customerTotalPages, searchCustomers]);
+
+  const loadMoreProducts = useCallback(() => {
+    if (productPageRef.current < productTotalPages && !productLoadingRef.current) {
+      void searchProducts(productSearchTerm.current, productPageRef.current + 1, true);
+    }
+  }, [productTotalPages, searchProducts]);
+
+  const loadLookups = useCallback(async () => {
+    setCustomers([]);
+    setProducts([]);
+    customerSearchTerm.current = '';
+    productSearchTerm.current = '';
+    await Promise.all([
+      searchCustomers('', 1, false),
+      searchProducts('', 1, false),
+    ]);
+  }, [searchCustomers, searchProducts]);
 
   const addItem = useCallback(
     (productId: string, quantity: number) => {
@@ -203,6 +295,10 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
     selectedPaymentMethod,
     discount,
     grandTotal,
+    customerLoading,
+    productLoading,
+    customerTotalPages,
+    productTotalPages,
     submit,
     reset,
     setSelectedCustomerId,
@@ -212,6 +308,10 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
     removeItem,
     updateItemQuantity,
     loadLookups,
+    handleCustomerSearch,
+    handleProductSearch,
+    loadMoreCustomers,
+    loadMoreProducts,
   };
 }
 
