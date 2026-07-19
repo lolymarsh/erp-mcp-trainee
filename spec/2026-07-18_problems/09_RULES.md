@@ -100,9 +100,9 @@ A service constructor MUST NOT receive:
 
 ## Phase 09 Checklist
 
-- [ ] `.agent/rules/ServicePatterns.md` — add Section 7 (no DB in service)
-- [ ] `.claude/rules/ServicePatterns.md` — same
-- [ ] `.agent/rules/RepositoryPatterns.md` — add Section 10 (cross-module queries)
-- [ ] `.claude/rules/RepositoryPatterns.md` — same
-- [ ] `.agent/rules/OpenCodeStandards.md` — add Service Dependencies section
-- [ ] `.claude/rules/OpenCodeStandards.md` — same
+- [x] `.agent/rules/ServicePatterns.md` — add Section 7 (no DB in service)
+- [x] `.claude/rules/ServicePatterns.md` — same
+- [x] `.agent/rules/RepositoryPatterns.md` — add Section 10 (cross-module queries)
+- [x] `.claude/rules/RepositoryPatterns.md` — same
+- [x] `.agent/rules/OpenCodeStandards.md` — add Service Dependencies section
+- [x] `.claude/rules/OpenCodeStandards.md` — same

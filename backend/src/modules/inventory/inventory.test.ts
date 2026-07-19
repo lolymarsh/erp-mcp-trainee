@@ -50,8 +50,10 @@ describe("InventoryService", () => {
   let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: InventoryService;
+  const mockAuditService = { insertAuditLog: jest.fn() };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = {
       findFiltered: jest.fn(),
       findById: jest.fn(),
@@ -68,7 +70,7 @@ describe("InventoryService", () => {
       transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
     } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InventoryService(repo, db, redis);
+    svc = new InventoryService(repo, db, redis, mockAuditService as any);
   });
 
   describe("filter", () => {
@@ -167,7 +169,7 @@ describe("InventoryService", () => {
           sellPrice: 5000,
           minStock: 5,
           currentStock: 10,
-        }),
+        }, "user-1"),
       ).rejects.toThrow("SKU already exists");
     });
 
@@ -184,7 +186,7 @@ describe("InventoryService", () => {
         sellPrice: 5000,
         minStock: 5,
         currentStock: 10,
-      });
+      }, "user-1");
 
       expect(result.sku).toBe("GS-001");
       expect(result.version).toBe(1);
@@ -221,7 +223,7 @@ describe("InventoryService", () => {
         sellPrice: 0,
         minStock: 0,
         currentStock: 0,
-      });
+      }, "user-1");
 
       expect(result.unit).toBe("piece");
       expect(result.costPrice).toBe("0");
@@ -230,6 +232,7 @@ describe("InventoryService", () => {
 
   describe("update", () => {
     it("should throw ConflictError on version mismatch", async () => {
+      repo.findById.mockResolvedValue(mockProduct);
       repo.findBySku.mockResolvedValue(null);
       repo.update.mockResolvedValue(null);
 
@@ -237,22 +240,24 @@ describe("InventoryService", () => {
         svc.update("prod-1", {
           name: "Updated Name",
           version: 1,
-        }),
+        }, "user-1"),
       ).rejects.toThrow(ConflictError);
     });
 
     it("should throw when updated sku conflicts", async () => {
+      repo.findById.mockResolvedValue(mockProduct);
       repo.findBySku.mockResolvedValue({ ...mockProduct, id: "prod-2" });
 
       await expect(
         svc.update("prod-1", {
           sku: "GS-001",
           version: 1,
-        }),
+        }, "user-1"),
       ).rejects.toThrow("SKU already exists");
     });
 
     it("should update product successfully", async () => {
+      repo.findById.mockResolvedValue(mockProduct);
       repo.findBySku.mockResolvedValue(null);
       const updatedProduct = {
         ...mockProduct,
@@ -264,7 +269,7 @@ describe("InventoryService", () => {
       const result = await svc.update("prod-1", {
         name: "Updated Name",
         version: 1,
-      });
+      }, "user-1");
 
       expect(result.name).toBe("Updated Name");
       expect(repo.update).toHaveBeenCalledWith(
@@ -275,13 +280,14 @@ describe("InventoryService", () => {
     });
 
     it("should allow updating with same sku", async () => {
+      repo.findById.mockResolvedValue(mockProduct);
       repo.findBySku.mockResolvedValue(mockProduct);
       repo.update.mockResolvedValue({ ...mockProduct, version: 2 });
 
       const result = await svc.update("prod-1", {
         sku: "GS-001",
         version: 1,
-      });
+      }, "user-1");
 
       expect(result.sku).toBe("GS-001");
     });
@@ -289,18 +295,22 @@ describe("InventoryService", () => {
 
   describe("softDelete", () => {
     it("should throw ConflictError on version mismatch", async () => {
+      repo.findById.mockResolvedValue(mockProduct);
       repo.softDelete.mockResolvedValue(false);
 
-      await expect(svc.softDelete("prod-1", { version: 1 })).rejects.toThrow(
+      await expect(svc.softDelete("prod-1", { version: 1 }, "user-1")).rejects.toThrow(
         ConflictError,
       );
     });
 
     it("should soft delete product successfully", async () => {
+      repo.findById
+        .mockResolvedValueOnce(mockProduct)
+        .mockResolvedValueOnce({ ...mockProduct, deletedAt: new Date() });
       repo.softDelete.mockResolvedValue(true);
 
       await expect(
-        svc.softDelete("prod-1", { version: 1 }),
+        svc.softDelete("prod-1", { version: 1 }, "user-1"),
       ).resolves.toBeUndefined();
 
       expect(repo.softDelete).toHaveBeenCalledWith("prod-1", 1);

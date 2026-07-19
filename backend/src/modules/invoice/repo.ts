@@ -177,96 +177,26 @@ export class InvoiceRepository implements IInvoiceRepository {
     data: CreateInvoiceData,
     tx?: Tx,
   ): Promise<InvoiceWithItemsResult> {
-    const db = tx ?? this.db;
-    for (const item of data.items) {
-      const [product] = await db
-        .select()
-        .from(products)
-        .where(and(eq(products.id, item.productId), isNull(products.deletedAt)))
-        .for("update");
+    const doWork = async (d: typeof this.db | Tx): Promise<InvoiceWithItemsResult> => {
+      for (const item of data.items) {
+        const [product] = await d
+          .select()
+          .from(products)
+          .where(and(eq(products.id, item.productId), isNull(products.deletedAt)))
+          .for("update");
 
-      if (!product) {
-        throw new Error("PRODUCT_NOT_FOUND");
+        if (!product) {
+          throw new Error("PRODUCT_NOT_FOUND");
+        }
+        if (product.currentStock < item.quantity) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
       }
-      if (product.currentStock < item.quantity) {
-        throw new Error("INSUFFICIENT_STOCK");
-      }
-    }
 
-    const invId = uuidv4();
-    const now = new Date();
+      const invId = uuidv4();
+      const now = new Date();
 
-    await db.insert(invoices).values({
-      id: invId,
-      invoiceNumber: data.invoiceNumber,
-      customerId: data.customerId,
-      vehicleId: data.vehicleId,
-      totalAmount: data.totalAmount,
-      discount: data.discount,
-      tax: data.tax,
-      grandTotal: data.grandTotal,
-      paymentStatus: "PENDING",
-      paymentMethod: data.paymentMethod as
-        | "CASH"
-        | "BANK_TRANSFER"
-        | "CREDIT"
-        | "PROMPTPAY"
-        | null,
-      version: 1,
-      createdBy: data.createdBy,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    const createdItems: InvoiceItemEntity[] = [];
-
-    for (const item of data.items) {
-      const itemId = uuidv4();
-      await db.insert(invoiceItems).values({
-        id: itemId,
-        invoiceId: invId,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-      });
-
-      createdItems.push({
-        id: itemId,
-        invoiceId: invId,
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-      });
-    }
-
-    for (const item of data.items) {
-      await db
-        .update(products)
-        .set({
-          currentStock: sql`${products.currentStock} - ${item.quantity}`,
-          updatedAt: now,
-        })
-        .where(eq(products.id, item.productId));
-    }
-
-    for (const item of data.items) {
-      await db.insert(stockMovements).values({
-        id: uuidv4(),
-        productId: item.productId,
-        type: "OUT",
-        quantity: item.quantity,
-        referenceType: "INVOICE",
-        referenceId: invId,
-        createdBy: data.createdBy,
-        note: null,
-        createdAt: now,
-      });
-    }
-
-    return {
-      invoice: {
+      await d.insert(invoices).values({
         id: invId,
         invoiceNumber: data.invoiceNumber,
         customerId: data.customerId,
@@ -286,9 +216,83 @@ export class InvoiceRepository implements IInvoiceRepository {
         createdBy: data.createdBy,
         createdAt: now,
         updatedAt: now,
-      },
-      items: createdItems,
+      });
+
+      const createdItems: InvoiceItemEntity[] = [];
+
+      for (const item of data.items) {
+        const itemId = uuidv4();
+        await d.insert(invoiceItems).values({
+          id: itemId,
+          invoiceId: invId,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+        });
+
+        createdItems.push({
+          id: itemId,
+          invoiceId: invId,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+        });
+      }
+
+      for (const item of data.items) {
+        await d
+          .update(products)
+          .set({
+            currentStock: sql`${products.currentStock} - ${item.quantity}`,
+            updatedAt: now,
+          })
+          .where(eq(products.id, item.productId));
+      }
+
+      for (const item of data.items) {
+        await d.insert(stockMovements).values({
+          id: uuidv4(),
+          productId: item.productId,
+          type: "OUT",
+          quantity: item.quantity,
+          referenceType: "INVOICE",
+          referenceId: invId,
+          createdBy: data.createdBy,
+          note: null,
+          createdAt: now,
+        });
+      }
+
+      return {
+        invoice: {
+          id: invId,
+          invoiceNumber: data.invoiceNumber,
+          customerId: data.customerId,
+          vehicleId: data.vehicleId,
+          totalAmount: data.totalAmount,
+          discount: data.discount,
+          tax: data.tax,
+          grandTotal: data.grandTotal,
+          paymentStatus: "PENDING",
+          paymentMethod: data.paymentMethod as
+            | "CASH"
+            | "BANK_TRANSFER"
+            | "CREDIT"
+            | "PROMPTPAY"
+            | null,
+          version: 1,
+          createdBy: data.createdBy,
+          createdAt: now,
+          updatedAt: now,
+        },
+        items: createdItems,
+      };
     };
+
+    if (tx) return doWork(tx);
+    return this.db.transaction((innerTx) => doWork(innerTx));
   }
 
   async getTodaySummary(): Promise<{

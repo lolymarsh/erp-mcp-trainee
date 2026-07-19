@@ -23,19 +23,36 @@ import {
   AppError,
   BadRequestError,
 } from "../../shared/errors/AppError";
+import type { IAuditLogService } from "../audit/service";
+import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface IInventoryService {
   filter(
     input: FilterRequestInput,
   ): Promise<{ data: ProductResponse[]; pagination: PaginationResponse }>;
   getById(id: string): Promise<ProductWithMovementsResponse>;
-  create(input: CreateProductInput): Promise<ProductResponse>;
-  update(id: string, input: UpdateProductInput): Promise<ProductResponse>;
-  softDelete(id: string, input: DeleteProductInput): Promise<void>;
+  create(
+    input: CreateProductInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<ProductResponse>;
+  update(
+    id: string,
+    input: UpdateProductInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<ProductResponse>;
+  softDelete(
+    id: string,
+    input: DeleteProductInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void>;
   adjustStock(
     productId: string,
     input: StockAdjustInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<StockAdjustResponse>;
   listCategories(): Promise<CategoryResponse[]>;
 }
@@ -47,6 +64,7 @@ export class InventoryService implements IInventoryService {
     private repo: IInventoryRepository,
     private db: MySql2Database,
     private redis: Redis,
+    private auditService: IAuditLogService,
   ) {}
 
   async filter(
@@ -75,7 +93,11 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async create(input: CreateProductInput): Promise<ProductResponse> {
+  async create(
+    input: CreateProductInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<ProductResponse> {
     const existing = await this.repo.findBySku(input.sku);
     if (existing) throw new AppError(409, "SKU already exists");
 
@@ -93,18 +115,33 @@ export class InventoryService implements IInventoryService {
       version: 1,
     });
 
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "products",
+      entity.id,
+      userId,
+      null,
+      entity,
+      meta,
+    );
+
     return this.toProductResponse(entity);
   }
 
   async update(
     id: string,
     input: UpdateProductInput,
+    userId: string,
+    meta?: AuditMeta,
   ): Promise<ProductResponse> {
+    const existing = await this.repo.findById(id);
+    if (!existing) throw new NotFoundError("Product not found");
+
     const { version, ...fields } = input;
 
     if (typeof fields.sku === "string") {
-      const existing = await this.repo.findBySku(fields.sku);
-      if (existing && existing.id !== id) {
+      const existingSku = await this.repo.findBySku(fields.sku);
+      if (existingSku && existingSku.id !== id) {
         throw new AppError(409, "SKU already exists");
       }
     }
@@ -121,19 +158,48 @@ export class InventoryService implements IInventoryService {
     const updated = await this.repo.update(id, updateData as any, version);
     if (!updated) throw new ConflictError("Version mismatch");
 
+    this.auditService.insertAuditLog(
+      "UPDATE",
+      "products",
+      id,
+      userId,
+      existing,
+      updated,
+      meta,
+    );
+
     return this.toProductResponse(updated);
   }
 
-  async softDelete(id: string, input: DeleteProductInput): Promise<void> {
+  async softDelete(
+    id: string,
+    input: DeleteProductInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void> {
+    const before = await this.repo.findById(id);
+    if (!before) throw new NotFoundError("Product not found");
+
     const deleted = await this.repo.softDelete(id, input.version);
-    if (!deleted)
-      throw new ConflictError("Version mismatch or product not found");
+    if (!deleted) throw new ConflictError("Version mismatch or product not found");
+
+    const after = await this.repo.findById(id);
+    this.auditService.insertAuditLog(
+      "DELETE",
+      "products",
+      id,
+      userId,
+      before,
+      after ?? before,
+      meta,
+    );
   }
 
   async adjustStock(
     productId: string,
     input: StockAdjustInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<StockAdjustResponse> {
     if (
       (input.type === "IN" || input.type === "OUT") &&
@@ -158,6 +224,16 @@ export class InventoryService implements IInventoryService {
       });
 
       await this.redis.del(DASHBOARD_CACHE_KEY);
+
+      this.auditService.insertAuditLog(
+        "UPDATE",
+        "products",
+        productId,
+        userId,
+        null,
+        { type: input.type, quantity: input.quantity, note: input.note ?? null },
+        meta,
+      );
 
       return {
         product: this.toProductResponse(result.product),

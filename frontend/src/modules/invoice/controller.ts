@@ -247,3 +247,39 @@ export function useTodaySummary(): UseTodaySummaryReturn {
 
   return { summary, loading, error, refetch: fetch };
 }
+
+interface UseInvoiceDetailReturn {
+  invoice: InvoiceWithItemsResponse | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useInvoiceDetail(id: string | null): UseInvoiceDetailReturn {
+  const [invoice, setInvoice] = useState<InvoiceWithItemsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch = useCallback(async () => {
+    if (!id) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await invoiceApi.getById(id);
+      setInvoice(result);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load invoice";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    void fetch();
+  }, [fetch]);
+
+  return { invoice, loading, error, refetch: fetch };
+}

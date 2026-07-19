@@ -157,14 +157,14 @@ Update `CustomerListRoute` — เปลี่ยนจาก dead navigate เ�
 
 ## Phase 04 Checklist
 
-- [ ] `useCustomerDetail(id)` controller
-- [ ] `CustomerDetailView` — display customer + vehicles
-- [ ] `useCustomerCreate()` controller + Zod schema
-- [ ] `CustomerCreateDialog` — MUI Dialog with form
-- [ ] "เพิ่มลูกค้า" button in `CustomerListView` header
-- [ ] `useCustomerUpdate(id)` controller + pre-fill + version
-- [ ] `CustomerEditDialog` — handle 409 version conflict
-- [ ] `useCustomerDelete(id)` controller + confirmation
-- [ ] Delete confirmation dialog
-- [ ] `/customers/:id` route registered
-- [ ] Run `npm run typecheck` — pass
+- [x] `useCustomerDetail(id)` controller
+- [x] `CustomerDetailView` — display customer + vehicles
+- [x] `useCustomerCreate()` controller + Zod schema
+- [x] `CustomerCreateDialog` — MUI Dialog with form
+- [x] "เพิ่มลูกค้า" button in `CustomerListView` header
+- [x] `useCustomerUpdate(id)` controller + pre-fill + version
+- [x] `CustomerEditDialog` — handle 409 version conflict
+- [x] `useCustomerDelete(id)` controller + confirmation
+- [x] Delete confirmation dialog
+- [x] `/customers/:id` route registered
+- [x] Run `npx tsc -b --noEmit` — pass (0 errors)

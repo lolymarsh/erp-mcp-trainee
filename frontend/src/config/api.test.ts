@@ -36,13 +36,13 @@ describe('api config', () => {
       localStorage.setItem('token', 'test-jwt');
       const config = { headers: {} as Record<string, string> };
       const result = interceptorFns.request!(config);
-      expect(result.headers.Authorization).toBe('Bearer test-jwt');
+      expect(result).toHaveProperty('headers.Authorization', 'Bearer test-jwt');
     });
 
     it('omits Authorization when no token', () => {
       const config = { headers: {} as Record<string, string> };
       const result = interceptorFns.request!(config);
-      expect(result.headers.Authorization).toBeUndefined();
+      expect(result).not.toHaveProperty('headers.Authorization');
     });
   });
 

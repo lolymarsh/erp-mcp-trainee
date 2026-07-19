@@ -118,7 +118,7 @@ describe("InventoryHandler", () => {
       req.body = { type: "IN", quantity: 5 };
       req.user = { userId: "user-1", role: "ADMIN" };
       await handler.adjustStock(req, res);
-      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "user-1");
+      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "user-1", undefined);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
@@ -128,7 +128,7 @@ describe("InventoryHandler", () => {
       req.params = { id: "prod-1" };
       req.body = { type: "IN", quantity: 5 };
       await handler.adjustStock(req, res);
-      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "system");
+      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "system", undefined);
     });
   });
 

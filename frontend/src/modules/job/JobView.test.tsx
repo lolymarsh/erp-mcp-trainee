@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { JobQueueView } from './view';
 import type { JobResponse, PaginationInfo } from './model';
 
@@ -52,6 +52,8 @@ describe('JobQueueView', () => {
   const onStatusFilterChange = vi.fn();
   const onStatusChange = vi.fn();
   const onClearStatusError = vi.fn();
+  const onRowClick = vi.fn();
+  const onCreateClick = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,6 +72,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -93,6 +97,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -112,6 +118,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -131,6 +139,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -150,6 +160,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -169,6 +181,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError={null}
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -189,6 +203,8 @@ describe('JobQueueView', () => {
         onStatusChange={onStatusChange}
         statusChangeError="Version conflict"
         onClearStatusError={onClearStatusError}
+        onRowClick={onRowClick}
+        onCreateClick={onCreateClick}
       />,
     );
 

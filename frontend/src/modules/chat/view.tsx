@@ -14,12 +14,15 @@ import {
   Tooltip,
   Chip,
   Divider,
+  Snackbar,
+  Button,
   type SelectChangeEvent,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DeleteSweepIcon from '@mui/icons-material/ClearAll';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useChat } from './controller';
 import type { ChatMessage } from './controller';
 import type { ExportFormat } from './model';
@@ -31,13 +34,16 @@ export function ChatPanel(): React.ReactElement {
     error,
     streaming,
     format,
+    toast,
     messagesEndRef,
     setFormat,
     sendMessage,
     cancelStream,
     clearMessages,
     exportLastResult,
+    retrySend,
     setError,
+    hideToast,
   } = useChat();
 
   const [input, setInput] = useState('');
@@ -70,9 +76,14 @@ export function ChatPanel(): React.ReactElement {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <Typography variant="h5" sx={{ flexGrow: 1 }}>
-          AI Chat
-        </Typography>
+          <Typography variant="h5" sx={{ flexGrow: 1 }}>
+            AI Chat
+          </Typography>
+          <Tooltip title="เริ่มแชทใหม่">
+            <IconButton onClick={clearMessages}>
+              <DeleteSweepIcon />
+            </IconButton>
+          </Tooltip>
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel id="format-label">Format</InputLabel>
           <Select
@@ -98,10 +109,15 @@ export function ChatPanel(): React.ReactElement {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Clear chat">
-          <IconButton onClick={clearMessages} disabled={messages.length === 0}>
-            <DeleteSweepIcon />
-          </IconButton>
+        <Tooltip title="เริ่มแชทใหม่">
+          <span>
+            <IconButton
+              onClick={clearMessages}
+              disabled={messages.length === 0}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
 
@@ -116,6 +132,22 @@ export function ChatPanel(): React.ReactElement {
           {error}
         </Alert>
       )}
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={toast.persistent ? null : 6000}
+        onClose={toast.persistent ? undefined : hideToast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={toast.severity}
+          onClose={hideToast}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
 
       <Paper
         sx={{
@@ -143,7 +175,7 @@ export function ChatPanel(): React.ReactElement {
         )}
 
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} onRetry={retrySend} />
         ))}
 
         {streaming.active && (
@@ -187,7 +219,7 @@ export function ChatPanel(): React.ReactElement {
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }): React.ReactElement {
+function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry?: (question: string) => void }): React.ReactElement {
   const isUser = message.role === 'user';
 
   return (
@@ -202,8 +234,8 @@ function MessageBubble({ message }: { message: ChatMessage }): React.ReactElemen
         sx={{
           maxWidth: '75%',
           p: 1.5,
-          bgcolor: isUser ? 'primary.main' : 'background.paper',
-          color: isUser ? 'primary.contrastText' : 'text.primary',
+          bgcolor: isUser ? 'primary.main' : message.isError ? 'warning.light' : 'background.paper',
+          color: isUser ? 'primary.contrastText' : message.isError ? 'warning.contrastText' : 'text.primary',
           borderRadius: 2,
           borderTopRightRadius: isUser ? 0 : 2,
           borderTopLeftRadius: isUser ? 2 : 0,
@@ -212,6 +244,21 @@ function MessageBubble({ message }: { message: ChatMessage }): React.ReactElemen
         <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
           {message.content}
         </Typography>
+
+        {message.isError && message.errorCode === 'SQL_TIMEOUT' && message.retryQuestion && onRetry && (
+          <Box sx={{ mt: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              startIcon={<RefreshIcon />}
+              onClick={() => onRetry(message.retryQuestion!)}
+              sx={{ textTransform: 'none' }}
+            >
+              ลองอีกครั้ง
+            </Button>
+          </Box>
+        )}
 
         {message.sql && (
           <>

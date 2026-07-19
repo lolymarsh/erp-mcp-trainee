@@ -25,10 +25,11 @@ import {
   Alert,
   TablePagination,
   Autocomplete,
+  Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import type { InvoiceResponse, PaginationInfo } from './model';
+import type { InvoiceResponse, InvoiceWithItemsResponse, PaginationInfo } from './model';
 import type { CustomerEntity } from '../customer/model';
 import type { ProductEntity } from '../inventory/model';
 import type { CreateInvoiceItemInput } from './model';
@@ -40,6 +41,7 @@ interface InvoiceListViewProps {
   pagination: PaginationInfo | null;
   onPageChange: (page: number) => void;
   onCreateClick: () => void;
+  onSelectInvoice: (invoice: InvoiceResponse) => void;
 }
 
 export function InvoiceListView({
@@ -49,6 +51,7 @@ export function InvoiceListView({
   pagination,
   onPageChange,
   onCreateClick,
+  onSelectInvoice,
 }: InvoiceListViewProps) {
   const formatCurrency = (value: string) => {
     return parseFloat(value).toLocaleString('th-TH', {
@@ -94,11 +97,15 @@ export function InvoiceListView({
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                </TableRow>
+              ))
             ) : invoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">
@@ -107,7 +114,7 @@ export function InvoiceListView({
               </TableRow>
             ) : (
               invoices.map((inv) => (
-                <TableRow key={inv.id} hover>
+                <TableRow key={inv.id} hover sx={{ cursor: "pointer" }} onClick={() => onSelectInvoice(inv)}>
                   <TableCell>{inv.invoiceNumber}</TableCell>
                   <TableCell>{formatCurrency(inv.grandTotal)}</TableCell>
                   <TableCell>
@@ -130,6 +137,7 @@ export function InvoiceListView({
             onPageChange={(_, newPage) => onPageChange(newPage + 1)}
             rowsPerPage={pagination.pageSize}
             rowsPerPageOptions={[pagination.pageSize]}
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
           />
         )}
       </TableContainer>
@@ -212,7 +220,7 @@ export function InvoiceCreateView({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionProps={{ onEnter: handleOpen }}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ transition: { onEnter: handleOpen } }}>
       <DialogTitle>Create Invoice</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -257,7 +265,7 @@ export function InvoiceCreateView({
             value={itemQty}
             onChange={(e) => setItemQty(Math.max(1, parseInt(e.target.value) || 1))}
             sx={{ width: 100 }}
-            inputProps={{ min: 1 }}
+            slotProps={{ htmlInput: { min: 1 } }}
           />
           <Button variant="outlined" onClick={handleAddItem} sx={{ whiteSpace: 'nowrap' }}>
             Add Item
@@ -288,7 +296,7 @@ export function InvoiceCreateView({
                         value={item.quantity}
                         onChange={(e) => onUpdateItemQuantity(idx, Math.max(1, parseInt(e.target.value) || 1))}
                         sx={{ width: 70 }}
-                        inputProps={{ min: 1 }}
+                        slotProps={{ htmlInput: { min: 1 } }}
                       />
                     </TableCell>
                     <TableCell align="right">
@@ -313,7 +321,7 @@ export function InvoiceCreateView({
             value={discount}
             onChange={(e) => onDiscountChange(Math.max(0, parseFloat(e.target.value) || 0))}
             sx={{ width: 130 }}
-            inputProps={{ min: 0 }}
+            slotProps={{ htmlInput: { min: 0 } }}
           />
           <Typography variant="h6">
             Total: {formatCurrency(grandTotal.toFixed(2))}
@@ -331,5 +339,137 @@ export function InvoiceCreateView({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+interface InvoiceDetailViewProps {
+  invoice: InvoiceWithItemsResponse | null;
+  loading: boolean;
+  error: string | null;
+  onBack: () => void;
+  onHistory: () => void;
+}
+
+export function InvoiceDetailView({
+  invoice,
+  loading,
+  error,
+  onBack,
+  onHistory,
+}: InvoiceDetailViewProps) {
+  const formatCurrency = (value: string) => {
+    return parseFloat(value).toLocaleString("th-TH", {
+      style: "currency",
+      currency: "THB",
+    });
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  if (!invoice) {
+    return <Alert severity="info">ไม่พบข้อมูลใบแจ้งหนี้</Alert>;
+  }
+
+  const statusColor: Record<string, "success" | "warning" | "error" | "default"> = {
+    PAID: "success",
+    PARTIAL: "warning",
+    REFUNDED: "error",
+  };
+
+  return (
+    <Paper sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button variant="outlined" onClick={onBack}>
+            กลับ
+          </Button>
+          <Typography variant="h5">{invoice.invoiceNumber}</Typography>
+          <Chip
+            label={invoice.paymentStatus}
+            color={statusColor[invoice.paymentStatus] ?? "default"}
+            size="small"
+          />
+        </Box>
+        <Button variant="outlined" onClick={onHistory}>
+          ประวัติการแก้ไข
+        </Button>
+      </Box>
+
+      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">รหัสลูกค้า</Typography>
+          <Typography>{invoice.customerId}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">วันที่</Typography>
+          <Typography>{new Date(invoice.createdAt).toLocaleDateString("th-TH")}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">ชำระเงิน</Typography>
+          <Typography>{invoice.paymentMethod ?? "-"}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">ยอดรวม</Typography>
+          <Typography>{formatCurrency(invoice.totalAmount)}</Typography>
+        </Box>
+      </Box>
+
+      <Typography variant="h6" gutterBottom>รายการสินค้า</Typography>
+      {invoice.items.length === 0 ? (
+        <Typography color="text.secondary">ไม่มีรายการสินค้า</Typography>
+      ) : (
+        <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>สินค้า</TableCell>
+                <TableCell align="right">จำนวน</TableCell>
+                <TableCell align="right">ราคาต่อหน่วย</TableCell>
+                <TableCell align="right">รวม</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {invoice.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.productId}</TableCell>
+                  <TableCell align="right">{item.quantity}</TableCell>
+                  <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
+                  <TableCell align="right">{formatCurrency(item.total)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 3, mt: 2 }}>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography variant="subtitle2" color="text.secondary">ยอดรวม</Typography>
+          <Typography>{formatCurrency(invoice.totalAmount)}</Typography>
+        </Box>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography variant="subtitle2" color="text.secondary">ส่วนลด</Typography>
+          <Typography>{formatCurrency(invoice.discount)}</Typography>
+        </Box>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography variant="subtitle2" color="text.secondary">ภาษี</Typography>
+          <Typography>{formatCurrency(invoice.tax)}</Typography>
+        </Box>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography variant="h6">ยอดสุทธิ</Typography>
+          <Typography variant="h6">{formatCurrency(invoice.grandTotal)}</Typography>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

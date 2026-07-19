@@ -64,7 +64,8 @@ export class InvoiceHandler {
     try {
       const input = createInvoiceSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
-      const invoice = await this.svc.create(input, userId);
+      const meta = req.auditMeta;
+      const invoice = await this.svc.create(input, userId, meta);
       sendSuccess(res, 201, "created", { data: invoice });
     } catch (err: unknown) {
       if (err instanceof AppError) {

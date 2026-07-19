@@ -31,6 +31,10 @@ import { DashboardRepository } from "./modules/dashboard/repo";
 import { DashboardService } from "./modules/dashboard/service";
 import { DashboardHandler } from "./modules/dashboard/handler";
 import { registerDashboardRoutes } from "./modules/dashboard/route";
+import { AuditLogRepository } from "./modules/audit/repo_mongo";
+import { AuditLogService } from "./modules/audit/service";
+import { AuditLogHandler } from "./modules/audit/handler";
+import { registerAuditLogRoutes } from "./modules/audit/route";
 import { createAuthMiddleware } from "./shared/middleware/auth";
 import { logger } from "./config/logger";
 
@@ -45,28 +49,44 @@ export interface AppDependencies {
 export function setupRoutes(app: Express, deps: AppDependencies): void {
   const auth = createAuthMiddleware(deps.redis);
 
+  const auditRepo = new AuditLogRepository(deps.mongoDb);
+  const auditSvc = new AuditLogService(auditRepo);
+  const auditHandler = new AuditLogHandler(auditSvc);
+  app.use("/api/audit-log", registerAuditLogRoutes(auditHandler, auth));
+
   const userRepo = new UserRepository(deps.db);
-  const userSvc = new UserService(userRepo, deps.redis);
+  const userSvc = new UserService(userRepo, deps.redis, auditSvc);
   const userHandler = new UserHandler(userSvc);
   app.use("/api/auth", registerUserRoutes(userHandler, auth));
 
   const customerRepo = new CustomerRepository(deps.db);
-  const customerSvc = new CustomerService(customerRepo);
+  const customerSvc = new CustomerService(customerRepo, auditSvc);
   const customerHandler = new CustomerHandler(customerSvc);
   app.use("/api/customers", registerCustomerRoutes(customerHandler, auth));
 
   const inventoryRepo = new InventoryRepository(deps.db);
-  const inventorySvc = new InventoryService(inventoryRepo, deps.db, deps.redis);
+  const inventorySvc = new InventoryService(
+    inventoryRepo,
+    deps.db,
+    deps.redis,
+    auditSvc,
+  );
   const inventoryHandler = new InventoryHandler(inventorySvc);
   app.use("/api/inventory", registerInventoryRoutes(inventoryHandler, auth));
 
   const invoiceRepo = new InvoiceRepository(deps.db);
-  const invoiceSvc = new InvoiceService(invoiceRepo, customerRepo, inventoryRepo, deps.db, deps.redis);
+  const invoiceSvc = new InvoiceService(
+    invoiceRepo,
+    customerRepo,
+    inventoryRepo,
+    deps.redis,
+    auditSvc,
+  );
   const invoiceHandler = new InvoiceHandler(invoiceSvc);
   app.use("/api/sales/invoices", registerInvoiceRoutes(invoiceHandler, auth));
 
   const jobRepo = new JobRepository(deps.db);
-  const jobSvc = new JobService(jobRepo, customerRepo, deps.db, deps.redis);
+  const jobSvc = new JobService(jobRepo, customerRepo, deps.redis, auditSvc);
   const jobHandler = new JobHandler(jobSvc);
   app.use("/api/jobs", registerJobRoutes(jobHandler, auth));
 

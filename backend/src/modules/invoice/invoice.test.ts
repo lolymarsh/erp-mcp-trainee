@@ -13,7 +13,6 @@ import { InvoiceService } from "./service";
 import type { IInvoiceRepository } from "./repo";
 import type { ICustomerRepository } from "../customer/repo";
 import type { IInventoryRepository } from "../inventory/repo";
-import type { MySql2Database } from "drizzle-orm/mysql2";
 import { NotFoundError, BadRequestError } from "../../shared/errors/AppError";
 
 const mockInvoice = {
@@ -46,11 +45,12 @@ describe("InvoiceService", () => {
   let repo: jest.Mocked<IInvoiceRepository>;
   let customerRepo: jest.Mocked<ICustomerRepository>;
   let inventoryRepo: jest.Mocked<IInventoryRepository>;
-  let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: InvoiceService;
+  const mockAuditService = { insertAuditLog: jest.fn() };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = {
       findFiltered: jest.fn(),
       findById: jest.fn(),
@@ -80,11 +80,8 @@ describe("InvoiceService", () => {
       softDelete: jest.fn(),
       adjustStock: jest.fn(),
     };
-    db = {
-      transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
-    } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InvoiceService(repo, customerRepo, inventoryRepo, db, redis);
+    svc = new InvoiceService(repo, customerRepo, inventoryRepo, redis, mockAuditService as any);
   });
 
   describe("filter", () => {

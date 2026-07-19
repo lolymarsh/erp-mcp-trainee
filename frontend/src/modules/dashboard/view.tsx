@@ -6,8 +6,8 @@ import {
   Card,
   CardContent,
   Grid,
-  CircularProgress,
   Alert,
+  Skeleton,
 } from '@mui/material';
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import {
@@ -55,8 +55,49 @@ export function DashboardView({
 
   if (loading && !summary) {
     return (
-      <Box display="flex" justifyContent="center" mt={4}>
-        <CircularProgress />
+      <Box>
+        <Typography variant="h4" gutterBottom>Dashboard</Typography>
+        <Grid container spacing={3}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={20} />
+                  <Skeleton variant="text" width="40%" height={36} sx={{ mt: 1 }} />
+                  <Skeleton variant="text" width="30%" height={16} sx={{ mt: 0.5 }} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card>
+              <CardContent>
+                <Skeleton variant="text" width="40%" height={24} />
+                <Skeleton variant="rectangular" height={300} sx={{ mt: 2, borderRadius: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card>
+              <CardContent>
+                <Skeleton variant="text" width="40%" height={24} />
+                <Skeleton variant="rectangular" height={300} sx={{ mt: 2, borderRadius: 1 }} />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+        <Box sx={{ mt: 3 }}>
+          <Card>
+            <CardContent>
+              <Skeleton variant="text" width="40%" height={24} />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} variant="text" height={40} sx={{ mt: 0.5 }} />
+              ))}
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
     );
   }
@@ -101,7 +142,7 @@ export function DashboardView({
               <Typography color="text.secondary" gutterBottom variant="subtitle2">
                 ยอดขายวันนี้
               </Typography>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {formatCurrency(summary.todaySales.amount)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -120,10 +161,10 @@ export function DashboardView({
               <Typography color="text.secondary" gutterBottom variant="subtitle2">
                 คิวงานวันนี้
               </Typography>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {formatNumber(summary.todayJobs.total)}
               </Typography>
-              <Box display="flex" gap={1} mt={1}>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                 <Typography variant="caption" color="success.main">
                   เสร็จ {summary.todayJobs.completed}
                 </Typography>
@@ -152,7 +193,7 @@ export function DashboardView({
               </Typography>
               <Typography
                 variant="h5"
-                fontWeight="bold"
+                sx={{ fontWeight: 'bold' }}
                 color={summary.lowStockProducts.length > 0 ? 'error.main' : 'text.primary'}
               >
                 {summary.lowStockProducts.length}
@@ -173,7 +214,7 @@ export function DashboardView({
               <Typography color="text.secondary" gutterBottom variant="subtitle2">
                 รายได้เดือนนี้
               </Typography>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
                 {formatCurrency(summary.monthlySales.length > 0
                   ? summary.monthlySales[summary.monthlySales.length - 1].amount
                   : '0.00')}
@@ -183,7 +224,7 @@ export function DashboardView({
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} mt={1}>
+      <Grid container spacing={3} sx={{ mt: 1 }}>
         <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
@@ -195,7 +236,7 @@ export function DashboardView({
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip formatter={(value: number) => formatCurrency(String(value))} />
+                  <Tooltip formatter={(value) => formatCurrency(String(value))} />
                   <Bar dataKey="amount" fill="#1976d2" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -214,7 +255,7 @@ export function DashboardView({
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="name" width={100} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value) => formatNumber(Number(value))} />
                   <Bar dataKey="jobCount" fill="#2e7d32" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -224,7 +265,7 @@ export function DashboardView({
       </Grid>
 
       {summary.lowStockProducts.length > 0 && (
-        <Box mt={3}>
+        <Box sx={{ mt: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>

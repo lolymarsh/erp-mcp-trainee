@@ -1,5 +1,4 @@
 import type Redis from "ioredis";
-import type { MySql2Database } from "drizzle-orm/mysql2";
 import type { IJobRepository } from "./repo";
 import type { JobEntity, JobStatus, JobStatusLogEntity } from "./entity";
 import type {
@@ -18,6 +17,8 @@ import {
   BadRequestError,
 } from "../../shared/errors/AppError";
 import type { ICustomerRepository } from "../customer/repo";
+import type { IAuditLogService } from "../audit/service";
+import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 const ALLOWED_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
   QUEUED: ["IN_PROGRESS", "CANCELLED"],
@@ -31,11 +32,16 @@ export interface IJobService {
     input: FilterRequestInput,
   ): Promise<{ data: JobResponse[]; pagination: PaginationResponse }>;
   getById(id: string): Promise<JobWithLogsResponse>;
-  create(input: CreateJobInput): Promise<JobWithLogsResponse>;
+  create(
+    input: CreateJobInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<JobWithLogsResponse>;
   updateStatus(
     id: string,
     input: UpdateJobStatusInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<{ job: JobResponse; log: JobStatusLogResponse }>;
   getTodayQueue(): Promise<TodayQueueResponse>;
 }
@@ -46,8 +52,8 @@ export class JobService implements IJobService {
   constructor(
     private repo: IJobRepository,
     private customerRepo: ICustomerRepository,
-    private db: MySql2Database,
     private redis: Redis,
+    private auditService: IAuditLogService,
   ) {}
 
   async filter(
@@ -78,7 +84,11 @@ export class JobService implements IJobService {
     };
   }
 
-  async create(input: CreateJobInput): Promise<JobWithLogsResponse> {
+  async create(
+    input: CreateJobInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<JobWithLogsResponse> {
     const customer = await this.customerRepo.findById(input.customerId);
     if (!customer) {
       throw new BadRequestError("Customer not found");
@@ -99,6 +109,16 @@ export class JobService implements IJobService {
       notes: input.notes ?? null,
     });
 
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "jobs",
+      job.id,
+      userId,
+      null,
+      job,
+      meta,
+    );
+
     return {
       ...this.toJobResponse(job),
       statusLogs: [],
@@ -109,6 +129,7 @@ export class JobService implements IJobService {
     id: string,
     input: UpdateJobStatusInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<{ job: JobResponse; log: JobStatusLogResponse }> {
     const current = await this.repo.findById(id);
     if (!current) {
@@ -128,18 +149,25 @@ export class JobService implements IJobService {
       );
     }
 
-    const result = await this.db.transaction(async (tx) => {
-      return this.repo.updateStatus(
-        id,
-        input.status,
-        userId,
-        input.version,
-        input.note ?? null,
-        tx,
-      );
-    });
+    const result = await this.repo.updateStatus(
+      id,
+      input.status,
+      userId,
+      input.version,
+      input.note ?? null,
+    );
 
     await this.redis.del(DASHBOARD_CACHE_KEY);
+
+    this.auditService.insertAuditLog(
+      "UPDATE",
+      "jobs",
+      id,
+      userId,
+      current,
+      result.job,
+      meta,
+    );
 
     return {
       job: this.toJobResponse(result.job),

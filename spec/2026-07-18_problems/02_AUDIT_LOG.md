@@ -364,29 +364,29 @@ frontend/src/modules/audit/
 ## Phase 02 Checklist
 
 ### Backend
-- [ ] MongoDB `audit_logs` collection indexes in `database.ts`
-- [ ] `modules/audit/entity.ts` — `AuditLogDocument` + `ChangeModel`
-- [ ] `modules/audit/schema.ts` — Zod schemas + response DTOs
-- [ ] `modules/audit/repo_mongo.ts` — `IAuditLogRepository` + `AuditLogRepository`
-- [ ] `modules/audit/service.ts` — `IAuditLogService` + diff engine + async insert
-- [ ] `modules/audit/handler.ts` — `filter`, `getDetail`
-- [ ] `modules/audit/route.ts` — `/api/audit-log/filter`, `/api/audit-log/detail`
-- [ ] `shared/middleware/auditMeta.ts` — IP/UA/RequestID extraction
-- [ ] Apply `auditMetaMiddleware` in `app.ts` after auth middleware
-- [ ] `customer/service.ts` — inject `IAuditLogService` + log CREATE/UPDATE/DELETE
-- [ ] `inventory/service.ts` — inject `IAuditLogService` + log CREATE/UPDATE/DELETE + stock adjust
-- [ ] `invoice/service.ts` — inject `IAuditLogService` + log CREATE
-- [ ] `job/service.ts` — inject `IAuditLogService` + log CREATE + status change
-- [ ] `user/service.ts` — inject `IAuditLogService` + log admin create user
-- [ ] All DI wiring updated in `route.ts` files
-- [ ] Run `npm run typecheck` — pass
-- [ ] Run `npm test` — all tests pass
+- [x] MongoDB `audit_logs` collection indexes in `database.ts`
+- [x] `modules/audit/entity.ts` — `AuditLogDocument` + `ChangeModel`
+- [x] `modules/audit/schema.ts` — Zod schemas + response DTOs
+- [x] `modules/audit/repo_mongo.ts` — `IAuditLogRepository` + `AuditLogRepository`
+- [x] `modules/audit/service.ts` — `IAuditLogService` + diff engine + async insert
+- [x] `modules/audit/handler.ts` — `filter`, `getDetail`
+- [x] `modules/audit/route.ts` — `/api/audit-log/filter`, `/api/audit-log/detail`
+- [x] `shared/middleware/auditMeta.ts` — IP/UA/RequestID extraction
+- [x] Apply `auditMetaMiddleware` in `app.ts` after auth middleware
+- [x] `customer/service.ts` — inject `IAuditLogService` + log CREATE/UPDATE/DELETE
+- [x] `inventory/service.ts` — inject `IAuditLogService` + log CREATE/UPDATE/DELETE + stock adjust
+- [x] `invoice/service.ts` — inject `IAuditLogService` + log CREATE
+- [x] `job/service.ts` — inject `IAuditLogService` + log CREATE + status change
+- [x] `user/service.ts` — inject `IAuditLogService` + log admin create user
+- [x] All DI wiring updated in `route.ts` files
+- [x] Run `npm run typecheck` — pass
+- [x] Run `npm test` — all tests pass
 
 ### Frontend
-- [ ] `modules/audit/model.ts` — `auditApi.getDetail()`, `auditApi.filter()`
-- [ ] `modules/audit/controller.ts` — `useAuditHistory(tableName, recordId)`
-- [ ] `shared/components/AuditLogDialog.tsx` — reusable audit history viewer
-- [ ] CustomerDetail — add "ประวัติการแก้ไข" button
-- [ ] InventoryDetail — add "ประวัติการแก้ไข" button
-- [ ] JobDetail — add "ประวัติการแก้ไข" button
-- [ ] InvoiceDetail — add "ประวัติการแก้ไข" button
+- [x] `modules/audit/model.ts` — `auditApi.getDetail()`, `auditApi.filter()`
+- [x] `modules/audit/controller.ts` — `useAuditHistory(tableName, recordId)`
+- [x] `shared/components/AuditLogDialog.tsx` — reusable audit history viewer
+- [x] CustomerDetail — add "ประวัติการแก้ไข" button
+- [x] InventoryDetail — add "ประวัติการแก้ไข" button
+- [x] JobDetail — add "ประวัติการแก้ไข" button
+- [x] InvoiceDetail — add "ประวัติการแก้ไข" button

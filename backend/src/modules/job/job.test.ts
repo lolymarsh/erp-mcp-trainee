@@ -12,7 +12,6 @@ import Redis from "ioredis";
 import { JobService } from "./service";
 import type { IJobRepository } from "./repo";
 import type { ICustomerRepository } from "../customer/repo";
-import type { MySql2Database } from "drizzle-orm/mysql2";
 import {
   NotFoundError,
   BadRequestError,
@@ -48,11 +47,12 @@ const mockLog = {
 describe("JobService", () => {
   let repo: jest.Mocked<IJobRepository>;
   let customerRepo: jest.Mocked<ICustomerRepository>;
-  let db: MySql2Database;
   let redis: jest.Mocked<Redis>;
   let svc: JobService;
+  const mockAuditService = { insertAuditLog: jest.fn() };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = {
       findFiltered: jest.fn(),
       findById: jest.fn(),
@@ -71,11 +71,8 @@ describe("JobService", () => {
       softDelete: jest.fn(),
       findVehicleById: jest.fn(),
     };
-    db = {
-      transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
-    } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new JobService(repo, customerRepo, db, redis);
+    svc = new JobService(repo, customerRepo, redis, mockAuditService as any);
   });
 
   describe("filter", () => {

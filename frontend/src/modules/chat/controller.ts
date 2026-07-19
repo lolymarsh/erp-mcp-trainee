@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { chatApi } from './model';
+import { chatApi, setSessionId } from './model';
 import type { SendMessageInput, ExportFormat } from './model';
+
+const SESSION_KEY = 'chat_session_id';
 
 export interface ChatMessage {
   id: string;
@@ -12,6 +14,9 @@ export interface ChatMessage {
   format?: string;
   cached?: boolean;
   timestamp: Date;
+  isError?: boolean;
+  errorCode?: string;
+  retryQuestion?: string;
 }
 
 interface StreamingState {
@@ -19,6 +24,26 @@ interface StreamingState {
   sql: string;
   resultCount: number;
   data: Record<string, unknown>[];
+}
+
+export interface ToastState {
+  open: boolean;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  persistent: boolean;
+}
+
+const errorMessages: Record<string, string> = {
+  OPENAI_KEY_INVALID: 'API key ไม่ถูกต้อง กรุณาตรวจสอบ OPENAI_API_KEY ใน .env',
+  OPENAI_RATE_LIMIT: 'AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที',
+  SQL_TIMEOUT: 'Query ใช้เวลานานเกินไป ลองถามใหม่ด้วยคำที่เจาะจงขึ้น',
+  SQL_BLOCKED: 'คำถามนี้ไม่ปลอดภัย กรุณาถามใหม่',
+  LLM_ERROR: 'ไม่สามารถสร้าง SQL ได้ กรุณาลองใหม่',
+  NETWORK_ERROR: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+};
+
+function generateSessionId(): string {
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function useChat() {
@@ -32,8 +57,29 @@ export function useChat() {
     resultCount: 0,
     data: [],
   });
+  const [sessionId, setSessionIdState] = useState<string>(() => {
+    return localStorage.getItem(SESSION_KEY) || generateSessionId();
+  });
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'error',
+    persistent: false,
+  });
   const controllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const hasSavedSession = useRef(false);
+
+  const showToast = useCallback(
+    (message: string, severity: 'error' | 'warning' | 'info' = 'error', persistent = false) => {
+      setToast({ open: true, message, severity, persistent });
+    },
+    [],
+  );
+
+  const hideToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, open: false }));
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,6 +89,114 @@ export function useChat() {
     scrollToBottom();
   }, [messages, streaming, scrollToBottom]);
 
+  const loadHistory = useCallback(async () => {
+    try {
+      const history = await chatApi.getHistory(50);
+      const loaded: ChatMessage[] = [];
+      for (const msg of history) {
+        loaded.push({
+          id: `history-user-${msg._id}`,
+          role: 'user',
+          content: msg.question,
+          timestamp: new Date(msg.createdAt),
+        });
+        loaded.push({
+          id: `history-assistant-${msg._id}`,
+          role: 'assistant',
+          content: msg.response,
+          sql: msg.sql,
+          resultCount: msg.resultCount,
+          format: msg.format,
+          cached: msg.cached,
+          timestamp: new Date(msg.createdAt),
+        });
+      }
+      if (loaded.length > 0) {
+        setMessages(loaded);
+      }
+    } catch {
+      // silent — history is optional
+    }
+  }, []);
+
+  useEffect(() => {
+    setSessionId(sessionId);
+    const existing = localStorage.getItem(SESSION_KEY);
+    if (existing) {
+      loadHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const addAssistantMessage = useCallback(
+    (
+      sql: string,
+      resultCount: number,
+      data: Record<string, unknown>[],
+      msgFormat: string,
+      cached: boolean,
+    ) => {
+      const content = formatMessageContent(data, msgFormat);
+      const assistantMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content,
+        sql,
+        resultCount,
+        data,
+        format: msgFormat,
+        cached,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    },
+    [],
+  );
+
+  const handleErrorEvent = useCallback(
+    (code: string, message: string, question: string) => {
+      switch (code) {
+        case 'OPENAI_KEY_INVALID':
+          showToast(errorMessages.OPENAI_KEY_INVALID, 'error', true);
+          break;
+        case 'OPENAI_RATE_LIMIT':
+          showToast(errorMessages.OPENAI_RATE_LIMIT, 'warning', false);
+          break;
+        case 'SQL_TIMEOUT': {
+          const errorBubble: ChatMessage = {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: errorMessages.SQL_TIMEOUT,
+            timestamp: new Date(),
+            isError: true,
+            errorCode: code,
+            retryQuestion: question,
+          };
+          setMessages((prev) => [...prev, errorBubble]);
+          break;
+        }
+        case 'SQL_BLOCKED': {
+          const errorBubble: ChatMessage = {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: errorMessages.SQL_BLOCKED,
+            timestamp: new Date(),
+            isError: true,
+            errorCode: code,
+          };
+          setMessages((prev) => [...prev, errorBubble]);
+          break;
+        }
+        default:
+          showToast(message || errorMessages.LLM_ERROR, 'error', false);
+          break;
+      }
+      setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
+      setLoading(false);
+    },
+    [showToast],
+  );
+
   const sendMessage = useCallback(
     async (question: string): Promise<void> => {
       if (!question.trim() || loading || streaming.active) {
@@ -51,6 +205,11 @@ export function useChat() {
 
       setError(null);
       setLoading(true);
+
+      if (!hasSavedSession.current) {
+        localStorage.setItem(SESSION_KEY, sessionId);
+        hasSavedSession.current = true;
+      }
 
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -111,15 +270,20 @@ export function useChat() {
               setLoading(false);
               break;
             }
-            case 'error':
-              setError(payload.message as string);
-              setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
-              setLoading(false);
+            case 'error': {
+              const code = payload.code as string;
+              const message = (payload.message as string) || code;
+              handleErrorEvent(code, message, question);
               break;
+            }
           }
         },
-        (errMsg) => {
-          setError(errMsg);
+        (err) => {
+          if (err.code === 'NETWORK_ERROR') {
+            showToast(errorMessages.NETWORK_ERROR, 'error', false);
+          } else {
+            showToast(err.message, 'error', false);
+          }
           setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
           setLoading(false);
         },
@@ -128,32 +292,7 @@ export function useChat() {
         },
       );
     },
-    [format, loading, streaming.active],
-  );
-
-  const addAssistantMessage = useCallback(
-    (
-      sql: string,
-      resultCount: number,
-      data: Record<string, unknown>[],
-      msgFormat: string,
-      cached: boolean,
-    ) => {
-      const content = formatMessageContent(data, msgFormat);
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content,
-        sql,
-        resultCount,
-        data,
-        format: msgFormat,
-        cached,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    },
-    [],
+    [format, loading, streaming.active, sessionId, showToast, addAssistantMessage, handleErrorEvent],
   );
 
   const cancelStream = useCallback(() => {
@@ -165,7 +304,19 @@ export function useChat() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+    const newId = generateSessionId();
+    setSessionIdState(newId);
+    setSessionId(newId);
+    hasSavedSession.current = false;
+    localStorage.removeItem(SESSION_KEY);
   }, []);
+
+  const retrySend = useCallback(
+    async (question: string) => {
+      await sendMessage(question);
+    },
+    [sendMessage],
+  );
 
   const exportLastResult = useCallback(async () => {
     const lastAssistant = [...messages]
@@ -197,13 +348,16 @@ export function useChat() {
     error,
     streaming,
     format,
+    toast,
     messagesEndRef,
     setFormat,
     sendMessage,
     cancelStream,
     clearMessages,
     exportLastResult,
+    retrySend,
     setError,
+    hideToast,
   };
 }
 
@@ -212,7 +366,7 @@ function formatMessageContent(
   format: string,
 ): string {
   if (data.length === 0) {
-    return 'No results found.';
+    return 'ไม่พบข้อมูล';
   }
 
   switch (format) {

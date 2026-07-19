@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 
 const mockApi = vi.hoisted(() => ({
   get: vi.fn(),
@@ -213,11 +213,7 @@ describe('useInvoiceCreate', () => {
   it('submit fails validation when no customer selected', async () => {
     const { result } = renderHook(() => useInvoiceCreate());
 
-    let invoice;
-    await act(async () => {
-      invoice = await result.current.submit();
-    });
-
+    const invoice = await result.current.submit();
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('Please select a customer');
   });
@@ -229,11 +225,7 @@ describe('useInvoiceCreate', () => {
       result.current.setSelectedCustomerId('c1');
     });
 
-    let invoice;
-    await act(async () => {
-      invoice = await result.current.submit();
-    });
-
+    const invoice = await result.current.submit();
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('Please add at least one item');
   });
@@ -266,12 +258,8 @@ describe('useInvoiceCreate', () => {
       result.current.addItem('p1', 2);
     });
 
-    let invoice;
-    await act(async () => {
-      invoice = await result.current.submit();
-    });
-
-    expect(invoice).toBeTruthy();
+    const invoice = await result.current.submit();
+    expect(invoice).not.toBeNull();
     expect(invoice?.invoiceNumber).toBe('INV-2025-001');
     expect(mockApi.post).toHaveBeenCalledWith('/sales/invoices', {
       customerId: 'c1',
@@ -302,11 +290,7 @@ describe('useInvoiceCreate', () => {
       result.current.addItem('p1', 2);
     });
 
-    let invoice;
-    await act(async () => {
-      invoice = await result.current.submit();
-    });
-
+    const invoice = await result.current.submit();
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('API Error');
   });

@@ -30,10 +30,19 @@ export interface SendMessageInput {
 
 export type ExportFormat = 'text' | 'table' | 'csv' | 'html' | 'json';
 
+export interface StreamError {
+  code: string;
+  message: string;
+}
+
 let sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
 
 export function getSessionId(): string {
   return sessionId;
+}
+
+export function setSessionId(id: string): void {
+  sessionId = id;
 }
 
 export const chatApi = {
@@ -63,7 +72,7 @@ export const chatApi = {
   stream: (
     input: SendMessageInput,
     onEvent: (event: string, payload: Record<string, unknown>) => void,
-    onError: (error: string) => void,
+    onError: (error: StreamError) => void,
     onComplete: () => void,
   ): AbortController => {
     const controller = new AbortController();
@@ -82,12 +91,12 @@ export const chatApi = {
       .then(async (response) => {
         if (!response.ok) {
           const text = await response.text();
-          onError(text);
+          onError({ code: "HTTP_ERROR", message: text });
           return;
         }
         const reader = response.body?.getReader();
         if (!reader) {
-          onError("No response body");
+          onError({ code: "STREAM_ERROR", message: "No response body" });
           return;
         }
         const decoder = new TextDecoder();
@@ -121,7 +130,7 @@ export const chatApi = {
       })
       .catch((err: Error) => {
         if (err.name !== "AbortError") {
-          onError(err.message);
+          onError({ code: "NETWORK_ERROR", message: err.message });
         }
       })
       .finally(() => {

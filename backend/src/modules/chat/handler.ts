@@ -22,7 +22,8 @@ export class ChatHandler {
       sendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message);
+        const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;
+        sendError(res, err.statusCode, message);
         return;
       }
       if (err instanceof ZodError) {
@@ -70,7 +71,8 @@ export class ChatHandler {
       res.status(200).send(result.formatted);
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message);
+        const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;
+        sendError(res, err.statusCode, message);
         return;
       }
       if (err instanceof ZodError) {
@@ -104,8 +106,13 @@ export class ChatHandler {
         });
         sendSSE(res, "done", { cached: result.cached });
       } catch (err: unknown) {
+        if (err instanceof AppError) {
+          const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;
+          sendSSE(res, "error", { code: err.message, message });
+          return;
+        }
         const message = err instanceof Error ? err.message : "Unknown error";
-        sendSSE(res, "error", { message });
+        sendSSE(res, "error", { code: "LLM_ERROR", message });
       }
 
       res.end();

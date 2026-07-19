@@ -1,19 +1,49 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { NotFoundPage } from './shared/pages/NotFound';
+import { useAuthStore } from './stores/authStore';
 import { Layout } from './shared/components/Layout';
 import { LoginPage } from './modules/auth/view';
 import { DashboardView } from './modules/dashboard/view';
 import { useDashboard } from './modules/dashboard/controller';
-import { CustomerListView } from './modules/customer/view';
-import { useCustomerList } from './modules/customer/controller';
-import { InventoryListView } from './modules/inventory/view';
-import { useInventoryList } from './modules/inventory/controller';
-import { InvoiceListView, InvoiceCreateView } from './modules/invoice/view';
-import { useInvoiceList, useInvoiceCreate } from './modules/invoice/controller';
-import { JobQueueView } from './modules/job/view';
-import { useJobQueue, useStatusUpdate } from './modules/job/controller';
+import {
+  CustomerListView,
+  CustomerDetailView,
+  CustomerCreateDialog,
+  CustomerEditDialog,
+  DeleteConfirmDialog,
+} from './modules/customer/view';
+import {
+  useCustomerList,
+  useCustomerDetail,
+  useCustomerCreate,
+  useCustomerUpdate,
+  useCustomerDelete,
+} from './modules/customer/controller';
+import {
+  InventoryListView,
+  InventoryDetailView,
+  ProductCreateDialog,
+  ProductEditDialog,
+  StockAdjustDialog,
+  ProductDeleteConfirmDialog,
+} from './modules/inventory/view';
+import {
+  useInventoryList,
+  useInventoryDetail,
+  useProductCreate,
+  useProductUpdate,
+  useProductDelete,
+  useStockAdjust,
+} from './modules/inventory/controller';
+import { InvoiceListView, InvoiceCreateView, InvoiceDetailView } from './modules/invoice/view';
+import { useInvoiceList, useInvoiceCreate, useInvoiceDetail } from './modules/invoice/controller';
+import { JobQueueView, JobCreateDialog, JobDetailView } from './modules/job/view';
+import { useJobQueue, useStatusUpdate, useJobCreate, useJobDetail } from './modules/job/controller';
 import { ChatPanel } from './modules/chat/view';
-import { useNavigate } from 'react-router-dom';
+import { AuditLogDialog } from './shared/components/AuditLogDialog';
 import { useState, useCallback } from 'react';
+import type { CustomerWithVehicles } from './modules/customer/model';
+import type { ProductWithMovements } from './modules/inventory/model';
 
 function DashboardRoute() {
   const { summary, loading, error } = useDashboard();
@@ -26,47 +56,220 @@ function DashboardRoute() {
   );
 }
 
+function LoginGuard() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  return <LoginPage />;
+}
+
 function CustomerListRoute() {
   const navigate = useNavigate();
-  const { customers, loading, error, pagination, setPage, setSearch } =
+  const { customers, loading, error, pagination, setPage, setSearch, refetch } =
     useCustomerList();
+  const createCtl = useCustomerCreate(refetch);
 
   return (
-    <CustomerListView
-      customers={customers}
-      loading={loading}
-      error={error}
-      pagination={pagination}
-      onSearch={setSearch}
-      onPageChange={setPage}
-      onSelectCustomer={(customer) => {
-        navigate(`/customers/${customer.id}`);
-      }}
-    />
+    <>
+      <CustomerListView
+        customers={customers}
+        loading={loading}
+        error={error}
+        pagination={pagination}
+        onSearch={setSearch}
+        onPageChange={setPage}
+        onSelectCustomer={(customer) => {
+          navigate(`/customers/${customer.id}`);
+        }}
+        onCreateClick={() => createCtl.setOpen(true)}
+      />
+      <CustomerCreateDialog
+        open={createCtl.open}
+        onClose={createCtl.handleClose}
+        loading={createCtl.loading}
+        error={createCtl.error}
+        fieldErrors={createCtl.fieldErrors}
+        onSubmit={createCtl.submit}
+      />
+    </>
+  );
+}
+
+function CustomerDetailRoute() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { customer, loading, error, refetch } = useCustomerDetail(id!);
+  const updateCtl = useCustomerUpdate(id!, refetch);
+  const deleteCtl = useCustomerDelete(
+    id!,
+    () => navigate('/customers'),
+    refetch,
+  );
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handleEdit = useCallback(
+    (c: CustomerWithVehicles) => updateCtl.openWithData(c),
+    [updateCtl],
+  );
+
+  const handleDelete = useCallback(
+    () => {
+      deleteCtl.setOpen(true);
+    },
+    [deleteCtl],
+  );
+
+  return (
+    <>
+      <CustomerDetailView
+        customer={customer}
+        loading={loading}
+        error={error}
+        onBack={() => navigate('/customers')}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onHistory={() => setHistoryOpen(true)}
+      />
+      <CustomerEditDialog
+        open={updateCtl.open}
+        onClose={updateCtl.handleClose}
+        loading={updateCtl.loading}
+        error={updateCtl.error}
+        fieldErrors={updateCtl.fieldErrors}
+        initialValues={updateCtl.initialValues}
+        onSubmit={updateCtl.submit}
+      />
+      <DeleteConfirmDialog
+        open={deleteCtl.open}
+        customerName={customer ? `${customer.firstName} ${customer.lastName}` : ''}
+        loading={deleteCtl.loading}
+        error={deleteCtl.error}
+        onCancel={deleteCtl.handleClose}
+        onConfirm={() => {
+          if (customer) {
+            deleteCtl.submit(customer.version);
+          }
+        }}
+      />
+      {id && (
+        <AuditLogDialog
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          tableName="customers"
+          recordId={id}
+          entityLabel={customer ? `${customer.firstName} ${customer.lastName}` : undefined}
+        />
+      )}
+    </>
   );
 }
 
 function InventoryListRoute() {
   const navigate = useNavigate();
-  const { products, loading, error, pagination, setPage, setSearch } =
+  const { products, loading, error, pagination, setPage, setSearch, refetch } =
     useInventoryList();
+  const createCtl = useProductCreate(refetch);
 
   return (
-    <InventoryListView
-      products={products}
-      loading={loading}
-      error={error}
-      pagination={pagination}
-      onSearch={setSearch}
-      onPageChange={setPage}
-      onSelectProduct={(product) => {
-        navigate(`/inventory/${product.id}`);
-      }}
-    />
+    <>
+      <InventoryListView
+        products={products}
+        loading={loading}
+        error={error}
+        pagination={pagination}
+        onSearch={setSearch}
+        onPageChange={setPage}
+        onSelectProduct={(product) => {
+          navigate(`/inventory/${product.id}`);
+        }}
+        onCreateClick={() => createCtl.setOpen(true)}
+      />
+      <ProductCreateDialog
+        open={createCtl.open}
+        onClose={createCtl.handleClose}
+        loading={createCtl.loading}
+        error={createCtl.error}
+        fieldErrors={createCtl.fieldErrors}
+        onSubmit={createCtl.submit}
+      />
+    </>
+  );
+}
+
+function InventoryDetailRoute() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { product, loading, error, refetch } = useInventoryDetail(id!);
+  const updateCtl = useProductUpdate(id!, refetch);
+  const deleteCtl = useProductDelete(
+    id!,
+    () => navigate('/inventory'),
+    refetch,
+  );
+  const stockAdjustCtl = useStockAdjust(id!, refetch);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handleEdit = (p: ProductWithMovements) => updateCtl.openWithData(p);
+  const handleDelete = () => deleteCtl.setOpen(true);
+  const handleStockAdjust = () => stockAdjustCtl.setOpen(true);
+
+  return (
+    <>
+      <InventoryDetailView
+        product={product}
+        loading={loading}
+        error={error}
+        onBack={() => navigate('/inventory')}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onStockAdjust={handleStockAdjust}
+        onHistory={() => setHistoryOpen(true)}
+      />
+      <ProductEditDialog
+        open={updateCtl.open}
+        onClose={updateCtl.handleClose}
+        loading={updateCtl.loading}
+        error={updateCtl.error}
+        fieldErrors={updateCtl.fieldErrors}
+        initialValues={updateCtl.initialValues}
+        onSubmit={updateCtl.submit}
+      />
+      <StockAdjustDialog
+        open={stockAdjustCtl.open}
+        onClose={stockAdjustCtl.handleClose}
+        loading={stockAdjustCtl.loading}
+        error={stockAdjustCtl.error}
+        fieldErrors={stockAdjustCtl.fieldErrors}
+        onSubmit={stockAdjustCtl.submit}
+      />
+      <ProductDeleteConfirmDialog
+        open={deleteCtl.open}
+        productName={product ? product.name : ''}
+        loading={deleteCtl.loading}
+        error={deleteCtl.error}
+        onCancel={deleteCtl.handleClose}
+        onConfirm={() => {
+          if (product) {
+            deleteCtl.submit(product.version);
+          }
+        }}
+      />
+      {id && (
+        <AuditLogDialog
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          tableName="products"
+          recordId={id}
+          entityLabel={product ? product.name : undefined}
+        />
+      )}
+    </>
   );
 }
 
 function InvoiceListRoute() {
+  const navigate = useNavigate();
   const { invoices, loading, error, pagination, setPage, refetch } =
     useInvoiceList();
   const createCtl = useInvoiceCreate();
@@ -87,6 +290,7 @@ function InvoiceListRoute() {
         pagination={pagination}
         onPageChange={setPage}
         onCreateClick={() => setCreateOpen(true)}
+        onSelectInvoice={(inv) => navigate(`/sales/invoices/${inv.id}`)}
       />
       <InvoiceCreateView
         open={createOpen}
@@ -122,9 +326,11 @@ function InvoiceListRoute() {
 }
 
 function JobListRoute() {
+  const navigate = useNavigate();
   const { jobs, loading, error, pagination, setPage, setStatusFilter, refetch, statusFilter } =
     useJobQueue();
   const statusUpdate = useStatusUpdate(() => refetch());
+  const createCtl = useJobCreate(() => refetch());
 
   const handleStatusChange = useCallback(
     (jobId: string, newStatus: string, version: number) => {
@@ -134,18 +340,108 @@ function JobListRoute() {
   );
 
   return (
-    <JobQueueView
-      jobs={jobs}
-      loading={loading}
-      error={error}
-      pagination={pagination}
-      statusFilter={statusFilter}
-      onPageChange={setPage}
-      onStatusFilterChange={setStatusFilter}
-      onStatusChange={handleStatusChange}
-      statusChangeError={statusUpdate.error}
-      onClearStatusError={statusUpdate.resetError}
-    />
+    <>
+      <JobQueueView
+        jobs={jobs}
+        loading={loading}
+        error={error}
+        pagination={pagination}
+        statusFilter={statusFilter}
+        onPageChange={setPage}
+        onStatusFilterChange={setStatusFilter}
+        onStatusChange={handleStatusChange}
+        statusChangeError={statusUpdate.error}
+        onClearStatusError={statusUpdate.resetError}
+        onRowClick={(job) => navigate(`/jobs/${job.id}`)}
+        onCreateClick={() => createCtl.setOpen(true)}
+      />
+      <JobCreateDialog
+        open={createCtl.open}
+        onClose={createCtl.handleClose}
+        loading={createCtl.loading}
+        error={createCtl.error}
+        fieldErrors={createCtl.fieldErrors}
+        customers={createCtl.customers}
+        vehicles={createCtl.vehicles}
+        customerId={createCtl.customerId}
+        vehicleId={createCtl.vehicleId}
+        jobType={createCtl.jobType}
+        scheduledDate={createCtl.scheduledDate}
+        technicianId={createCtl.technicianId}
+        notes={createCtl.notes}
+        onCustomerChange={createCtl.setCustomerId}
+        onVehicleChange={createCtl.setVehicleId}
+        onJobTypeChange={createCtl.setJobType}
+        onScheduledDateChange={createCtl.setScheduledDate}
+        onTechnicianChange={createCtl.setTechnicianId}
+        onNotesChange={createCtl.setNotes}
+        onCustomerSearch={createCtl.handleCustomerSearch}
+        onSubmit={createCtl.submit}
+      />
+    </>
+  );
+}
+
+function JobDetailRoute() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { job, loading, error, refetch } = useJobDetail(id!);
+  const statusUpdate = useStatusUpdate(() => refetch());
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handleStatusChange = useCallback(
+    (newStatus: string, version: number) => {
+      void statusUpdate.updateStatus(id!, newStatus, version);
+    },
+    [statusUpdate, id],
+  );
+
+  return (
+    <>
+      <JobDetailView
+        job={job}
+        loading={loading}
+        error={error}
+        onBack={() => navigate('/jobs')}
+        onStatusChange={handleStatusChange}
+        onHistory={() => setHistoryOpen(true)}
+      />
+      {id && (
+        <AuditLogDialog
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          tableName="jobs"
+          recordId={id}
+        />
+      )}
+    </>
+  );
+}
+
+function InvoiceDetailRoute() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { invoice, loading, error } = useInvoiceDetail(id!);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  return (
+    <>
+      <InvoiceDetailView
+        invoice={invoice}
+        loading={loading}
+        error={error}
+        onBack={() => navigate('/sales/invoices')}
+        onHistory={() => setHistoryOpen(true)}
+      />
+      {id && (
+        <AuditLogDialog
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          tableName="invoices"
+          recordId={id}
+        />
+      )}
+    </>
   );
 }
 
@@ -155,12 +451,17 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <DashboardRoute /> },
-      { path: 'login', element: <LoginPage /> },
+      { path: 'login', element: <LoginGuard /> },
       { path: 'customers', element: <CustomerListRoute /> },
+      { path: 'customers/:id', element: <CustomerDetailRoute /> },
       { path: 'inventory', element: <InventoryListRoute /> },
+      { path: 'inventory/:id', element: <InventoryDetailRoute /> },
       { path: 'sales/invoices', element: <InvoiceListRoute /> },
+      { path: 'sales/invoices/:id', element: <InvoiceDetailRoute /> },
       { path: 'jobs', element: <JobListRoute /> },
+      { path: 'jobs/:id', element: <JobDetailRoute /> },
       { path: 'chat', element: <ChatPanel /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);

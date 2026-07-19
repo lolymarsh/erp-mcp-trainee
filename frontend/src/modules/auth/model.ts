@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { api } from '../../config/api';
 
 export interface UserResponse {
@@ -17,6 +18,19 @@ export interface LoginInput {
 export interface LoginResult {
   token: string;
   user: UserResponse;
+}
+
+export const loginFormSchema = z.object({
+  username: z.string().min(1, 'กรุณากรอกชื่อผู้ใช้'),
+  password: z.string().min(1, 'กรุณากรอกรหัสผ่าน'),
+});
+
+export type LoginFormInput = z.infer<typeof loginFormSchema>;
+
+export interface LoginFieldErrors {
+  username?: string;
+  password?: string;
+  form?: string;
 }
 
 export const authApi = {

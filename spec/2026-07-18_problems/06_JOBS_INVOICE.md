@@ -100,20 +100,20 @@ const createJobSchema = z.object({
 ## Phase 06 Checklist
 
 ### Jobs
-- [ ] `useJobCreate()` controller + Zod schema
-- [ ] `JobCreateDialog` — customer/vehicle Autocomplete + form fields
-- [ ] "สร้างงาน" button in `JobQueueView` header
-- [ ] `JobDetailView` — job info + status logs + actions
-- [ ] `/jobs/:id` route registered
+- [x] `useJobCreate()` controller + Zod schema
+- [x] `JobCreateDialog` — customer/vehicle Autocomplete + form fields
+- [x] "สร้างงาน" button in `JobQueueView` header
+- [x] `JobDetailView` — job info + status logs + actions
+- [x] `/jobs/:id` route registered
 
 ### Invoice
-- [ ] `InvoiceDetailView` — invoice info + items table + totals
-- [ ] `/sales/invoices/:id` route registered
+- [x] `InvoiceDetailView` — invoice info + items table + totals
+- [x] `/sales/invoices/:id` route registered
 
 ### Pagination
-- [ ] `CustomerListView` — replace custom buttons with `<TablePagination>`
-- [ ] `InventoryListView` — replace custom buttons with `<TablePagination>`
-- [ ] Verify `PaginationResponse` type has all required fields
+- [x] `CustomerListView` — replace custom buttons with `<TablePagination>`
+- [x] `InventoryListView` — replace custom buttons with `<TablePagination>`
+- [x] Verify `PaginationResponse` type has all required fields
 
 ### Verify
-- [ ] Run `npm run typecheck` — pass
+- [x] Run `npm run typecheck` — pass

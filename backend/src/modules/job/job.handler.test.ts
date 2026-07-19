@@ -109,7 +109,7 @@ describe("JobHandler", () => {
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
       await handler.updateStatus(req, res);
-      expect(svc.updateStatus).toHaveBeenCalledWith("job-1", expect.any(Object), "system");
+      expect(svc.updateStatus).toHaveBeenCalledWith("job-1", expect.any(Object), "system", undefined);
     });
 
     it("should return 409 on version mismatch", async () => {

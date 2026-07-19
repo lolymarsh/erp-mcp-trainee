@@ -12,13 +12,24 @@ import {
   CircularProgress,
   Alert,
   TablePagination,
+  Skeleton,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
   Snackbar,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Autocomplete,
 } from "@mui/material";
-import type { JobResponse, PaginationInfo } from "./model";
+import { useState } from "react";
+import AddIcon from "@mui/icons-material/Add";
+import type { JobResponse, JobWithLogsResponse, PaginationInfo } from "./model";
+import type { CustomerEntity, VehicleEntity } from "../customer/model";
 
 const STATUS_COLORS: Record<string, "default" | "primary" | "success" | "error"> = {
   QUEUED: "default",
@@ -71,6 +82,8 @@ interface JobQueueViewProps {
   onStatusChange: (jobId: string, newStatus: string, version: number) => void;
   statusChangeError: string | null;
   onClearStatusError: () => void;
+  onRowClick: (job: JobResponse) => void;
+  onCreateClick: () => void;
 }
 
 export function JobQueueView({
@@ -84,11 +97,18 @@ export function JobQueueView({
   onStatusChange,
   statusChangeError,
   onClearStatusError,
+  onRowClick,
+  onCreateClick,
 }: JobQueueViewProps) {
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h5">Job Queue</Typography>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Typography variant="h5">Job Queue</Typography>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
+            สร้างงาน
+          </Button>
+        </Box>
 
         <FormControl sx={{ minWidth: 180 }} size="small">
           <InputLabel>Status Filter</InputLabel>
@@ -129,11 +149,17 @@ export function JobQueueView({
           </TableHead>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                  <TableCell><Skeleton /></TableCell>
+                </TableRow>
+              ))
             ) : jobs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
@@ -144,7 +170,7 @@ export function JobQueueView({
               jobs.map((job) => {
                 const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
                 return (
-                  <TableRow key={job.id} hover>
+                  <TableRow key={job.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(job)}>
                     <TableCell>{job.customerId}</TableCell>
                     <TableCell>
                       {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
@@ -159,7 +185,7 @@ export function JobQueueView({
                     <TableCell>{formatDate(job.scheduledDate)}</TableCell>
                     <TableCell>{job.technicianId ?? "-"}</TableCell>
                     <TableCell>{formatDate(job.createdAt)}</TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {transitions.length > 0 ? (
                         <FormControl size="small" sx={{ minWidth: 140 }}>
                           <Select
@@ -202,6 +228,7 @@ export function JobQueueView({
             onPageChange={(_, newPage) => onPageChange(newPage + 1)}
             rowsPerPage={pagination.pageSize}
             rowsPerPageOptions={[pagination.pageSize]}
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
           />
         )}
       </TableContainer>
@@ -222,5 +249,304 @@ export function JobQueueView({
         </Alert>
       </Snackbar>
     </Box>
+  );
+}
+
+interface JobCreateDialogProps {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  customers: CustomerEntity[];
+  vehicles: VehicleEntity[];
+  customerId: string;
+  vehicleId: string;
+  jobType: "INSTALL" | "REPAIR" | "INSPECT";
+  scheduledDate: string;
+  technicianId: string;
+  notes: string;
+  onCustomerChange: (id: string) => void;
+  onVehicleChange: (id: string) => void;
+  onJobTypeChange: (t: "INSTALL" | "REPAIR" | "INSPECT") => void;
+  onScheduledDateChange: (d: string) => void;
+  onTechnicianChange: (t: string) => void;
+  onNotesChange: (n: string) => void;
+  onCustomerSearch: (q: string) => void;
+  onSubmit: () => void;
+}
+
+export function JobCreateDialog({
+  open,
+  onClose,
+  loading,
+  error,
+  fieldErrors,
+  customers,
+  vehicles,
+  customerId,
+  vehicleId,
+  jobType,
+  scheduledDate,
+  technicianId,
+  notes,
+  onCustomerChange,
+  onVehicleChange,
+  onJobTypeChange,
+  onScheduledDateChange,
+  onTechnicianChange,
+  onNotesChange,
+  onCustomerSearch,
+  onSubmit,
+}: JobCreateDialogProps) {
+  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null;
+  const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>สร้างงานใหม่</DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          <Autocomplete
+            options={customers}
+            getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
+            value={selectedCustomer}
+            onChange={(_, val) => onCustomerChange(val?.id ?? "")}
+            onInputChange={(_, val) => onCustomerSearch(val)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="ลูกค้า *"
+                required
+                error={!!fieldErrors.customerId}
+                helperText={fieldErrors.customerId}
+              />
+            )}
+          />
+          <Autocomplete
+            options={vehicles}
+            getOptionLabel={(v) => `${v.licensePlate}${v.brand ? ` - ${v.brand}` : ""}${v.model ? ` ${v.model}` : ""}`}
+            value={selectedVehicle}
+            onChange={(_, val) => onVehicleChange(val?.id ?? "")}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="รถ"
+                error={!!fieldErrors.vehicleId}
+                helperText={fieldErrors.vehicleId}
+              />
+            )}
+            disabled={!customerId}
+          />
+          <FormControl fullWidth error={!!fieldErrors.jobType}>
+            <InputLabel>ประเภทงาน *</InputLabel>
+            <Select
+              value={jobType}
+              label="ประเภทงาน *"
+              onChange={(e) => onJobTypeChange(e.target.value as "INSTALL" | "REPAIR" | "INSPECT")}
+            >
+              <MenuItem value="INSTALL">ติดตั้ง</MenuItem>
+              <MenuItem value="REPAIR">ซ่อม</MenuItem>
+              <MenuItem value="INSPECT">ตรวจสอบ</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="วันที่นัดหมาย"
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => onScheduledDateChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            error={!!fieldErrors.scheduledDate}
+            helperText={fieldErrors.scheduledDate}
+          />
+          <TextField
+            label="ช่างผู้รับผิดชอบ"
+            value={technicianId}
+            onChange={(e) => onTechnicianChange(e.target.value)}
+            error={!!fieldErrors.technicianId}
+            helperText={fieldErrors.technicianId}
+          />
+          <TextField
+            label="หมายเหตุ"
+            multiline
+            rows={3}
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            error={!!fieldErrors.notes}
+            helperText={fieldErrors.notes}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
+        <Button variant="contained" onClick={onSubmit} disabled={loading}>
+          {loading ? <CircularProgress size={20} /> : "สร้างงาน"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+interface JobDetailViewProps {
+  job: JobWithLogsResponse | null;
+  loading: boolean;
+  error: string | null;
+  onBack: () => void;
+  onStatusChange: (newStatus: string, version: number) => void;
+  onHistory: () => void;
+}
+
+export function JobDetailView({
+  job,
+  loading,
+  error,
+  onBack,
+  onStatusChange,
+  onHistory,
+}: JobDetailViewProps) {
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  if (!job) {
+    return <Alert severity="info">ไม่พบข้อมูลงาน</Alert>;
+  }
+
+  const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
+  const [selectedStatus, setSelectedStatus] = useState("");
+
+  const handleStatusSubmit = () => {
+    if (selectedStatus) {
+      onStatusChange(selectedStatus, job.version);
+      setSelectedStatus("");
+    }
+  };
+
+  return (
+    <Paper sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button variant="outlined" onClick={onBack}>
+            กลับ
+          </Button>
+          <Typography variant="h5">
+            {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
+          </Typography>
+          <Chip
+            label={STATUS_LABELS[job.status] ?? job.status}
+            color={STATUS_COLORS[job.status] ?? "default"}
+            size="small"
+          />
+        </Box>
+        <Button variant="outlined" onClick={onHistory}>
+          ประวัติการแก้ไข
+        </Button>
+      </Box>
+
+      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">รหัสลูกค้า</Typography>
+          <Typography>{job.customerId}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">รหัสรถ</Typography>
+          <Typography>{job.vehicleId || "-"}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">วันที่นัดหมาย</Typography>
+          <Typography>{formatDate(job.scheduledDate)}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">เวลาเริ่ม</Typography>
+          <Typography>{formatDate(job.startTime)}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">เวลาสิ้นสุด</Typography>
+          <Typography>{formatDate(job.endTime)}</Typography>
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary">ช่าง</Typography>
+          <Typography>{job.technicianId || "-"}</Typography>
+        </Box>
+        <Box sx={{ gridColumn: "1 / -1" }}>
+          <Typography variant="subtitle2" color="text.secondary">หมายเหตุ</Typography>
+          <Typography>{job.notes || "-"}</Typography>
+        </Box>
+      </Box>
+
+      {transitions.length > 0 && (
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 3 }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <Select
+              value={selectedStatus}
+              displayEmpty
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <MenuItem value="" disabled>เปลี่ยนสถานะ...</MenuItem>
+              {transitions.map((s) => (
+                <MenuItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            onClick={handleStatusSubmit}
+            disabled={!selectedStatus}
+          >
+            ยืนยัน
+          </Button>
+        </Box>
+      )}
+
+      <Typography variant="h6" gutterBottom>ประวัติสถานะ</Typography>
+      {job.statusLogs.length === 0 ? (
+        <Typography color="text.secondary">ไม่มีประวัติ</Typography>
+      ) : (
+        <Box>
+          {job.statusLogs.map((log) => (
+            <Box
+              key={log.id}
+              sx={{
+                display: "flex",
+                gap: 2,
+                py: 1,
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                alignItems: "center",
+              }}
+            >
+              <Chip
+                label={STATUS_LABELS[log.toStatus] ?? log.toStatus}
+                color={STATUS_COLORS[log.toStatus] ?? "default"}
+                size="small"
+              />
+              <Typography variant="body2" color="text.secondary">
+                {log.fromStatus
+                  ? `${STATUS_LABELS[log.fromStatus] ?? log.fromStatus} → ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`
+                  : `เริ่มต้น: ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                โดย {log.changedBy}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {log.note ? `- ${log.note}` : ""}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: "auto" }}>
+                {formatDate(log.createdAt)}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Paper>
   );
 }

@@ -17,19 +17,38 @@ import {
   ConflictError,
   AppError,
 } from "../../shared/errors/AppError";
+import type { IAuditLogService } from "../audit/service";
+import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface ICustomerService {
   filter(
     input: FilterRequestInput,
   ): Promise<{ data: CustomerResponse[]; pagination: PaginationResponse }>;
   getById(id: string): Promise<CustomerWithVehiclesResponse>;
-  create(input: CreateCustomerInput): Promise<CustomerResponse>;
-  update(id: string, input: UpdateCustomerInput): Promise<CustomerResponse>;
-  softDelete(id: string, input: DeleteCustomerInput): Promise<void>;
+  create(
+    input: CreateCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<CustomerResponse>;
+  update(
+    id: string,
+    input: UpdateCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<CustomerResponse>;
+  softDelete(
+    id: string,
+    input: DeleteCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void>;
 }
 
 export class CustomerService implements ICustomerService {
-  constructor(private repo: ICustomerRepository) {}
+  constructor(
+    private repo: ICustomerRepository,
+    private auditService: IAuditLogService,
+  ) {}
 
   async filter(
     input: FilterRequestInput,
@@ -57,7 +76,11 @@ export class CustomerService implements ICustomerService {
     };
   }
 
-  async create(input: CreateCustomerInput): Promise<CustomerResponse> {
+  async create(
+    input: CreateCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<CustomerResponse> {
     const existing = await this.repo.findByPhone(input.phone);
     if (existing) throw new AppError(409, "Phone number already exists");
 
@@ -71,19 +94,34 @@ export class CustomerService implements ICustomerService {
       version: 1,
     });
 
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "customers",
+      entity.id,
+      userId,
+      null,
+      entity,
+      meta,
+    );
+
     return this.toResponse(entity);
   }
 
   async update(
     id: string,
     input: UpdateCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
   ): Promise<CustomerResponse> {
+    const existing = await this.repo.findById(id);
+    if (!existing) throw new NotFoundError("Customer not found");
+
     const { version, ...fields } = input;
 
     const phone = fields.phone;
     if (typeof phone === "string") {
-      const existing = await this.repo.findByPhone(phone);
-      if (existing && existing.id !== id) {
+      const existingPhone = await this.repo.findByPhone(phone);
+      if (existingPhone && existingPhone.id !== id) {
         throw new AppError(409, "Phone number already exists");
       }
     }
@@ -91,13 +129,41 @@ export class CustomerService implements ICustomerService {
     const updated = await this.repo.update(id, fields, version);
     if (!updated) throw new ConflictError("Version mismatch");
 
+    this.auditService.insertAuditLog(
+      "UPDATE",
+      "customers",
+      id,
+      userId,
+      existing,
+      updated,
+      meta,
+    );
+
     return this.toResponse(updated);
   }
 
-  async softDelete(id: string, input: DeleteCustomerInput): Promise<void> {
+  async softDelete(
+    id: string,
+    input: DeleteCustomerInput,
+    userId: string,
+    meta?: AuditMeta,
+  ): Promise<void> {
+    const before = await this.repo.findById(id);
+    if (!before) throw new NotFoundError("Customer not found");
+
     const deleted = await this.repo.softDelete(id, input.version);
-    if (!deleted)
-      throw new ConflictError("Version mismatch or customer not found");
+    if (!deleted) throw new ConflictError("Version mismatch or customer not found");
+
+    const after = await this.repo.findById(id);
+    this.auditService.insertAuditLog(
+      "DELETE",
+      "customers",
+      id,
+      userId,
+      before,
+      after ?? before,
+      meta,
+    );
   }
 
   private toResponse(entity: CustomerEntity): CustomerResponse {

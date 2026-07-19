@@ -23,8 +23,10 @@ describe('UserService', () => {
   let repo: jest.Mocked<IUserRepository>;
   let redis: jest.Mocked<Redis>;
   let svc: UserService;
+  const mockAuditService = { insertAuditLog: jest.fn() };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = {
       findById: jest.fn(),
       findByUsername: jest.fn(),
@@ -34,7 +36,7 @@ describe('UserService', () => {
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
     } as any;
-    svc = new UserService(repo, redis);
+    svc = new UserService(repo, redis, mockAuditService as any);
   });
 
   describe('login', () => {
@@ -106,7 +108,7 @@ describe('UserService', () => {
         password: 'password123',
         displayName: 'Admin',
         role: 'ADMIN',
-      })).rejects.toThrow('Username already exists');
+      }, 'admin-user-id')).rejects.toThrow('Username already exists');
     });
 
     it('should create and return user', async () => {
@@ -118,7 +120,7 @@ describe('UserService', () => {
         password: 'password123',
         displayName: 'Admin',
         role: 'ADMIN',
-      });
+      }, 'admin-user-id');
 
       expect(result.username).toBe('admin');
       expect(repo.create).toHaveBeenCalled();

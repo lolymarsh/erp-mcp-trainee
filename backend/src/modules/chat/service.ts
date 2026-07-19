@@ -13,6 +13,7 @@ import { ChatMongoRepository } from "./repo_mongo";
 import type { IChatMongoRepository } from "./repo_mongo";
 import type { ChatMessageDocument } from "./entity";
 import type { RabbitMQConnection } from "../../config/rabbitmq";
+import { AppError } from "../../shared/errors/AppError";
 
 const CACHE_TTL = 600;
 const QUERY_TIMEOUT_MS = 5000;
@@ -85,6 +86,7 @@ export class ChatService implements IChatService {
     private rmq: RabbitMQConnection,
   ) {
     this.mongoRepo = new ChatMongoRepository(mongoDb);
+    // API key from process.env.OPENAI_API_KEY — set in .env
     this.llmClient = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || "",
     });
@@ -109,9 +111,22 @@ export class ChatService implements IChatService {
     const systemPrompt = buildSystemPrompt();
     const llmResponse = await this.callLLM(systemPrompt, input.question);
     const sql = extractSQL(llmResponse);
-    sanitizeSql(sql);
 
-    const rawResult = await this.executeWithTimeout(sql, QUERY_TIMEOUT_MS);
+    try {
+      sanitizeSql(sql);
+    } catch {
+      throw new AppError(400, "SQL_BLOCKED", { userMessage: "คำถามนี้ไม่ปลอดภัย กรุณาถามใหม่" });
+    }
+
+    let rawResult: RowDataPacket[];
+    try {
+      rawResult = await this.executeWithTimeout(sql, QUERY_TIMEOUT_MS);
+    } catch (err: unknown) {
+      if (err instanceof Error && (err.message?.toLowerCase().includes("timeout") || err.message?.toLowerCase().includes("max_execution_time") || err.message?.toLowerCase().includes("interrupted"))) {
+        throw new AppError(500, "SQL_TIMEOUT", { userMessage: "Query ใช้เวลานานเกินไป ลองถามใหม่ด้วยคำที่เจาะจงขึ้น" });
+      }
+      throw err;
+    }
     const data = rawResult as Record<string, unknown>[];
     const formatted = formatResult(data, input.format);
 
@@ -168,7 +183,15 @@ export class ChatService implements IChatService {
       return content;
     } catch (err: unknown) {
       logger.error({ err }, "LLM call failed");
-      throw new Error("Failed to generate SQL query. Please try again.");
+      if (err instanceof OpenAI.APIError) {
+        if (err.status === 401) {
+          throw new AppError(500, "OPENAI_KEY_INVALID", { userMessage: "API key ไม่ถูกต้อง" });
+        }
+        if (err.status === 429) {
+          throw new AppError(500, "OPENAI_RATE_LIMIT", { userMessage: "AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที" });
+        }
+      }
+      throw new AppError(500, "LLM_ERROR", { userMessage: "ไม่สามารถสร้าง SQL ได้ กรุณาลองใหม่" });
     }
   }
 

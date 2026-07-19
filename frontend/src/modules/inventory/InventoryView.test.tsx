@@ -49,6 +49,7 @@ describe('InventoryListView', () => {
   const onSearch = vi.fn();
   const onPageChange = vi.fn();
   const onSelectProduct = vi.fn();
+  const onCreateClick = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,6 +65,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -82,6 +84,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -98,6 +101,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -114,6 +118,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -130,6 +135,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -150,6 +156,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -168,6 +175,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -185,6 +193,7 @@ describe('InventoryListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectProduct={onSelectProduct}
+        onCreateClick={onCreateClick}
       />,
     );
 

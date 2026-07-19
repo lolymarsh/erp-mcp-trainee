@@ -147,14 +147,14 @@ export function useChat() {
 
 ## Phase 08 Checklist
 
-- [ ] `.env.example` — add `OPENAI_API_KEY` + `OPENAI_MODEL`
-- [ ] `chat/service.ts` — comment explaining key source
-- [ ] `chat/service.ts` — categorized errors (OPENAI_KEY_INVALID, OPENAI_RATE_LIMIT, SQL_TIMEOUT, SQL_BLOCKED, LLM_ERROR)
-- [ ] `chat/handler.ts` — pass error codes to SSE response
-- [ ] `chat/controller.ts` — error message mapping + categorized display
-- [ ] Network error → Toast/Snackbar
-- [ ] API key error → persistent Toast
-- [ ] SQL timeout → chat bubble with retry
-- [ ] `sessionId` saved to localStorage on first message
-- [ ] Load history on page revisit
-- [ ] Run `npm run typecheck` — pass
+- [x] `.env.example` — add `OPENAI_API_KEY` + `OPENAI_MODEL` *(มีอยู่แล้ว)*
+- [x] `chat/service.ts` — comment explaining key source
+- [x] `chat/service.ts` — categorized errors (OPENAI_KEY_INVALID, OPENAI_RATE_LIMIT, SQL_TIMEOUT, SQL_BLOCKED, LLM_ERROR)
+- [x] `chat/handler.ts` — pass error codes to SSE response
+- [x] `chat/controller.ts` — error message mapping + categorized display
+- [x] Network error → Toast/Snackbar
+- [x] API key error → persistent Toast
+- [x] SQL timeout → chat bubble with retry
+- [x] `sessionId` saved to localStorage on first message
+- [x] Load history on page revisit
+- [x] Run `npm run typecheck` — pass

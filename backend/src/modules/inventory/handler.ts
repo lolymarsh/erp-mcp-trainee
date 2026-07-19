@@ -66,7 +66,9 @@ export class InventoryHandler {
   create = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createProductSchema.parse(req.body);
-      const product = await this.svc.create(input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const product = await this.svc.create(input, userId, meta);
       sendSuccess(res, 201, "created", { data: product });
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -86,7 +88,9 @@ export class InventoryHandler {
     try {
       const id = extractId(req.params.id);
       const input = updateProductSchema.parse(req.body);
-      const product = await this.svc.update(id, input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const product = await this.svc.update(id, input, userId, meta);
       sendSuccess(res, 200, "success", { data: product });
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -106,7 +110,9 @@ export class InventoryHandler {
     try {
       const id = extractId(req.params.id);
       const input = deleteProductSchema.parse(req.body);
-      await this.svc.softDelete(id, input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      await this.svc.softDelete(id, input, userId, meta);
       sendSuccess(res, 200, "deleted");
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -127,7 +133,8 @@ export class InventoryHandler {
       const id = extractId(req.params.id);
       const input = stockAdjustSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
-      const result = await this.svc.adjustStock(id, input, userId);
+      const meta = req.auditMeta;
+      const result = await this.svc.adjustStock(id, input, userId, meta);
       sendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {

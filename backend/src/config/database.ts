@@ -50,6 +50,15 @@ export async function createMongo(): Promise<MongoConnection> {
   await mongoDb
     .collection("activity_logs")
     .createIndex({ entityType: 1, entityId: 1 });
+  await mongoDb
+    .collection("audit_logs")
+    .createIndex({ tableName: 1, recordId: 1, createdAt: -1 });
+  await mongoDb
+    .collection("audit_logs")
+    .createIndex({ userId: 1, createdAt: -1 });
+  await mongoDb
+    .collection("audit_logs")
+    .createIndex({ action: 1, createdAt: -1 });
   logger.info("MongoDB indexes created");
 
   return { client, mongoDb };

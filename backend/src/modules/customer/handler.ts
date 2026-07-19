@@ -65,7 +65,9 @@ export class CustomerHandler {
   create = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createCustomerSchema.parse(req.body);
-      const customer = await this.svc.create(input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const customer = await this.svc.create(input, userId, meta);
       sendSuccess(res, 201, "created", { data: customer });
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -85,7 +87,9 @@ export class CustomerHandler {
     try {
       const id = extractId(req.params.id);
       const input = updateCustomerSchema.parse(req.body);
-      const customer = await this.svc.update(id, input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const customer = await this.svc.update(id, input, userId, meta);
       sendSuccess(res, 200, "success", { data: customer });
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -105,7 +109,9 @@ export class CustomerHandler {
     try {
       const id = extractId(req.params.id);
       const input = deleteCustomerSchema.parse(req.body);
-      await this.svc.softDelete(id, input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      await this.svc.softDelete(id, input, userId, meta);
       sendSuccess(res, 200, "deleted");
     } catch (err: unknown) {
       if (err instanceof AppError) {

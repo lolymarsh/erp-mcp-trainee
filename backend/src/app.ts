@@ -10,6 +10,7 @@ import {
   logger,
 } from "./config";
 import { setupRoutes } from "./router";
+import { auditMetaMiddleware } from "./shared/middleware/auditMeta";
 import { startAuditWorker } from "./workers/auditWorker";
 import { startAiWorker } from "./workers/aiWorker";
 
@@ -34,6 +35,8 @@ async function start(): Promise<void> {
     const { mongoDb } = await createMongo();
     const redis = createRedis();
     const rmq = await createRabbitMQ();
+
+    app.use(auditMetaMiddleware);
 
     setupRoutes(app, { db, pool, redis, mongoDb, rmq });
 

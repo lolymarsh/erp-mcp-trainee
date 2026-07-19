@@ -176,31 +176,31 @@ export function useCustomerList() {
 ## Phase 07 Checklist
 
 ### Routes
-- [ ] `/customers/:id` route registered
-- [ ] `/inventory/:id` route registered
-- [ ] `/sales/invoices/:id` route registered
-- [ ] `/jobs/:id` route registered
-- [ ] `*` catch-all route → `NotFoundPage`
-- [ ] Login redirect (if authenticated) optional
+- [x] `/customers/:id` route registered
+- [x] `/inventory/:id` route registered
+- [x] `/sales/invoices/:id` route registered
+- [x] `/jobs/:id` route registered
+- [x] `*` catch-all route → `NotFoundPage`
+- [x] Login redirect (if authenticated) optional
 
 ### Error Pages
-- [ ] `shared/pages/NotFound.tsx`
-- [ ] `shared/pages/Forbidden.tsx`
-- [ ] `shared/pages/ErrorPage.tsx`
-- [ ] `shared/pages/NetworkError.tsx`
+- [x] `shared/pages/NotFound.tsx`
+- [x] `shared/pages/Forbidden.tsx`
+- [x] `shared/pages/ErrorPage.tsx`
+- [x] `shared/pages/NetworkError.tsx`
 
 ### Skeleton Loading
-- [ ] CustomerListView — skeleton rows
-- [ ] InventoryListView — skeleton rows
-- [ ] InvoiceListView — skeleton table rows
-- [ ] JobQueueView — skeleton table rows
-- [ ] DashboardView — skeleton cards + charts
+- [x] CustomerListView — skeleton rows
+- [x] InventoryListView — skeleton rows
+- [x] InvoiceListView — skeleton table rows
+- [x] JobQueueView — skeleton table rows
+- [x] DashboardView — skeleton cards + charts
 
 ### Debounce
-- [ ] `shared/hooks/useDebouncedValue.ts`
-- [ ] Customer search — debounced
-- [ ] Inventory search — debounced
+- [x] `shared/hooks/useDebouncedValue.ts`
+- [x] Customer search — debounced
+- [x] Inventory search — debounced
 
 ### Verify
-- [ ] Run `npm run typecheck` — pass
-- [ ] Run `npm run lint` — pass
+- [x] Run `npm run typecheck` — pass
+- [x] Run `npm run lint` — pass

@@ -212,77 +212,81 @@ export class JobRepository implements IJobRepository {
     note: string | null,
     tx?: Tx,
   ): Promise<{ job: JobEntity; log: JobStatusLogEntity }> {
-    const db = tx ?? this.db;
-    const [current] = await db
-      .select()
-      .from(jobs)
-      .where(eq(jobs.id, id))
-      .for("update")
-      .limit(1);
+    const doWork = async (d: typeof this.db | Tx): Promise<{ job: JobEntity; log: JobStatusLogEntity }> => {
+      const [current] = await d
+        .select()
+        .from(jobs)
+        .where(eq(jobs.id, id))
+        .for("update")
+        .limit(1);
 
-    if (!current) {
-      throw new Error("JOB_NOT_FOUND");
-    }
+      if (!current) {
+        throw new Error("JOB_NOT_FOUND");
+      }
 
-    if (current.version !== version) {
-      throw new Error("VERSION_MISMATCH");
-    }
+      if (current.version !== version) {
+        throw new Error("VERSION_MISMATCH");
+      }
 
-    const newVersion = version + 1;
-    const now = new Date();
+      const newVersion = version + 1;
+      const now = new Date();
 
-    const setFields: Record<string, unknown> = {
-      status: newStatus,
-      version: newVersion,
-      updatedAt: now,
+      const setFields: Record<string, unknown> = {
+        status: newStatus,
+        version: newVersion,
+        updatedAt: now,
+      };
+
+      if (newStatus === "IN_PROGRESS" && !current.startTime) {
+        setFields.startTime = now;
+      }
+
+      if ((newStatus === "COMPLETED" || newStatus === "CANCELLED") && !current.endTime) {
+        setFields.endTime = now;
+      }
+
+      await d
+        .update(jobs)
+        .set(setFields)
+        .where(and(eq(jobs.id, id), eq(jobs.version, version)));
+
+      const logId = uuidv4();
+      const fromStatus = current.status as JobStatus;
+
+      await d.insert(jobStatusLogs).values({
+        id: logId,
+        jobId: id,
+        fromStatus,
+        toStatus: newStatus,
+        changedBy,
+        note,
+        createdAt: now,
+      });
+
+      const updated: JobEntity = {
+        ...(current as JobEntity),
+        status: newStatus,
+        version: newVersion,
+        ...(setFields.startTime ? { startTime: now } : {}),
+        ...(setFields.endTime ? { endTime: now } : {}),
+        updatedAt: now,
+      };
+
+      const log: JobStatusLogEntity = {
+        id: logId,
+        jobId: id,
+        fromStatus,
+        toStatus: newStatus,
+        changedBy,
+        note,
+        createdAt: now,
+      };
+
+      return { job: updated, log };
     };
 
-    if (newStatus === "IN_PROGRESS" && !current.startTime) {
-      setFields.startTime = now;
-    }
-
-    if ((newStatus === "COMPLETED" || newStatus === "CANCELLED") && !current.endTime) {
-      setFields.endTime = now;
-    }
-
-    await db
-      .update(jobs)
-      .set(setFields)
-      .where(and(eq(jobs.id, id), eq(jobs.version, version)));
-
-    const logId = uuidv4();
-    const fromStatus = current.status as JobStatus;
-
-    await db.insert(jobStatusLogs).values({
-      id: logId,
-      jobId: id,
-      fromStatus,
-      toStatus: newStatus,
-      changedBy,
-      note,
-      createdAt: now,
-    });
-
-    const updated: JobEntity = {
-      ...(current as JobEntity),
-      status: newStatus,
-      version: newVersion,
-      ...(setFields.startTime ? { startTime: now } : {}),
-      ...(setFields.endTime ? { endTime: now } : {}),
-      updatedAt: now,
-    };
-
-    const log: JobStatusLogEntity = {
-      id: logId,
-      jobId: id,
-      fromStatus,
-      toStatus: newStatus,
-      changedBy,
-      note,
-      createdAt: now,
-    };
-
-    return { job: updated, log };
+    if (tx) return doWork(tx);
+    return this.db.transaction((innerTx) => doWork(innerTx));
   }
 
   async getTodayQueue(): Promise<{

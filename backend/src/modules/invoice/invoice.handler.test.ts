@@ -79,7 +79,7 @@ describe("InvoiceHandler", () => {
       req.body = { customerId: "c1", items: [{ productId: "p1", quantity: 1 }] };
       req.user = { userId: "u1", role: "ADMIN" };
       await handler.create(req, res);
-      expect(svc.create).toHaveBeenCalledWith(expect.any(Object), "u1");
+      expect(svc.create).toHaveBeenCalledWith(expect.any(Object), "u1", undefined);
       expect(res.status).toHaveBeenCalledWith(201);
     });
 
@@ -94,7 +94,7 @@ describe("InvoiceHandler", () => {
       const { req, res } = mockReqRes();
       req.body = { customerId: "c1", items: [{ productId: "p1", quantity: 1 }] };
       await handler.create(req, res);
-      expect(svc.create).toHaveBeenCalledWith(expect.any(Object), "system");
+      expect(svc.create).toHaveBeenCalledWith(expect.any(Object), "system", undefined);
     });
   });
 

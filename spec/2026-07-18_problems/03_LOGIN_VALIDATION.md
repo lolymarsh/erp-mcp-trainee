@@ -171,13 +171,13 @@ export function LoginPage() {
 
 ## Phase 03 Checklist
 
-- [ ] Add Zod `loginFormSchema` in `auth/model.ts`
-- [ ] `TextField` — `error={!!fieldErrors.xxx}` + `helperText={fieldErrors.xxx}`
-- [ ] Zod parse before API call — block submit if invalid
-- [ ] Map API error string to field-level errors
-- [ ] Clear field errors on typing
-- [ ] Show password toggle button
-- [ ] Disable submit when fields empty (not just loading)
-- [ ] Auto-focus username field
-- [ ] Blur validation (optional)
-- [ ] Run `npm run typecheck` — pass
+- [x] Add Zod `loginFormSchema` in `auth/model.ts`
+- [x] `TextField` — `error={!!fieldErrors.xxx}` + `helperText={fieldErrors.xxx}`
+- [x] Zod parse before API call — block submit if invalid
+- [x] Map API error string to field-level errors
+- [x] Clear field errors on typing
+- [x] Show password toggle button
+- [x] Disable submit when fields empty (not just loading)
+- [x] Auto-focus username field
+- [x] Blur validation (optional)
+- [x] Run `npm run typecheck` — pass

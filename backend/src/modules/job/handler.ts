@@ -63,7 +63,9 @@ export class JobHandler {
   create = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createJobSchema.parse(req.body);
-      const job = await this.svc.create(input);
+      const userId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const job = await this.svc.create(input, userId, meta);
       sendSuccess(res, 201, "created", { data: job });
     } catch (err: unknown) {
       if (err instanceof AppError) {
@@ -84,7 +86,8 @@ export class JobHandler {
       const id = extractId(req.params.id);
       const input = updateJobStatusSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
-      const result = await this.svc.updateStatus(id, input, userId);
+      const meta = req.auditMeta;
+      const result = await this.svc.updateStatus(id, input, userId, meta);
       sendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {

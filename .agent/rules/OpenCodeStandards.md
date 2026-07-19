@@ -218,3 +218,37 @@ DevOps (Nginx):     Rate Limiting, CORS restriction, Security Headers
 ```
 
 rateLimit.ts เก็บไว้เป็น dev fallback — comment บอกว่าย้ายไป Nginx ใน production
+
+### 14. Service Dependencies
+
+**Service may receive (✅ allowed):**
+- Repo interfaces (`ICustomerRepository`)
+- Service interfaces (`ICustomerService`)
+- Infrastructure clients (`Redis`, `RabbitMQ`)
+
+**Service MUST NOT receive (❌ forbidden):**
+- Raw DB (`MySql2Database`) — ห้าม inject db เข้า service
+- Drizzle ORM helpers (`eq`, `and`, `isNull`) — ห้าม import ใน service
+- Schema tables (import schema จาก module อื่น) — ห้าม
+- Express `req` / `res` — service ไม่ควรรู้จัก HTTP layer
+
+```ts
+// ✅ ALLOWED — repo interfaces, service interfaces, infra clients
+export class InvoiceService implements IInvoiceService {
+  constructor(
+    private invoiceRepo: IInvoiceRepository,
+    private customerSvc: ICustomerService,
+    private redis: Redis,
+  ) {}
+}
+
+// ❌ FORBIDDEN — raw DB, Express req/res
+export class InvoiceService implements IInvoiceService {
+  constructor(
+    private db: MySql2Database<Record<string, never>>,  // ❌ ห้าม
+    private req: Request,                                 // ❌ ห้าม
+  ) {}
+}
+```
+
+**Exception:** Chat module → สามารถรับ raw mysql2 `Pool` สำหรับ execute AI-generated SQL

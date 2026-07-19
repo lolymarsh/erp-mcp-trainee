@@ -31,8 +31,10 @@ const mockVehicle = {
 describe("CustomerService", () => {
   let repo: jest.Mocked<ICustomerRepository>;
   let svc: CustomerService;
+  const mockAuditService = { insertAuditLog: jest.fn() };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     repo = {
       findFiltered: jest.fn(),
       findById: jest.fn(),
@@ -43,7 +45,7 @@ describe("CustomerService", () => {
       softDelete: jest.fn(),
       findVehicleById: jest.fn(),
     };
-    svc = new CustomerService(repo);
+    svc = new CustomerService(repo, mockAuditService as any);
   });
 
   describe("filter", () => {
@@ -141,7 +143,7 @@ describe("CustomerService", () => {
           phone: "0812345678",
           email: "somchai@email.com",
           address: "123 ถนนสุขุมวิท",
-        }),
+        }, "user-1"),
       ).rejects.toThrow("Phone number already exists");
     });
 
@@ -155,7 +157,7 @@ describe("CustomerService", () => {
         phone: "0812345678",
         email: null,
         address: null,
-      });
+      }, "user-1");
 
       expect(result.firstName).toBe("สมชาย");
       expect(result.version).toBe(1);
@@ -180,7 +182,7 @@ describe("CustomerService", () => {
         firstName: "สมชาย",
         lastName: "ใจดี",
         phone: "0812345678",
-      });
+      }, "user-1");
 
       expect(result.email).toBeNull();
       expect(result.address).toBeNull();
@@ -189,6 +191,7 @@ describe("CustomerService", () => {
 
   describe("update", () => {
     it("should throw ConflictError on version mismatch", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.findByPhone.mockResolvedValue(null);
       repo.update.mockResolvedValue(null);
 
@@ -196,22 +199,24 @@ describe("CustomerService", () => {
         svc.update("cust-1", {
           firstName: "สมหมาย",
           version: 1,
-        }),
+        }, "user-1"),
       ).rejects.toThrow(ConflictError);
     });
 
     it("should throw when updated phone conflicts", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.findByPhone.mockResolvedValue({ ...mockCustomer, id: "cust-2" });
 
       await expect(
         svc.update("cust-1", {
           phone: "0812345678",
           version: 1,
-        }),
+        }, "user-1"),
       ).rejects.toThrow("Phone number already exists");
     });
 
     it("should update customer successfully", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.findByPhone.mockResolvedValue(null);
       const updatedCustomer = {
         ...mockCustomer,
@@ -223,7 +228,7 @@ describe("CustomerService", () => {
       const result = await svc.update("cust-1", {
         firstName: "สมหมาย",
         version: 1,
-      });
+      }, "user-1");
 
       expect(result.firstName).toBe("สมหมาย");
       expect(repo.update).toHaveBeenCalledWith(
@@ -234,6 +239,7 @@ describe("CustomerService", () => {
     });
 
     it("should allow updating with same phone", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.findByPhone.mockResolvedValue(mockCustomer);
       repo.update.mockResolvedValue({
         ...mockCustomer,
@@ -244,7 +250,7 @@ describe("CustomerService", () => {
       const result = await svc.update("cust-1", {
         phone: "0812345678",
         version: 1,
-      });
+      }, "user-1");
 
       expect(result.phone).toBe("0812345678");
       expect(repo.update).toHaveBeenCalled();
@@ -253,18 +259,21 @@ describe("CustomerService", () => {
 
   describe("softDelete", () => {
     it("should throw ConflictError on version mismatch", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.softDelete.mockResolvedValue(false);
 
-      await expect(svc.softDelete("cust-1", { version: 1 })).rejects.toThrow(
+      await expect(svc.softDelete("cust-1", { version: 1 }, "user-1")).rejects.toThrow(
         ConflictError,
       );
     });
 
     it("should soft delete customer successfully", async () => {
+      repo.findById.mockResolvedValue(mockCustomer);
       repo.softDelete.mockResolvedValue(true);
+      repo.findById.mockResolvedValue({ ...mockCustomer, deletedAt: new Date() });
 
       await expect(
-        svc.softDelete("cust-1", { version: 1 }),
+        svc.softDelete("cust-1", { version: 1 }, "user-1"),
       ).resolves.toBeUndefined();
 
       expect(repo.softDelete).toHaveBeenCalledWith("cust-1", 1);

@@ -231,3 +231,49 @@ export class ChatMongoRepository {
 - ✅ Return `null` for not found — let service throw AppError
 - ✅ Soft delete only — no hard delete
 - ❌ No business logic in repo — just data access
+
+## 10. Cross-Module Repository Queries
+
+เมื่อ repo ต้อง query ตารางจาก module อื่น (เช่น InventoryRepo ต้องอ่าน invoice items) — มี 2 options:
+
+### Option A: Service injects other repo interfaces (✅ preferred)
+
+```ts
+// Service layer — inject ทั้งสอง repo
+export class InvoiceService implements IInvoiceService {
+  constructor(
+    private invoiceRepo: IInvoiceRepository,
+    private inventoryRepo: IInventoryRepository,  // ✅ inject repo ของ module อื่น
+  ) {}
+
+  async createInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
+    // validate stock ผ่าน inventoryRepo
+    for (const item of input.items) {
+      const stock = await this.inventoryRepo.getStock(item.productId);
+      if (stock < item.quantity) {
+        throw new BadRequestError(`Insufficient stock for ${item.productId}`);
+      }
+    }
+    return this.invoiceRepo.createInvoice(input);
+  }
+}
+```
+
+### Option B: Add cross-table methods to repo interface
+
+เพิ่ม method ใน repo interface สำหรับ query ที่ต้อง join ข้าม module:
+
+```ts
+export interface IInvoiceRepository {
+  // ... methods ปกติ
+
+  // ✅ cross-table method — repo จัดการ join เอง
+  findWithCustomerDetails(id: string): Promise<InvoiceWithCustomer>;
+  getMonthlySales(year: number): Promise<MonthlySales[]>;
+}
+```
+
+**ข้อควรจำ:**
+- Option A: Service orchestrate repos → ดีที่สุดสำหรับ business logic ที่ต้อง validate หรือ transform ข้อมูลก่อน
+- Option B: Repo จัดการ cross-table query → ใช้เมื่อต้องการ aggregate หรือ report ที่ซับซ้อน
+- ❌ ห้าม inject repo เข้า repo อีกตัว — inject ที่ service layer เท่านั้น

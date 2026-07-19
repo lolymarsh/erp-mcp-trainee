@@ -155,15 +155,15 @@ Service ไม่ต้องจัดการ transaction — แค่ valida
 
 ## Phase 01 Checklist
 
-- [ ] `InvoiceService` — remove `db` parameter, inject `ICustomerRepository` + `IInventoryRepository`
-- [ ] `InvoiceService` — replace `this.db.select()` with `this.customerRepo.findById()` + `this.inventoryRepo.findByIds()`
-- [ ] `InvoiceService` — remove `drizzle-orm` imports (`eq`, `and`, `isNull`)
-- [ ] `InvoiceService` — remove schema imports (`customers`, `products`)
-- [ ] `IInventoryRepository` — add `findByIds(ids[])` method
-- [ ] `JobService` — remove `db` parameter, inject `ICustomerRepository`
-- [ ] `JobService` — add vehicle validation via repo (add `findVehicleById` or new `IVehicleRepository`)
-- [ ] `JobService` — remove `drizzle-orm` + schema imports
-- [ ] All DI wiring in `route.ts` updated
-- [ ] Run `npm run typecheck` — pass
-- [ ] Run `npm test` — all existing tests pass
-- [ ] Run `npm run lint` — no new errors
+- [x] `InvoiceService` — remove `db` parameter, inject `ICustomerRepository` + `IInventoryRepository`
+- [x] `InvoiceService` — replace `this.db.select()` with `this.customerRepo.findById()` + `this.inventoryRepo.findByIds()`
+- [x] `InvoiceService` — remove `drizzle-orm` imports (`eq`, `and`, `isNull`)
+- [x] `InvoiceService` — remove schema imports (`customers`, `products`)
+- [x] `IInventoryRepository` — add `findByIds(ids[])` method
+- [x] `JobService` — remove `db` parameter, inject `ICustomerRepository`
+- [x] `JobService` — add vehicle validation via repo (`CustomerRepository.findVehicleById`)
+- [x] `JobService` — remove `drizzle-orm` + schema imports
+- [x] All DI wiring in `route.ts` updated
+- [x] Run `npm run typecheck` — pass
+- [x] Run `npm test` — all 402 tests pass
+- [x] Run `npm run lint` — no new errors

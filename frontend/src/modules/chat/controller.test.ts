@@ -43,8 +43,8 @@ describe('useChat', () => {
         errorCb: ErrorCallback,
         _completeCb: CompleteCallback,
       ) => {
-        mockStream._eventCb = eventCb;
-        mockStream._errorCb = errorCb;
+        (mockStream as unknown as { _eventCb: StreamCallback })._eventCb = eventCb;
+        (mockStream as unknown as { _errorCb: ErrorCallback })._errorCb = errorCb;
         return new AbortController();
       },
     );

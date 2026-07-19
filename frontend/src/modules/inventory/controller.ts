@@ -1,6 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { ProductEntity, PaginationResponse, FilterParams } from './model';
+import { isAxiosError } from 'axios';
+import { z } from 'zod';
+import type { ProductEntity, ProductWithMovements, PaginationResponse, FilterParams } from './model';
 import { inventoryApi } from './model';
+import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
+
+const createProductSchema = z.object({
+  sku: z.string().min(1, 'กรุณากรอก SKU'),
+  name: z.string().min(1, 'กรุณากรอกชื่อสินค้า'),
+  categoryId: z.string().min(1, 'กรุณาเลือกหมวดหมู่'),
+  description: z.string().optional(),
+  unit: z.string().optional(),
+  costPrice: z.coerce.number().min(0, 'ราคาต้องไม่ติดลบ').optional(),
+  sellPrice: z.coerce.number().min(0, 'ราคาต้องไม่ติดลบ').optional(),
+  minStock: z.coerce.number().int().min(0).optional(),
+  currentStock: z.coerce.number().int().min(0).optional(),
+});
+
+export type CreateProductFormData = z.infer<typeof createProductSchema>;
+
+const stockAdjustSchema = z.object({
+  type: z.enum(['IN', 'OUT', 'ADJUST']),
+  quantity: z.coerce.number().int().min(1, 'จำนวนต้องมากกว่า 0'),
+  note: z.string().optional(),
+});
+
+export type StockAdjustFormData = z.infer<typeof stockAdjustSchema>;
 
 interface UseInventoryListReturn {
   products: ProductEntity[];
@@ -19,6 +44,7 @@ export function useInventoryList(): UseInventoryListReturn {
   const [pagination, setPagination] = useState<PaginationResponse | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -31,9 +57,9 @@ export function useInventoryList(): UseInventoryListReturn {
         sortName: 'createdAt',
       };
 
-      if (search.length > 0) {
+      if (debouncedSearch.length > 0) {
         params.filters = [
-          { field: 'name', operator: 'contains', value: search },
+          { field: 'name', operator: 'contains', value: debouncedSearch },
         ];
       }
 
@@ -47,11 +73,15 @@ export function useInventoryList(): UseInventoryListReturn {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, debouncedSearch]);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   return {
     products,
@@ -110,4 +140,281 @@ export function useLowStockAlerts(): UseLowStockAlertsReturn {
     error,
     refetch: fetchLowStock,
   };
+}
+
+// ====== Detail ======
+
+export interface UseInventoryDetailReturn {
+  product: ProductWithMovements | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useInventoryDetail(id: string): UseInventoryDetailReturn {
+  const [product, setProduct] = useState<ProductWithMovements | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await inventoryApi.getById(id);
+      setProduct(result.data);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load product';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return { product, loading, error, refetch: fetch };
+}
+
+// ====== Create ======
+
+export interface UseProductCreateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  submit: (input: CreateProductFormData) => Promise<void>;
+}
+
+export function useProductCreate(onSuccess: () => void): UseProductCreateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setFieldErrors({});
+  }, []);
+
+  const submit = useCallback(async (input: CreateProductFormData) => {
+    const parsed = createProductSchema.safeParse(input);
+    if (!parsed.success) {
+      const errMap: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errMap[field]) {
+          errMap[field] = issue.message;
+        }
+      }
+      setFieldErrors(errMap);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await inventoryApi.create(parsed.data);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create product';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, fieldErrors, submit };
+}
+
+// ====== Update ======
+
+export interface UseProductUpdateReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  openWithData: (product: ProductWithMovements) => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  initialValues: CreateProductFormData | null;
+  version: number;
+  submit: (input: CreateProductFormData) => Promise<void>;
+}
+
+export function useProductUpdate(id: string, onSuccess: () => void): UseProductUpdateReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [initialValues, setInitialValues] = useState<CreateProductFormData | null>(null);
+  const [version, setVersion] = useState(0);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setFieldErrors({});
+  }, []);
+
+  const openWithData = useCallback((product: ProductWithMovements) => {
+    setInitialValues({
+      sku: product.sku,
+      name: product.name,
+      categoryId: product.categoryId,
+      description: product.description ?? '',
+      unit: product.unit,
+      costPrice: Number(product.costPrice),
+      sellPrice: Number(product.sellPrice),
+      minStock: product.minStock,
+      currentStock: product.currentStock,
+    });
+    setVersion(product.version);
+    setError(null);
+    setFieldErrors({});
+    setOpen(true);
+  }, []);
+
+  const submit = useCallback(async (input: CreateProductFormData) => {
+    const parsed = createProductSchema.safeParse(input);
+    if (!parsed.success) {
+      const errMap: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errMap[field]) {
+          errMap[field] = issue.message;
+        }
+      }
+      setFieldErrors(errMap);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await inventoryApi.update(id, { ...parsed.data, version });
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        onSuccess();
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to update product';
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [id, version, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, openWithData, loading, error, fieldErrors, initialValues, version, submit };
+}
+
+// ====== Stock Adjust ======
+
+export interface UseStockAdjustReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  fieldErrors: Record<string, string>;
+  submit: (input: StockAdjustFormData) => Promise<void>;
+}
+
+export function useStockAdjust(id: string, onSuccess: () => void): UseStockAdjustReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+    setFieldErrors({});
+  }, []);
+
+  const submit = useCallback(async (input: StockAdjustFormData) => {
+    const parsed = stockAdjustSchema.safeParse(input);
+    if (!parsed.success) {
+      const errMap: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errMap[field]) {
+          errMap[field] = issue.message;
+        }
+      }
+      setFieldErrors(errMap);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await inventoryApi.adjustStock(id, parsed.data);
+      onSuccess();
+      handleClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to adjust stock';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, onSuccess, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, fieldErrors, submit };
+}
+
+// ====== Delete ======
+
+export interface UseProductDeleteReturn {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  handleClose: () => void;
+  loading: boolean;
+  error: string | null;
+  submit: (version: number) => Promise<void>;
+}
+
+export function useProductDelete(
+  id: string,
+  onSuccess: () => void,
+  onConflict?: () => void,
+): UseProductDeleteReturn {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setError(null);
+  }, []);
+
+  const submit = useCallback(async (version: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await inventoryApi.softDelete(id, { version });
+      handleClose();
+      onSuccess();
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        if (onConflict) onConflict();
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to delete product';
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [id, onSuccess, onConflict, handleClose]);
+
+  return { open, setOpen, handleClose, loading, error, submit };
 }

@@ -16,8 +16,9 @@ import {
 } from "../../shared/errors/AppError";
 import type { ICustomerRepository } from "../customer/repo";
 import type { IInventoryRepository } from "../inventory/repo";
-import type { MySql2Database } from "drizzle-orm/mysql2";
 import type Redis from "ioredis";
+import type { IAuditLogService } from "../audit/service";
+import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface IInvoiceService {
   filter(
@@ -27,6 +28,7 @@ export interface IInvoiceService {
   create(
     input: CreateInvoiceInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<InvoiceWithItemsResponse>;
   getTodaySummary(): Promise<TodaySummaryResponse>;
 }
@@ -38,8 +40,8 @@ export class InvoiceService implements IInvoiceService {
     private repo: IInvoiceRepository,
     private customerRepo: ICustomerRepository,
     private inventoryRepo: IInventoryRepository,
-    private db: MySql2Database,
     private redis: Redis,
+    private auditService: IAuditLogService,
   ) {}
 
   async filter(
@@ -73,6 +75,7 @@ export class InvoiceService implements IInvoiceService {
   async create(
     input: CreateInvoiceInput,
     userId: string,
+    meta?: AuditMeta,
   ): Promise<InvoiceWithItemsResponse> {
     const customer = await this.customerRepo.findById(input.customerId);
     if (!customer) {
@@ -122,22 +125,30 @@ export class InvoiceService implements IInvoiceService {
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const invoiceNumber = `INV-${dateStr}-${random}`;
 
-    const result = await this.db.transaction(async (tx) => {
-      return this.repo.createInvoice({
-        invoiceNumber,
-        customerId: input.customerId,
-        vehicleId: input.vehicleId ?? null,
-        discount: String(discount),
-        tax: String(tax),
-        totalAmount: totalAmount.toFixed(2),
-        grandTotal,
-        paymentMethod: input.paymentMethod ?? null,
-        createdBy: userId,
-        items: itemsData,
-      }, tx);
+    const result = await this.repo.createInvoice({
+      invoiceNumber,
+      customerId: input.customerId,
+      vehicleId: input.vehicleId ?? null,
+      discount: String(discount),
+      tax: String(tax),
+      totalAmount: totalAmount.toFixed(2),
+      grandTotal,
+      paymentMethod: input.paymentMethod ?? null,
+      createdBy: userId,
+      items: itemsData,
     });
 
     await this.redis.del(DASHBOARD_CACHE_KEY);
+
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "invoices",
+      result.invoice.id,
+      userId,
+      null,
+      result.invoice,
+      meta,
+    );
 
     return {
       ...this.toInvoiceResponse(result.invoice),

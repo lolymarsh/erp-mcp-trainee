@@ -52,7 +52,9 @@ export class UserHandler {
   createUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createUserSchema.parse(req.body);
-      const user = await this.svc.createUser(input);
+      const adminUserId = req.user?.userId ?? "system";
+      const meta = req.auditMeta;
+      const user = await this.svc.createUser(input, adminUserId, meta);
       sendSuccess(res, 201, "created", { data: user });
     } catch (err: unknown) {
       if (err instanceof AppError) {

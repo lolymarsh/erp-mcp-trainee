@@ -10,19 +10,26 @@ import {
   AppError,
   NotFoundError,
 } from "../../shared/errors/AppError";
+import type { IAuditLogService } from "../audit/service";
+import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 const JWT_SECRET = process.env.JWT_SECRET || "versus-dev-secret-key";
 
 export interface IUserService {
   login(input: LoginInput): Promise<{ token: string; user: UserResponse }>;
   getProfile(userId: string): Promise<UserResponse>;
-  createUser(input: CreateUserInput): Promise<UserResponse>;
+  createUser(
+    input: CreateUserInput,
+    adminUserId: string,
+    meta?: AuditMeta,
+  ): Promise<UserResponse>;
 }
 
 export class UserService implements IUserService {
   constructor(
     private repo: IUserRepository,
     private redis: Redis,
+    private auditService: IAuditLogService,
   ) {}
 
   async login(
@@ -51,7 +58,11 @@ export class UserService implements IUserService {
     return this.toResponse(user);
   }
 
-  async createUser(input: CreateUserInput): Promise<UserResponse> {
+  async createUser(
+    input: CreateUserInput,
+    adminUserId: string,
+    meta?: AuditMeta,
+  ): Promise<UserResponse> {
     const existing = await this.repo.findByUsername(input.username);
     if (existing) throw new AppError(409, "Username already exists");
 
@@ -65,6 +76,17 @@ export class UserService implements IUserService {
       isActive: true,
       version: 1,
     });
+
+    this.auditService.insertAuditLog(
+      "CREATE",
+      "users",
+      user.id,
+      adminUserId,
+      null,
+      user,
+      meta,
+    );
+
     return this.toResponse(user);
   }
 

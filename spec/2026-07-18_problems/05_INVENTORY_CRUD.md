@@ -103,15 +103,15 @@ const stockAdjustSchema = z.object({
 
 ## Phase 05 Checklist
 
-- [ ] `useInventoryDetail(id)` controller
-- [ ] `InventoryDetailView` — product info + StockBadge + stock movements
-- [ ] `useProductCreate()` controller + Zod schema
-- [ ] `ProductCreateDialog` — form with category Autocomplete
-- [ ] "เพิ่มสินค้า" button in `InventoryListView` header
-- [ ] `useProductUpdate(id)` controller + pre-fill + version
-- [ ] `ProductEditDialog` — handle 409
-- [ ] `useProductDelete(id)` controller + confirmation
-- [ ] `useStockAdjust(id)` controller + Zod
-- [ ] `StockAdjustDialog`
-- [ ] `/inventory/:id` route registered
-- [ ] Run `npm run typecheck` — pass
+- [x] `useInventoryDetail(id)` controller
+- [x] `InventoryDetailView` — product info + StockBadge + stock movements
+- [x] `useProductCreate()` controller + Zod schema
+- [x] `ProductCreateDialog` — form with category Autocomplete
+- [x] "เพิ่มสินค้า" button in `InventoryListView` header
+- [x] `useProductUpdate(id)` controller + pre-fill + version
+- [x] `ProductEditDialog` — handle 409
+- [x] `useProductDelete(id)` controller + confirmation
+- [x] `useStockAdjust(id)` controller + Zod
+- [x] `StockAdjustDialog`
+- [x] `/inventory/:id` route registered
+- [x] Run `npm run typecheck` — pass

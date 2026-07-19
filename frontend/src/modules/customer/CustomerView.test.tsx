@@ -41,6 +41,7 @@ describe('CustomerListView', () => {
   const onSearch = vi.fn();
   const onPageChange = vi.fn();
   const onSelectCustomer = vi.fn();
+  const onCreateClick = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,7 +57,8 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
-      />,
+        onCreateClick={onCreateClick}
+      />
     );
 
     expect(screen.getByText('สมชาย')).toBeInTheDocument();
@@ -74,7 +76,8 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
-      />,
+        onCreateClick={onCreateClick}
+      />
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -90,7 +93,8 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
-      />,
+        onCreateClick={onCreateClick}
+      />
     );
 
     expect(screen.getByText('ไม่พบข้อมูลลูกค้า')).toBeInTheDocument();
@@ -106,7 +110,8 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
-      />,
+        onCreateClick={onCreateClick}
+      />
     );
 
     expect(screen.getByText('Network error')).toBeInTheDocument();
@@ -122,6 +127,7 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -142,6 +148,7 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -160,6 +167,7 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
+        onCreateClick={onCreateClick}
       />,
     );
 
@@ -187,6 +195,7 @@ describe('CustomerListView', () => {
         onSearch={onSearch}
         onPageChange={onPageChange}
         onSelectCustomer={onSelectCustomer}
+        onCreateClick={onCreateClick}
       />,
     );
 
