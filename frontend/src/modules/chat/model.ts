@@ -7,7 +7,6 @@ export interface ChatResponse {
   data: Record<string, unknown>[];
   formatted: string;
   format: string;
-  cached: boolean;
 }
 
 export interface ChatMessageDocument {
@@ -23,9 +22,49 @@ export interface ChatMessageDocument {
   createdAt: string;
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  firstQuestion: string;
+  lastActivity: string;
+  messageCount: number;
+}
+
+export type Provider = "openai" | "gemini" | "openrouter";
+
+export const PROVIDERS: { value: Provider; label: string }[] = [
+  { value: "openai", label: "OpenAI" },
+  { value: "gemini", label: "Gemini" },
+  { value: "openrouter", label: "OpenRouter" },
+];
+
+export const PROVIDER_MODELS: Record<Provider, { value: string; label: string }[]> = {
+  openai: [
+    { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+    { value: "gpt-4o", label: "GPT-4o" },
+    { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+  ],
+  gemini: [
+    { value: "gemini-2.0-flash-lite", label: "Flash Lite" },
+    { value: "gemini-2.0-flash", label: "Flash" },
+    { value: "gemini-2.5-flash", label: "Flash 2.5" },
+  ],
+  openrouter: [
+    { value: "google/gemma-4-26b-a4b-it:free", label: "Gemma 4 26B (free)" },
+    { value: "qwen/qwen3-coder:free", label: "Qwen3 Coder (free)" },
+    { value: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (free)" },
+    { value: "qwen/qwen3-next-80b-a3b-instruct:free", label: "Qwen3 Next 80B (free)" },
+  ],
+};
+
+export function getDefaultModel(provider: Provider): string {
+  return PROVIDER_MODELS[provider][0].value;
+}
+
 export interface SendMessageInput {
   question: string;
   format: "text" | "table" | "csv" | "html" | "json";
+  provider: Provider;
+  model?: string;
 }
 
 export type ExportFormat = 'text' | 'table' | 'csv' | 'html' | 'json';
@@ -53,10 +92,18 @@ export const chatApi = {
     return data.data;
   },
 
-  getHistory: async (limit = 50): Promise<ChatMessageDocument[]> => {
+  getHistory: async (sessionIdOverride?: string, limit = 50): Promise<ChatMessageDocument[]> => {
+    const sid = sessionIdOverride || sessionId;
     const { data } = await api.get("/chat/history", {
       params: { limit },
-      headers: { "X-Session-Id": sessionId },
+      headers: { "X-Session-Id": sid },
+    });
+    return data.data;
+  },
+
+  listSessions: async (limit = 50): Promise<SessionSummary[]> => {
+    const { data } = await api.get("/chat/sessions", {
+      params: { limit },
     });
     return data.data;
   },

@@ -58,38 +58,12 @@ describe("ChatService", () => {
     pool = createMockPool();
     redis = {
       get: jest.fn(),
-      setex: jest.fn().mockResolvedValue("OK"),
     } as unknown as jest.Mocked<Redis>;
     svc = new ChatService(pool as Pool, redis, mockDb, mockRmq);
   });
 
   describe("ask", () => {
-    it("should return cached response when cache hit", async () => {
-      const cached = {
-        question: "ยอดขายวันนี้",
-        sql: "SELECT SUM(grand_total) FROM invoices WHERE DATE(created_at) = CURDATE()",
-        resultCount: 1,
-        data: [{ total: "85000" }],
-        formatted: "total: 85000",
-        format: "text",
-        cached: false,
-      };
-      redis.get.mockResolvedValue(JSON.stringify(cached));
-
-      const result = await svc.ask(
-        { question: "ยอดขายวันนี้", format: "text" },
-        "user-1",
-        "session-1",
-      );
-
-      expect(result.cached).toBe(true);
-      expect(result.question).toBe("ยอดขายวันนี้");
-      expect(redis.get).toHaveBeenCalledWith(expect.stringContaining("ai:cache:"));
-      expect(mockLLMCreate).not.toHaveBeenCalled();
-    });
-
-    it("should generate SQL and execute when cache miss", async () => {
-      redis.get.mockResolvedValue(null);
+    it("should generate SQL and execute with LLM", async () => {
       mockLLMCreate.mockResolvedValue({
         choices: [{ message: { content: "SELECT SUM(grand_total) AS total FROM invoices WHERE DATE(created_at) = CURDATE()" } }],
       });
@@ -101,23 +75,17 @@ describe("ChatService", () => {
       });
 
       const result = await svc.ask(
-        { question: "ยอดขายวันนี้", format: "text" },
+        { question: "ยอดขายวันนี้", format: "text", provider: "openai" },
         "user-1",
         "session-1",
       );
 
-      expect(result.cached).toBe(false);
       expect(result.sql).toContain("SELECT");
       expect(result.data).toHaveLength(1);
-      expect(redis.setex).toHaveBeenCalledWith(
-        expect.stringContaining("ai:cache:"),
-        600,
-        expect.any(String),
-      );
+      expect(mockLLMCreate).toHaveBeenCalled();
     });
 
-    it("should handle cache miss with empty result", async () => {
-      redis.get.mockResolvedValue(null);
+    it("should handle empty result", async () => {
       mockLLMCreate.mockResolvedValue({
         choices: [{ message: { content: "SELECT * FROM invoices WHERE 1=0" } }],
       });
@@ -129,7 +97,7 @@ describe("ChatService", () => {
       });
 
       const result = await svc.ask(
-        { question: "ค้นหาที่ไม่มี", format: "text" },
+        { question: "ค้นหาที่ไม่มี", format: "text", provider: "openai" },
         "user-1",
         "session-1",
       );

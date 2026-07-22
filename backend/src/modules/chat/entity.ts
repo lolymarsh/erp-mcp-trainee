@@ -10,3 +10,10 @@ export interface ChatMessageDocument {
   cached: boolean;
   createdAt: Date;
 }
+
+export interface SessionSummary {
+  sessionId: string;
+  firstQuestion: string;
+  lastActivity: Date;
+  messageCount: number;
+}

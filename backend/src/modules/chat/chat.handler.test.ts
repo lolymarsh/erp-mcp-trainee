@@ -23,7 +23,6 @@ const mockChatResponse = {
   data: [{ total: "85000" }],
   formatted: "total: 85000",
   format: "text",
-  cached: false,
 };
 
 describe("ChatHandler", () => {
@@ -34,6 +33,7 @@ describe("ChatHandler", () => {
     svc = {
       ask: jest.fn(),
       getHistory: jest.fn(),
+      listSessions: jest.fn(),
       executeHeavyQuery: jest.fn(),
     };
     handler = new ChatHandler(svc);

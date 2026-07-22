@@ -84,6 +84,24 @@ export class ChatHandler {
     }
   };
 
+  listSessions = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId ?? "anonymous";
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 50;
+      const sessions = await this.svc.listSessions(userId, limit);
+      sendSuccess(res, 200, "success", { data: sessions });
+    } catch (err: unknown) {
+      if (err instanceof AppError) {
+        sendError(res, err.statusCode, err.message);
+        return;
+      }
+      logger.error({ err }, "chat listSessions failed");
+      sendError(res, 500, "Internal server error");
+    }
+  };
+
   streamMessage = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = sendMessageSchema.parse(req.body);
@@ -104,7 +122,7 @@ export class ChatHandler {
           rows: result.resultCount,
           data: result.data,
         });
-        sendSSE(res, "done", { cached: result.cached });
+        sendSSE(res, "done", {});
       } catch (err: unknown) {
         if (err instanceof AppError) {
           const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;

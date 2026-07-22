@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { chatApi, setSessionId } from './model';
-import type { SendMessageInput, ExportFormat } from './model';
+import { chatApi, setSessionId, getDefaultModel } from './model';
+import type { SendMessageInput, ExportFormat, Provider, SessionSummary } from './model';
 
 const SESSION_KEY = 'chat_session_id';
 
@@ -12,7 +12,6 @@ export interface ChatMessage {
   resultCount?: number;
   data?: Record<string, unknown>[];
   format?: string;
-  cached?: boolean;
   timestamp: Date;
   isError?: boolean;
   errorCode?: string;
@@ -34,8 +33,14 @@ export interface ToastState {
 }
 
 const errorMessages: Record<string, string> = {
-  OPENAI_KEY_INVALID: 'API key ไม่ถูกต้อง กรุณาตรวจสอบ OPENAI_API_KEY ใน .env',
+  MISSING_API_KEY: 'ไม่ได้ตั้งค่า API Key ใน .env สำหรับ provider นี้',
+  OPENAI_KEY_INVALID: 'API key ของ OpenAI ไม่ถูกต้อง',
+  GEMINI_KEY_INVALID: 'API key ของ Gemini ไม่ถูกต้อง',
+  OPENROUTER_KEY_INVALID: 'API key ของ OpenRouter ไม่ถูกต้อง',
+  OPENROUTER_INSUFFICIENT_BALANCE: 'เครดิตไม่เพียงพอ หรือโมเดลนี้ต้องใช้เครดิต',
   OPENAI_RATE_LIMIT: 'AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที',
+  GEMINI_RATE_LIMIT: 'AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที',
+  OPENROUTER_RATE_LIMIT: 'AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที',
   SQL_TIMEOUT: 'Query ใช้เวลานานเกินไป ลองถามใหม่ด้วยคำที่เจาะจงขึ้น',
   SQL_BLOCKED: 'คำถามนี้ไม่ปลอดภัย กรุณาถามใหม่',
   LLM_ERROR: 'ไม่สามารถสร้าง SQL ได้ กรุณาลองใหม่',
@@ -51,14 +56,17 @@ export function useChat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [format, setFormat] = useState<ExportFormat>('text');
+  const [provider, setProvider] = useState<Provider>('openrouter');
+  const [model, setModel] = useState<string>(() => getDefaultModel('openrouter'));
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionId, setSessionIdState] = useState<string>(() => {
+    return localStorage.getItem(SESSION_KEY) || generateSessionId();
+  });
   const [streaming, setStreaming] = useState<StreamingState>({
     active: false,
     sql: '',
     resultCount: 0,
     data: [],
-  });
-  const [sessionId, setSessionIdState] = useState<string>(() => {
-    return localStorage.getItem(SESSION_KEY) || generateSessionId();
   });
   const [toast, setToast] = useState<ToastState>({
     open: false,
@@ -68,7 +76,6 @@ export function useChat() {
   });
   const controllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const hasSavedSession = useRef(false);
 
   const showToast = useCallback(
     (message: string, severity: 'error' | 'warning' | 'info' = 'error', persistent = false) => {
@@ -89,9 +96,18 @@ export function useChat() {
     scrollToBottom();
   }, [messages, streaming, scrollToBottom]);
 
-  const loadHistory = useCallback(async () => {
+  const loadSessions = useCallback(async () => {
     try {
-      const history = await chatApi.getHistory(50);
+      const list = await chatApi.listSessions(50);
+      setSessions(list);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const loadHistory = useCallback(async (sid?: string) => {
+    try {
+      const history = await chatApi.getHistory(sid, 50);
       const loaded: ChatMessage[] = [];
       for (const msg of history) {
         loaded.push({
@@ -107,15 +123,16 @@ export function useChat() {
           sql: msg.sql,
           resultCount: msg.resultCount,
           format: msg.format,
-          cached: msg.cached,
           timestamp: new Date(msg.createdAt),
         });
       }
       if (loaded.length > 0) {
         setMessages(loaded);
+      } else {
+        setMessages([]);
       }
     } catch {
-      // silent — history is optional
+      // silent
     }
   }, []);
 
@@ -125,8 +142,21 @@ export function useChat() {
     if (existing) {
       loadHistory();
     }
+    loadSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleProviderChange = useCallback((newProvider: Provider) => {
+    setProvider(newProvider);
+    setModel(getDefaultModel(newProvider));
+  }, []);
+
+  const switchSession = useCallback(async (sid: string) => {
+    setSessionIdState(sid);
+    setSessionId(sid);
+    localStorage.setItem(SESSION_KEY, sid);
+    await loadHistory(sid);
+  }, [loadHistory]);
 
   const addAssistantMessage = useCallback(
     (
@@ -134,7 +164,6 @@ export function useChat() {
       resultCount: number,
       data: Record<string, unknown>[],
       msgFormat: string,
-      cached: boolean,
     ) => {
       const content = formatMessageContent(data, msgFormat);
       const assistantMessage: ChatMessage = {
@@ -145,7 +174,6 @@ export function useChat() {
         resultCount,
         data,
         format: msgFormat,
-        cached,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -155,41 +183,45 @@ export function useChat() {
 
   const handleErrorEvent = useCallback(
     (code: string, message: string, question: string) => {
-      switch (code) {
-        case 'OPENAI_KEY_INVALID':
-          showToast(errorMessages.OPENAI_KEY_INVALID, 'error', true);
-          break;
-        case 'OPENAI_RATE_LIMIT':
-          showToast(errorMessages.OPENAI_RATE_LIMIT, 'warning', false);
-          break;
-        case 'SQL_TIMEOUT': {
-          const errorBubble: ChatMessage = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: errorMessages.SQL_TIMEOUT,
-            timestamp: new Date(),
-            isError: true,
-            errorCode: code,
-            retryQuestion: question,
-          };
-          setMessages((prev) => [...prev, errorBubble]);
-          break;
+      const knownCodes = [
+        'MISSING_API_KEY', 'OPENAI_KEY_INVALID', 'GEMINI_KEY_INVALID', 'OPENROUTER_KEY_INVALID',
+        'OPENROUTER_INSUFFICIENT_BALANCE',
+        'OPENAI_RATE_LIMIT', 'GEMINI_RATE_LIMIT', 'OPENROUTER_RATE_LIMIT',
+      ];
+      if (knownCodes.includes(code) && errorMessages[code]) {
+        const isPersistent = code === 'MISSING_API_KEY' || code.endsWith('_KEY_INVALID') || code === 'OPENROUTER_INSUFFICIENT_BALANCE';
+        showToast(errorMessages[code], 'error', isPersistent);
+      } else {
+        switch (code) {
+          case 'SQL_TIMEOUT': {
+            const errorBubble: ChatMessage = {
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: errorMessages.SQL_TIMEOUT,
+              timestamp: new Date(),
+              isError: true,
+              errorCode: code,
+              retryQuestion: question,
+            };
+            setMessages((prev) => [...prev, errorBubble]);
+            break;
+          }
+          case 'SQL_BLOCKED': {
+            const errorBubble: ChatMessage = {
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: errorMessages.SQL_BLOCKED,
+              timestamp: new Date(),
+              isError: true,
+              errorCode: code,
+            };
+            setMessages((prev) => [...prev, errorBubble]);
+            break;
+          }
+          default:
+            showToast(message || errorMessages.LLM_ERROR, 'error', false);
+            break;
         }
-        case 'SQL_BLOCKED': {
-          const errorBubble: ChatMessage = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: errorMessages.SQL_BLOCKED,
-            timestamp: new Date(),
-            isError: true,
-            errorCode: code,
-          };
-          setMessages((prev) => [...prev, errorBubble]);
-          break;
-        }
-        default:
-          showToast(message || errorMessages.LLM_ERROR, 'error', false);
-          break;
       }
       setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
       setLoading(false);
@@ -205,11 +237,7 @@ export function useChat() {
 
       setError(null);
       setLoading(true);
-
-      if (!hasSavedSession.current) {
-        localStorage.setItem(SESSION_KEY, sessionId);
-        hasSavedSession.current = true;
-      }
+      localStorage.setItem(SESSION_KEY, sessionId);
 
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -222,6 +250,8 @@ export function useChat() {
       const input: SendMessageInput = {
         question: question.trim(),
         format,
+        provider,
+        model,
       };
 
       setStreaming({ active: true, sql: '', resultCount: 0, data: [] });
@@ -247,12 +277,7 @@ export function useChat() {
               break;
             }
             case 'done': {
-              const cached = (payload.cached as boolean) ?? false;
-              const currentStreaming = {
-                sql: '',
-                resultCount: 0,
-                data: [] as Record<string, unknown>[],
-              };
+              const currentStreaming = { sql: '', resultCount: 0, data: [] };
               setStreaming((prev) => {
                 currentStreaming.sql = prev.sql;
                 currentStreaming.resultCount = prev.resultCount;
@@ -264,10 +289,10 @@ export function useChat() {
                 currentStreaming.resultCount,
                 currentStreaming.data,
                 format,
-                cached,
               );
               setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
               setLoading(false);
+              loadSessions();
               break;
             }
             case 'error': {
@@ -292,7 +317,7 @@ export function useChat() {
         },
       );
     },
-    [format, loading, streaming.active, sessionId, showToast, addAssistantMessage, handleErrorEvent],
+    [format, provider, model, loading, streaming.active, sessionId, showToast, addAssistantMessage, handleErrorEvent, loadSessions],
   );
 
   const cancelStream = useCallback(() => {
@@ -301,14 +326,13 @@ export function useChat() {
     setLoading(false);
   }, []);
 
-  const clearMessages = useCallback(() => {
+  const newSession = useCallback(() => {
     setMessages([]);
     setError(null);
     const newId = generateSessionId();
     setSessionIdState(newId);
     setSessionId(newId);
-    hasSavedSession.current = false;
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.setItem(SESSION_KEY, newId);
   }, []);
 
   const retrySend = useCallback(
@@ -330,6 +354,8 @@ export function useChat() {
       const blob = await chatApi.exportResult({
         question: lastAssistant.content.slice(0, 100),
         format: (lastAssistant.format as ExportFormat) ?? 'text',
+        provider,
+        model,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -340,7 +366,7 @@ export function useChat() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Export failed');
     }
-  }, [messages]);
+  }, [messages, provider, model]);
 
   return {
     messages,
@@ -348,12 +374,19 @@ export function useChat() {
     error,
     streaming,
     format,
+    provider,
+    model,
+    sessions,
+    sessionId,
     toast,
     messagesEndRef,
     setFormat,
+    setProvider: handleProviderChange,
+    setModel,
     sendMessage,
     cancelStream,
-    clearMessages,
+    newSession,
+    switchSession,
     exportLastResult,
     retrySend,
     setError,
@@ -380,6 +413,8 @@ function formatMessageContent(
       );
       return [header, ...rows].join('\n');
     }
+    case 'html':
+      return buildHtmlTable(data);
     case 'text':
     case 'table':
     default: {
@@ -392,4 +427,21 @@ function formatMessageContent(
       return [header, separator, ...rows].join('\n');
     }
   }
+}
+
+function buildHtmlTable(data: Record<string, unknown>[]): string {
+  if (data.length === 0) return '<p>ไม่พบข้อมูล</p>';
+  const cols = Object.keys(data[0]);
+  const thead = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+  const tbody = data.map(row =>
+    `<tr>${cols.map(c => `<td>${escapeHtml(String(row[c] ?? ''))}</td>`).join('')}</tr>`
+  ).join('');
+  return `<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%">
+    <thead><tr>${thead}</tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>`;
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

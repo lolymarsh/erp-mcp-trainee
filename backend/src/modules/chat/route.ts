@@ -12,6 +12,7 @@ export function registerChatRoutes(
   router.post("/stream", auth(), handler.streamMessage);
   router.get("/history", auth(), handler.getHistory);
   router.post("/export", auth(), handler.exportResult);
+  router.get("/sessions", auth(), handler.listSessions);
 
   return router;
 }

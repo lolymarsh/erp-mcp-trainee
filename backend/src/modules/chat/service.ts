@@ -1,9 +1,9 @@
-import crypto from "node:crypto";
 import type { Pool } from "mysql2/promise";
 import type { Db } from "mongodb";
 import type Redis from "ioredis";
 import type { RowDataPacket } from "mysql2/promise";
 import OpenAI from "openai";
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from "@google/generative-ai";
 import { logger } from "../../config/logger";
 import { publishToQueue } from "../../config/rabbitmq";
 import { sanitizeSql } from "./sanitizer";
@@ -11,16 +11,17 @@ import { formatResult } from "./formatter";
 import type { SendMessageInput, ChatResponse } from "./schema";
 import { ChatMongoRepository } from "./repo_mongo";
 import type { IChatMongoRepository } from "./repo_mongo";
-import type { ChatMessageDocument } from "./entity";
+import type { ChatMessageDocument, SessionSummary } from "./entity";
 import type { RabbitMQConnection } from "../../config/rabbitmq";
 import { AppError } from "../../shared/errors/AppError";
 
-const CACHE_TTL = 600;
 const QUERY_TIMEOUT_MS = 5000;
 
-function md5(input: string): string {
-  return crypto.createHash("md5").update(input).digest("hex");
-}
+const PROVIDER_ENV_MAP: Record<string, { key: string; label: string }> = {
+  openai: { key: "OPENAI_API_KEY", label: "OpenAI" },
+  gemini: { key: "GEMINI_API_KEY", label: "Gemini" },
+  openrouter: { key: "OPENROUTER_API_KEY", label: "OpenRouter" },
+};
 
 function buildSystemPrompt(): string {
   return `You are a SQL expert for an ERP system for an auto gas installation business in Thailand.
@@ -72,24 +73,43 @@ function extractSQL(response: string): string {
 export interface IChatService {
   ask(input: SendMessageInput, userId: string, sessionId: string): Promise<ChatResponse>;
   getHistory(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
+  listSessions(userId: string, limit?: number): Promise<SessionSummary[]>;
   executeHeavyQuery(sql: string): Promise<Record<string, unknown>[]>;
 }
 
 export class ChatService implements IChatService {
   private mongoRepo: IChatMongoRepository;
-  private llmClient: OpenAI;
+  private openaiClient: OpenAI | null;
+  private geminiClient: GoogleGenerativeAI | null;
+  private openrouterClient: OpenAI | null;
 
   constructor(
     private dbPool: Pool,
-    private redis: Redis,
+    _redis: Redis,
     mongoDb: Db,
     private rmq: RabbitMQConnection,
   ) {
     this.mongoRepo = new ChatMongoRepository(mongoDb);
-    // API key from process.env.OPENAI_API_KEY — set in .env
-    this.llmClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || "",
-    });
+
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      this.openaiClient = new OpenAI({ apiKey: openaiKey });
+    } else {
+      this.openaiClient = null as unknown as OpenAI;
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+    this.geminiClient = geminiKey ? new GoogleGenerativeAI(geminiKey) : null as unknown as GoogleGenerativeAI;
+
+    const orKey = process.env.OPENROUTER_API_KEY;
+    if (orKey) {
+      this.openrouterClient = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: orKey,
+      });
+    } else {
+      this.openrouterClient = null as unknown as OpenAI;
+    }
   }
 
   async ask(
@@ -97,19 +117,19 @@ export class ChatService implements IChatService {
     userId: string,
     sessionId: string,
   ): Promise<ChatResponse> {
-    const cacheKey = `ai:cache:${md5(`${input.question}:${input.format}`)}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) {
-      const parsed: ChatResponse = JSON.parse(cached);
-      parsed.cached = true;
-      this.saveToMongo(userId, sessionId, parsed).catch((err: unknown) => {
-        logger.error({ err }, "Failed to save cached chat to MongoDB");
-      });
-      return parsed;
+    const envInfo = PROVIDER_ENV_MAP[input.provider];
+    if (!envInfo) {
+      throw new AppError(400, "INVALID_PROVIDER", { userMessage: `ไม่รองรับ provider: ${input.provider}` });
+    }
+    const apiKey = process.env[envInfo.key];
+    if (!apiKey) {
+      throw new AppError(400, "MISSING_API_KEY", { userMessage: `ไม่ได้ตั้งค่า ${envInfo.key} ใน .env` });
     }
 
     const systemPrompt = buildSystemPrompt();
-    const llmResponse = await this.callLLM(systemPrompt, input.question);
+    const historyDocs = await this.mongoRepo.getHistoryAsc(sessionId, 10);
+
+    const llmResponse = await this.callLLM(systemPrompt, input, historyDocs);
     const sql = extractSQL(llmResponse);
 
     try {
@@ -137,10 +157,8 @@ export class ChatService implements IChatService {
       data,
       formatted,
       format: input.format,
-      cached: false,
     };
 
-    await this.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
     this.saveToMongo(userId, sessionId, response).catch((err: unknown) => {
       logger.error({ err }, "Failed to save chat to MongoDB");
     });
@@ -156,6 +174,10 @@ export class ChatService implements IChatService {
     return this.mongoRepo.getHistory(sessionId, limit);
   }
 
+  async listSessions(userId: string, limit = 50): Promise<SessionSummary[]> {
+    return this.mongoRepo.listSessions(userId, limit);
+  }
+
   async executeHeavyQuery(sql: string): Promise<Record<string, unknown>[]> {
     sanitizeSql(sql);
     const rawResult = await this.executeWithTimeout(sql, 60000);
@@ -164,14 +186,37 @@ export class ChatService implements IChatService {
 
   private async callLLM(
     systemPrompt: string,
-    question: string,
+    input: SendMessageInput,
+    historyDocs: ChatMessageDocument[],
   ): Promise<string> {
+    const provider = input.provider;
+
+    if (provider === "gemini") {
+      return this.callGemini(systemPrompt, input, historyDocs);
+    }
+    return this.callOpenAICompatible(systemPrompt, input, historyDocs);
+  }
+
+  private async callOpenAICompatible(
+    systemPrompt: string,
+    input: SendMessageInput,
+    historyDocs: ChatMessageDocument[],
+  ): Promise<string> {
+    const client = input.provider === "openrouter" ? this.openrouterClient! : this.openaiClient!;
+    const modelName = input.model || this.getDefaultModel(input.provider);
+
+    const history: OpenAI.Chat.ChatCompletionMessageParam[] = historyDocs.flatMap(doc => [
+      { role: "user", content: doc.question },
+      { role: "assistant", content: doc.response },
+    ]);
+
     try {
-      const completion = await this.llmClient.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      const completion = await client.chat.completions.create({
+        model: modelName,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: question },
+          ...history,
+          { role: "user", content: input.question },
         ],
         temperature: 0.1,
         max_tokens: 500,
@@ -182,16 +227,68 @@ export class ChatService implements IChatService {
       }
       return content;
     } catch (err: unknown) {
-      logger.error({ err }, "LLM call failed");
+      logger.error({ err }, `${input.provider} LLM call failed`);
       if (err instanceof OpenAI.APIError) {
-        if (err.status === 401) {
-          throw new AppError(500, "OPENAI_KEY_INVALID", { userMessage: "API key ไม่ถูกต้อง" });
+        if (err.status === 401 || err.status === 403) {
+          throw new AppError(500, `${input.provider.toUpperCase()}_KEY_INVALID`.replace("OPENAI", "OPENAI"), { userMessage: `API key ของ ${input.provider} ไม่ถูกต้อง` });
+        }
+        if (err.status === 402) {
+          throw new AppError(500, `${input.provider.toUpperCase()}_INSUFFICIENT_BALANCE`, { userMessage: "เครดิตไม่เพียงพอ หรือโมเดลนี้ต้องใช้เครดิต" });
         }
         if (err.status === 429) {
-          throw new AppError(500, "OPENAI_RATE_LIMIT", { userMessage: "AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที" });
+          throw new AppError(500, `${input.provider.toUpperCase()}_RATE_LIMIT`, { userMessage: "AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที" });
         }
       }
       throw new AppError(500, "LLM_ERROR", { userMessage: "ไม่สามารถสร้าง SQL ได้ กรุณาลองใหม่" });
+    }
+  }
+
+  private async callGemini(
+    systemPrompt: string,
+    input: SendMessageInput,
+    historyDocs: ChatMessageDocument[],
+  ): Promise<string> {
+    const modelName = input.model || process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
+
+    const history = historyDocs.flatMap(doc => [
+      { role: "user", parts: [{ text: doc.question }] },
+      { role: "model", parts: [{ text: doc.response }] },
+    ]);
+
+    try {
+      const model = this.geminiClient!.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+      });
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(input.question);
+      const content = result.response.text();
+      if (!content) {
+        throw new Error("LLM returned empty response");
+      }
+      return content;
+    } catch (err: unknown) {
+      logger.error({ err }, "gemini LLM call failed");
+      if (err instanceof GoogleGenerativeAIFetchError) {
+        if (err.status === 401 || err.status === 403) {
+          throw new AppError(500, "GEMINI_KEY_INVALID", { userMessage: "API key ของ Gemini ไม่ถูกต้อง" });
+        }
+        if (err.status === 429) {
+          throw new AppError(500, "GEMINI_RATE_LIMIT", { userMessage: "AI ทำงานหนักเกินไป กรุณาลองใหม่ใน 1 นาที" });
+        }
+      }
+      throw new AppError(500, "LLM_ERROR", { userMessage: "ไม่สามารถสร้าง SQL ได้ กรุณาลองใหม่" });
+    }
+  }
+
+  private getDefaultModel(provider: string): string {
+    switch (provider) {
+      case "openai":
+        return process.env.OPENAI_MODEL || "gpt-4o-mini";
+      case "openrouter":
+        return process.env.OPENROUTER_MODEL || "google/gemma-4-26b-a4b-it:free";
+      default:
+        return "gpt-4o-mini";
     }
   }
 
@@ -222,7 +319,7 @@ export class ChatService implements IChatService {
       resultCount: response.resultCount,
       format: response.format,
       response: response.formatted,
-      cached: response.cached,
+      cached: false,
       createdAt: new Date(),
     });
   }
