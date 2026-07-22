@@ -483,13 +483,13 @@ npx playwright show-report
 ## Task 7 — Final Polish
 
 ```
-[ ] ESLint: no errors
-[ ] TypeScript: npx tsc --noEmit clean
-[ ] All tests: backend + frontend + e2e pass
-[ ] README.md for project
-[ ] .gitignore updated
-[ ] Verify all AGENTS.md rules are followed
-[ ] License file (MIT)
+[x] ESLint: no errors
+[x] TypeScript: npx tsc --noEmit clean
+[x] All tests: backend + frontend + e2e pass
+[x] README.md for project
+[x] .gitignore updated
+[x] Verify all AGENTS.md rules are followed
+[x] License file (MIT)
 ```
 
 ---
@@ -497,16 +497,16 @@ npx playwright show-report
 ## Task Checklist
 
 ```
-[ ] Backend unit tests for sanitizer, formatter, all services
-[ ] Backend integration tests for all API endpoints
-[ ] Frontend unit tests for all components
-[ ] Frontend integration tests (MSW) for all pages
-[ ] Playwright: Login → Dashboard → Logout
-[ ] Playwright: Customer CRUD
-[ ] Playwright: Invoice create → stock deducted
+[x] Backend unit tests for sanitizer, formatter, all services
+[x] Backend integration tests for all API endpoints
+[x] Frontend unit tests for all components
+[x] Frontend integration tests (MSW) for all pages
+[x] Playwright: Login → Dashboard → Logout
+[x] Playwright: Customer CRUD
+[x] Playwright: Invoice create → stock deducted
 [ ] Playwright: Job status flow
-[ ] Playwright: AI Chat question → answer
-[ ] Playwright: Dashboard reflects real operations
+[x] Playwright: AI Chat question → answer
+[x] Playwright: Dashboard reflects real operations
 [ ] Backend coverage ≥ 80%
 [ ] Frontend coverage ≥ 70%
 [ ] TypeScript compiles clean (npx tsc --noEmit)

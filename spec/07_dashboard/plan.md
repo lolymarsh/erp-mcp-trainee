@@ -336,22 +336,22 @@ LIMIT 5;
 ## Task Checklist
 
 ```
-[ ] GET /api/dashboard/summary → all 5 sections populated
-[ ] Redis cache: first call queries DB, second call returns cached
-[ ] Cache invalidates on invoice create / stock adjust
-[ ] todaySales: amount + count for today
-[ ] todayJobs: total + completed + inProgress + queued
-[ ] lowStockProducts: products below min threshold
-[ ] monthlySales: last 12 months bar chart data
-[ ] topTechnicians: top 5 by completed jobs (last 30 days)
-[ ] Frontend: 4 KPI cards + 2 charts + low stock table
-[ ] KPI cards with MUI Paper + icons
-[ ] Monthly sales bar chart (Recharts)
-[ ] Top technicians bar chart (Recharts)
-[ ] Low stock DataGrid with red highlight
-[ ] Auto-refresh works (every 5 min)
-[ ] Integration tests for dashboard endpoint
-[ ] Unit tests for aggregate service
+[x] GET /api/dashboard/summary → all 5 sections populated
+[x] Redis cache: first call queries DB, second call returns cached
+[x] Cache invalidates on invoice create / stock adjust
+[x] todaySales: amount + count for today
+[x] todayJobs: total + completed + inProgress + queued
+[x] lowStockProducts: products below min threshold
+[x] monthlySales: last 12 months bar chart data
+[ ] topTechnicians: top 5 by completed jobs (last 30 days — missing date filter)
+[x] Frontend: 4 KPI cards + 2 charts + low stock table
+[x] KPI cards with MUI Paper + icons
+[x] Monthly sales bar chart (Recharts)
+[x] Top technicians bar chart (Recharts)
+[x] Low stock DataGrid with red highlight
+[x] Auto-refresh works (every 5 min)
+[x] Integration tests for dashboard endpoint
+[x] Unit tests for aggregate service
 ```
 
 ---

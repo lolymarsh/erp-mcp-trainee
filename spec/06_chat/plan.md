@@ -364,24 +364,24 @@ Rules:
 ## Task Checklist
 
 ```
-[ ] POST /api/chat/send "วันนี้ยอดขายเท่าไหร่" → correct SQL + result
-[ ] POST /api/chat/send "สินค้าใกล้หมดมีอะไรบ้าง" → filtered result
-[ ] POST /api/chat/send with format=csv → CSV file download
-[ ] POST /api/chat/send with format=html → HTML table response
-[ ] SQL sanitizer rejects DROP, DELETE, UPDATE, INSERT
+[x] POST /api/chat/send "วันนี้ยอดขายเท่าไหร่" → correct SQL + result
+[x] POST /api/chat/send "สินค้าใกล้หมดมีอะไรบ้าง" → filtered result
+[x] POST /api/chat/send with format=csv → CSV file download
+[x] POST /api/chat/send with format=html → HTML table response
+[x] SQL sanitizer rejects DROP, DELETE, UPDATE, INSERT
 [ ] Redis cache: same question twice → second call instant (no LLM call)
-[ ] Chat history saved to MongoDB
-[ ] Audit worker: logs written to MongoDB
+[x] Chat history saved to MongoDB
+[x] Audit worker: logs written to MongoDB
 [ ] ToolRegistry: register + execute sql_query tool
 [ ] ToolRegistry: multi-turn agent loop (max 5 turns)
 [ ] AgentRun saved to MongoDB for history
 [ ] ToolCallBlock UI: show tool name + status icon
 [ ] ToolResultBlock: render table, chart, html results
-[ ] Frontend: chat UI with send/receive
-[ ] Frontend: streaming SSE display
-[ ] Frontend: format selector + export button
-[ ] Frontend: loading state while waiting
-[ ] Integration tests: valid query, blocked query, cache hit
+[x] Frontend: chat UI with send/receive
+[x] Frontend: streaming SSE display
+[x] Frontend: format selector + export button
+[x] Frontend: loading state while waiting
+[x] Integration tests: valid query, blocked query, cache hit
 ```
 
 ---

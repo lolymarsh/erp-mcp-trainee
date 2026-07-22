@@ -163,30 +163,30 @@ function UserListRoute() {
 ```
 เฉพาะ Admin เท่านั้นที่เห็น
 
-## Tasks
+## Checklist
 
-### Backend
-- [ ] `user/schema.ts` — เพิ่ม `updateUserSchema`, `deleteUserSchema`
-- [ ] `user/repo.ts` — เพิ่ม `findFiltered()` with pagination + filters
-- [ ] `user/repo.ts` — เพิ่ม `softDelete()` with version check
-- [ ] `user/service.ts` — เพิ่ม `filter()`, `update()`, `softDelete()`, `deactivate()`
-- [ ] `user/handler.ts` — เพิ่ม `filter`, `update`, `softDelete`, `deactivate` handlers
-- [ ] `user/route.ts` — เพิ่ม routes (`POST /filter`, `PATCH /:id`, `DELETE /:id`, `PATCH /:id/deactivate`)
-- [ ] Inject audit service into user service
-- [ ] Audit logging for all user mutations
-- [ ] `npm run typecheck` — pass
-- [ ] `npm test` — all pass
+### Backend — User Module
+- [x] `user/schema.ts` — เพิ่ม `updateUserSchema`, `deleteUserSchema`, `filterRequestSchema`
+- [x] `user/repo.ts` — เพิ่ม `findFiltered()` with pagination + filters (role, isActive, displayName, username)
+- [x] `user/repo.ts` — เพิ่ม `softDelete()` with version check
+- [x] `user/service.ts` — เพิ่ม `filter()`, `update()`, `softDelete()`, `deactivate()`
+- [x] `user/handler.ts` — เพิ่ม `filter`, `update`, `softDelete`, `deactivate` handlers
+- [x] `user/route.ts` — เพิ่ม routes (`POST /filter`, `PATCH /:id`, `DELETE /:id`, `PATCH /:id/deactivate`)
+- [x] Inject audit service into user service
+- [x] Audit logging for all user mutations (CREATE/UPDATE/DELETE/ACTIVATE/DEACTIVATE)
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors
 
 ### Frontend
-- [ ] `modules/user/model.ts` — interfaces + API calls
-- [ ] `modules/user/controller.ts` — hooks (list, create, update, delete, toggleActive)
-- [ ] `modules/user/view.tsx` — UserListView, UserCreateDialog, UserEditDialog, UserDeleteConfirmDialog
-- [ ] `router.tsx` — เพิ่ม route `/admin/users`
-- [ ] Layout sidebar — เพิ่ม link (Admin only)
-- [ ] Search field with debounce (400ms)
-- [ ] Role filter dropdown
-- [ ] Button-style actions (not icon buttons)
-- [ ] ทุก label เป็นภาษาไทย
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
-- [ ] Manual test: Login as admin → /admin/users → list, create, edit, deactivate, delete
+- [x] `modules/user/model.ts` — interfaces + API calls
+- [x] `modules/user/controller.ts` — hooks: `useUserList`, `useUserCreate`, `useUserUpdate`, `useUserDelete`, `useUserToggleActive`
+- [x] `modules/user/view.tsx` — UserListView (search + role filter + button-style actions)
+- [x] `modules/user/view.tsx` — UserCreateDialog, UserEditDialog, UserDeleteConfirmDialog
+- [x] `router.tsx` — เพิ่ม route `/admin/users`
+- [x] Layout sidebar — เพิ่ม link (Admin only), พร้อม role guard
+- [x] Search field with debounce (400ms)
+- [x] Role filter dropdown
+- [x] ทุก label เป็นภาษาไทย
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors
+- [x] Manual test: Login as admin → /admin/users → list, create, edit, deactivate, delete

@@ -169,24 +169,24 @@ Wire in `frontend/src/router.tsx`:
 ## Checklist
 
 ### Backend — Customer CRUD
-- [ ] `POST /api/customers/filter` → paginated response with pagination metadata
-- [ ] `POST /api/customers` → 201 created
-- [ ] `GET /api/customers/:id` → customer + vehicles
-- [ ] `PATCH /api/customers/:id` → 200 updated
-- [ ] `PATCH /api/customers/:id` (wrong version) → 409
-- [ ] `DELETE /api/customers/:id` → soft delete (sets deleted_at)
-- [ ] Integration tests for all endpoints
+- [x] `POST /api/customers/filter` → paginated response with pagination metadata
+- [x] `POST /api/customers` → 201 created
+- [x] `GET /api/customers/:id` → customer + vehicles
+- [x] `PATCH /api/customers/:id` → 200 updated
+- [x] `PATCH /api/customers/:id` (wrong version) → 409
+- [x] `DELETE /api/customers/:id` → soft delete (sets deleted_at)
+- [x] Integration tests for all endpoints
 
 ### Backend — Vehicle CRUD
-- [ ] `POST /api/customers/vehicles` → create vehicle for customer
-- [ ] `PATCH /api/customers/vehicles/:id` → update vehicle
-- [ ] `DELETE /api/customers/vehicles/:id` → delete vehicle
-- [ ] Audit log for create/update/delete vehicle
+- [x] `POST /api/customers/vehicles` → create vehicle for customer
+- [x] `PATCH /api/customers/vehicles/:id` → update vehicle
+- [x] `DELETE /api/customers/vehicles/:id` → delete vehicle
+- [x] Audit log for create/update/delete vehicle
 
 ### Frontend
-- [ ] Customer list with pagination + search
-- [ ] Customer detail with vehicle list
-- [ ] Create/edit/delete customer dialogs with version
-- [ ] Create/edit/delete vehicle dialogs
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
+- [x] Customer list with pagination + search
+- [x] Customer detail with vehicle list
+- [x] Create/edit/delete customer dialogs with version
+- [x] Create/edit/delete vehicle dialogs
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors

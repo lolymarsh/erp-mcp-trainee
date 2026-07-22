@@ -672,58 +672,58 @@ api.interceptors.response.use(
 ## Implementation Checklist
 
 ```
-[ ] Task 1: Docker Infra
+[x] Task 1: Docker Infra
     [x] docker-compose.yml created
-    [ ] docker compose up -d — all 4 services healthy
-[ ] Task 2: Backend Init
-    [ ] npm install — all dependencies
-    [ ] TypeScript compiled without errors
-    [ ] ESLint configured
-    [ ] Express starts on :3000
-    [ ] /health returns 200
-[ ] Task 3: Config + DI
-    [ ] .env created (no hardcoded values)
-    [ ] createDb() factory — no global export
-    [ ] createRedis() factory
-    [ ] createRabbitMQ() factory
-    [ ] app.ts creates connections, injects to router
-    [ ] router.ts wires repos → services → handlers
-    [ ] Repos use constructor(db) — no import db global
-[ ] Task 4: Schema + Migrations
-    [ ] MySQL: all tables created
-    [ ] MongoDB: indexes created
-    [ ] Seed data inserted
-[ ] Task 5: Shared Middleware
-    [ ] AppError classes (NotFound, Conflict, Unauthorized, etc.)
-    [ ] sendSuccess/sendError with unified format
-    [ ] PaginationResponse + calculatePagination
-    [ ] authMiddleware (JWT + Redis session)
-    [ ] validatorMiddleware (Zod schema)
+    [x] docker compose up -d — all 4 services healthy
+[x] Task 2: Backend Init
+    [x] npm install — all dependencies
+    [x] TypeScript compiled without errors
+    [x] ESLint configured
+    [x] Express starts on :3000
+    [x] /health returns 200
+[x] Task 3: Config + DI
+    [x] .env created (no hardcoded values)
+    [x] createDb() factory — no global export
+    [x] createRedis() factory
+    [x] createRabbitMQ() factory
+    [x] app.ts creates connections, injects to router
+    [x] router.ts wires repos → services → handlers
+    [x] Repos use constructor(db) — no import db global
+[x] Task 4: Schema + Migrations
+    [x] MySQL: all tables created
+    [x] MongoDB: indexes created
+    [x] Seed data inserted
+[x] Task 5: Shared Middleware
+    [x] AppError classes (NotFound, Conflict, Unauthorized, etc.)
+    [x] sendSuccess/sendError with unified format
+    [x] PaginationResponse + calculatePagination
+    [x] authMiddleware (JWT + Redis session)
+    [x] validatorMiddleware (Zod schema)
     [ ] rateLimitMiddleware (dev fallback)
-    [ ] Unit tests for all shared utils
-[ ] Task 6: Auth Backend
-    [ ] POST /api/auth/login → 200 + JWT
-    [ ] GET /api/auth/profile → 200 (with token)
-    [ ] GET /api/auth/profile → 401 (without token)
-    [ ] POST /api/auth/ → 201 (admin creates user)
-    [ ] Integration tests pass
-[ ] Task 7: Frontend Init
-    [ ] Vite + React 19 setup
-    [ ] MUI + Tailwind v4 configured
-    [ ] Layout shell (sidebar + header)
-    [ ] Frontend starts on :5173
-[ ] Task 8: Auth Frontend
-    [ ] Login form renders
-    [ ] Login with valid credentials → redirect to /
-    [ ] Login with invalid credentials → error message
-    [ ] Logout → redirect to /login
-    [ ] Zustand store persists token
-    [ ] Axios interceptor auto-attaches JWT
-[ ] Quality Gates
-    [ ] npm run lint — 0 issues
-    [ ] npm run typecheck — no errors
-    [ ] No export const db in codebase
-    [ ] 43+ tests, 5+ suites passing
+    [x] Unit tests for all shared utils
+[x] Task 6: Auth Backend
+    [x] POST /api/auth/login → 200 + JWT
+    [x] GET /api/auth/profile → 200 (with token)
+    [x] GET /api/auth/profile → 401 (without token)
+    [x] POST /api/auth/ → 201 (admin creates user)
+    [x] Integration tests pass
+[x] Task 7: Frontend Init
+    [x] Vite + React 19 setup
+    [x] MUI + Tailwind v4 configured
+    [x] Layout shell (sidebar + header)
+    [x] Frontend starts on :5173
+[x] Task 8: Auth Frontend
+    [x] Login form renders
+    [x] Login with valid credentials → redirect to /
+    [x] Login with invalid credentials → error message
+    [x] Logout → redirect to /login
+    [x] Zustand store persists token
+    [x] Axios interceptor auto-attaches JWT
+[x] Quality Gates
+    [x] npm run lint — 0 issues
+    [x] npm run typecheck — no errors
+    [x] No export const db in codebase
+    [x] 43+ tests, 5+ suites passing
 ```
 
 ---

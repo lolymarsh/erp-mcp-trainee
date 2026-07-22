@@ -175,15 +175,24 @@ const searchCustomers = async (search: string, page: number, append: boolean) =>
 };
 ```
 
-## 5. Acceptance Criteria
+## 5. Checklist
 
-- [ ] `POST /api/jobs` → 201, linked to customer+vehicle
-- [ ] `PATCH /api/jobs/:id/status` → status updated + log created
-- [ ] `PATCH /api/jobs/:id/status` (wrong version) → 409
-- [ ] `PATCH /api/jobs/:id/status` (invalid transition) → 400
-- [ ] `POST /api/jobs/filter` → paginated with filters
-- [ ] `GET /api/jobs/today-queue` → correct counts by status
-- [ ] Status change uses `db.transaction()` (job + log)
-- [ ] Frontend: job queue with search/filter + color-coded status badges
-- [ ] Frontend: customer selector with infinite scroll + debounce
-- [ ] Integration tests for all endpoints
+### Backend
+- [x] `POST /api/jobs` → 201, linked to customer+vehicle
+- [x] `GET /api/jobs/:id` → job detail with status history
+- [x] `PATCH /api/jobs/:id/status` → status updated + log created
+- [x] `PATCH /api/jobs/:id/status` (wrong version) → 409
+- [x] `PATCH /api/jobs/:id/status` (invalid transition) → 400
+- [x] `POST /api/jobs/filter` → paginated with status + jobType filters
+- [ ] `GET /api/jobs/today-queue` → correct counts by status (missing cancelled + total)
+- [x] Status change uses `db.transaction()` (update job + insert log)
+- [x] Integration tests for all endpoints
+
+### Frontend
+- [ ] Job queue page with search (debounced) + status/jobType filter dropdowns (search not wired)
+- [x] Color-coded status badges (QUEUED/IN_PROGRESS/COMPLETED/CANCELLED)
+- [x] Job create dialog with customer selector (infinite scroll + debounce + pagination)
+- [x] Inline status change or detail page with status update button
+- [x] 409 alert dialog on version mismatch
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors

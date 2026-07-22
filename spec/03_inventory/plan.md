@@ -171,34 +171,34 @@ await db.transaction(async (tx) => {
 ## Checklist
 
 ### Backend — Products
-- [ ] `POST /api/inventory/products/filter` → paginated with stock info + categoryName
-- [ ] `POST /api/inventory/products` → 201 created
-- [ ] `GET /api/inventory/products/:id` → product detail + movements
-- [ ] `PATCH /api/inventory/products/:id` → 200 updated
-- [ ] `PATCH /api/inventory/products/:id` (version mismatch) → 409
-- [ ] `DELETE /api/inventory/products/:id` → soft delete
-- [ ] Integration tests for all endpoints
+- [x] `POST /api/inventory/products/filter` → paginated with stock info + categoryName
+- [x] `POST /api/inventory/products` → 201 created
+- [x] `GET /api/inventory/products/:id` → product detail + movements
+- [x] `PATCH /api/inventory/products/:id` → 200 updated
+- [x] `PATCH /api/inventory/products/:id` (version mismatch) → 409
+- [x] `DELETE /api/inventory/products/:id` → soft delete
+- [x] Integration tests for all endpoints
 
 ### Backend — Stock Adjustment
-- [ ] `POST /api/inventory/products/:id/stock` → stock updated + movement logged
-- [ ] Stock adjustment uses `db.transaction()` with `FOR UPDATE`
-- [ ] `OUT` type validates sufficient stock → 400 if insufficient
-- [ ] IN/OUT/ADJUST all calculate correctly
-- [ ] Integration tests (including rollback scenario)
+- [x] `POST /api/inventory/products/:id/stock` → stock updated + movement logged
+- [x] Stock adjustment uses `db.transaction()` with `FOR UPDATE`
+- [x] `OUT` type validates sufficient stock → 400 if insufficient
+- [x] IN/OUT/ADJUST all calculate correctly
+- [x] Integration tests (including rollback scenario)
 
 ### Backend — Categories
-- [ ] `POST /api/inventory/categories` → 201 created
-- [ ] `PATCH /api/inventory/categories/:id` → 200 updated
-- [ ] `DELETE /api/inventory/categories/:id` → deleted
-- [ ] Version mismatch → 409
-- [ ] Product queries JOIN categories → include `categoryName`
-- [ ] `POST /api/inventory/categories/filter` → paginated list
+- [x] `POST /api/inventory/categories` → 201 created
+- [x] `PATCH /api/inventory/categories/:id` → 200 updated
+- [x] `DELETE /api/inventory/categories/:id` → deleted
+- [x] Version mismatch → 409
+- [x] Product queries JOIN categories → include `categoryName`
+- [x] `POST /api/inventory/categories/filter` → paginated list
 
 ### Frontend
-- [ ] Product list with pagination + search + stock color badges
-- [ ] Product detail page with movement history
-- [ ] Stock adjustment dialog (IN/OUT/ADJUST)
-- [ ] Category management full page with CRUD dialogs
-- [ ] Version passed in edit/delete operations
-- [ ] `npm run typecheck` — pass
-- [ ] `npm run lint` — no new errors
+- [x] Product list with pagination + search + stock color badges
+- [x] Product detail page with movement history
+- [x] Stock adjustment dialog (IN/OUT/ADJUST)
+- [x] Category management full page with CRUD dialogs
+- [x] Version passed in edit/delete operations
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors

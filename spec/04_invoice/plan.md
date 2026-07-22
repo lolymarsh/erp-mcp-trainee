@@ -149,15 +149,24 @@ await tx.insert(stockMovements).values({
 - On submit: call API → refetch detail → close dialog
 - Version mismatch → show error → user refreshes
 
-## 5. Acceptance Criteria
+## 5. Checklist
 
-- [ ] `POST /api/sales/invoices` → 201, stock deducted, movement logged
-- [ ] `POST /api/sales/invoices` (insufficient stock) → 400, no partial changes
-- [ ] `POST /api/sales/invoices/filter` → paginated results
-- [ ] `PATCH /api/sales/invoices/:id/payment-status` → status updated + audit logged
-- [ ] `PATCH /api/sales/invoices/:id/payment-status` (wrong version) → 409
-- [ ] `GET /api/sales/invoices/today-summary` → correct total + count
-- [ ] Transaction test: verify rollback on failure
-- [ ] Frontend: invoice list with search/filter + create form + payment update dialog
-- [ ] Integration tests for all endpoints (8 unit tests for service layer)
-- [ ] Frontend typecheck + lint pass
+### Backend
+- [x] `POST /api/sales/invoices` → 201, stock deducted, movement logged
+- [x] `POST /api/sales/invoices` (insufficient stock) → 400, no partial changes
+- [x] Invoice creation uses `db.transaction()` with `FOR UPDATE`
+- [x] `POST /api/sales/invoices/filter` → paginated results with search + status/method filters
+- [x] `GET /api/sales/invoices/:id` → invoice detail with items
+- [x] `PATCH /api/sales/invoices/:id/payment-status` → status updated + audit logged
+- [x] `PATCH /api/sales/invoices/:id/payment-status` (wrong version) → 409
+- [x] `GET /api/sales/invoices/today-summary` → correct total + count
+- [x] Transaction test: verify rollback on failure
+- [x] Integration tests for all endpoints (8 unit tests for service layer)
+
+### Frontend
+- [x] Invoice list page with search (debounced 400ms) + payment status/method filter dropdowns
+- [x] Invoice create form with customer selector + product selector + auto-calculate totals
+- [x] Invoice detail page with items table + payment history
+- [x] Payment update dialog (status + method selectors, version check)
+- [x] `npm run typecheck` — pass
+- [x] `npm run lint` — no new errors
