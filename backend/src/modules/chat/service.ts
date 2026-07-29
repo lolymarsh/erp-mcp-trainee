@@ -6,8 +6,8 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from "@google/generative-ai";
 import { logger } from "../../config/logger";
 import { publishToQueue } from "../../config/rabbitmq";
-import { sanitizeSql } from "./sanitizer";
-import { formatResult } from "./formatter";
+import { SanitizeSql } from "./sanitizer";
+import { FormatResult } from "./formatter";
 import type { SendMessageInput, ChatResponse } from "./schema";
 import { ChatMongoRepository } from "./repo_mongo";
 import type { IChatMongoRepository } from "./repo_mongo";
@@ -71,10 +71,10 @@ function extractSQL(response: string): string {
 }
 
 export interface IChatService {
-  ask(input: SendMessageInput, userId: string, sessionId: string): Promise<ChatResponse>;
-  getHistory(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
-  listSessions(userId: string, limit?: number): Promise<SessionSummary[]>;
-  executeHeavyQuery(sql: string): Promise<Record<string, unknown>[]>;
+  Ask(input: SendMessageInput, userId: string, sessionId: string): Promise<ChatResponse>;
+  GetHistory(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
+  ListSessions(userId: string, limit?: number): Promise<SessionSummary[]>;
+  ExecuteHeavyQuery(sql: string): Promise<Record<string, unknown>[]>;
 }
 
 export class ChatService implements IChatService {
@@ -112,7 +112,7 @@ export class ChatService implements IChatService {
     }
   }
 
-  async ask(
+  async Ask(
     input: SendMessageInput,
     userId: string,
     sessionId: string,
@@ -127,13 +127,13 @@ export class ChatService implements IChatService {
     }
 
     const systemPrompt = buildSystemPrompt();
-    const historyDocs = await this.mongoRepo.getHistoryAsc(sessionId, 10);
+    const historyDocs = await this.mongoRepo.GetHistoryAsc(sessionId, 10);
 
     const llmResponse = await this.callLLM(systemPrompt, input, historyDocs);
     const sql = extractSQL(llmResponse);
 
     try {
-      sanitizeSql(sql);
+      SanitizeSql(sql);
     } catch {
       throw new AppError(400, "SQL_BLOCKED", { userMessage: "คำถามนี้ไม่ปลอดภัย กรุณาถามใหม่" });
     }
@@ -148,7 +148,7 @@ export class ChatService implements IChatService {
       throw err;
     }
     const data = rawResult as Record<string, unknown>[];
-    const formatted = formatResult(data, input.format);
+    const formatted = FormatResult(data, input.format);
 
     const response: ChatResponse = {
       question: input.question,
@@ -167,19 +167,19 @@ export class ChatService implements IChatService {
     return response;
   }
 
-  async getHistory(
+  async GetHistory(
     sessionId: string,
     limit?: number,
   ): Promise<ChatMessageDocument[]> {
-    return this.mongoRepo.getHistory(sessionId, limit);
+    return this.mongoRepo.GetHistory(sessionId, limit);
   }
 
-  async listSessions(userId: string, limit = 50): Promise<SessionSummary[]> {
-    return this.mongoRepo.listSessions(userId, limit);
+  async ListSessions(userId: string, limit = 50): Promise<SessionSummary[]> {
+    return this.mongoRepo.ListSessions(userId, limit);
   }
 
-  async executeHeavyQuery(sql: string): Promise<Record<string, unknown>[]> {
-    sanitizeSql(sql);
+  async ExecuteHeavyQuery(sql: string): Promise<Record<string, unknown>[]> {
+    SanitizeSql(sql);
     const rawResult = await this.executeWithTimeout(sql, 60000);
     return rawResult as Record<string, unknown>[];
   }
@@ -311,7 +311,7 @@ export class ChatService implements IChatService {
     sessionId: string,
     response: ChatResponse,
   ): Promise<void> {
-    await this.mongoRepo.save({
+    await this.mongoRepo.Save({
       sessionId,
       userId,
       question: response.question,

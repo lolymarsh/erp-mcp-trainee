@@ -45,201 +45,201 @@ describe("JobHandler", () => {
 
   beforeEach(() => {
     svc = {
-      filter: jest.fn(),
-      getById: jest.fn(),
-      create: jest.fn(),
-      updateStatus: jest.fn(),
-      getTodayQueue: jest.fn(),
+      Filter: jest.fn(),
+      GetById: jest.fn(),
+      Create: jest.fn(),
+      UpdateStatus: jest.fn(),
+      GetTodayQueue: jest.fn(),
     };
     handler = new JobHandler(svc);
   });
 
-  describe("filter", () => {
+  describe("Filter", () => {
     it("should return 200 with data and pagination", async () => {
-      svc.filter.mockResolvedValue({ data: [mockJob], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
+      svc.Filter.mockResolvedValue({ data: [mockJob], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
-  describe("getById", () => {
+  describe("GetById", () => {
     it("should return 200 with job", async () => {
-      svc.getById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
+      svc.GetById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it("should handle extractId with array params", async () => {
-      svc.getById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
+      svc.GetById.mockResolvedValue({ ...mockJob, statusLogs: [mockLog] });
       const { req, res } = mockReqRes();
       req.params = { id: ["job-1", "job-2"] } as unknown as Record<string, string>;
-      await handler.getById(req, res);
-      expect(svc.getById).toHaveBeenCalledWith("job-1");
+      await handler.GetById(req, res);
+      expect(svc.GetById).toHaveBeenCalledWith("job-1");
     });
   });
 
-  describe("create", () => {
+  describe("Create", () => {
     it("should return 201 on success", async () => {
-      svc.create.mockResolvedValue({ ...mockJob, statusLogs: [] });
+      svc.Create.mockResolvedValue({ ...mockJob, statusLogs: [] });
       const { req, res } = mockReqRes();
       req.body = { customerId: "cust-1", vehicleId: "veh-1", jobType: "INSTALL" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(201);
     });
   });
 
-  describe("updateStatus", () => {
+  describe("UpdateStatus", () => {
     it("should return 200 on success", async () => {
-      svc.updateStatus.mockResolvedValue({ job: { ...mockJob, status: "IN_PROGRESS", version: 2 }, log: mockLog });
+      svc.UpdateStatus.mockResolvedValue({ job: { ...mockJob, status: "IN_PROGRESS", version: 2 }, log: mockLog });
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
       req.user = { userId: "user-1", role: "ADMIN" };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it("should use system when no req.user", async () => {
-      svc.updateStatus.mockResolvedValue({ job: { ...mockJob, status: "IN_PROGRESS", version: 2 }, log: mockLog });
+      svc.UpdateStatus.mockResolvedValue({ job: { ...mockJob, status: "IN_PROGRESS", version: 2 }, log: mockLog });
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
-      await handler.updateStatus(req, res);
-      expect(svc.updateStatus).toHaveBeenCalledWith("job-1", expect.any(Object), "system", undefined);
+      await handler.UpdateStatus(req, res);
+      expect(svc.UpdateStatus).toHaveBeenCalledWith("job-1", expect.any(Object), "system", undefined);
     });
 
     it("should return 409 on version mismatch", async () => {
-      svc.updateStatus.mockRejectedValue(new Error("VERSION_MISMATCH"));
+      svc.UpdateStatus.mockRejectedValue(new Error("VERSION_MISMATCH"));
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(409);
     });
 
     it("should return 404 when job not found", async () => {
-      svc.updateStatus.mockRejectedValue(new Error("JOB_NOT_FOUND"));
+      svc.UpdateStatus.mockRejectedValue(new Error("JOB_NOT_FOUND"));
       const { req, res } = mockReqRes();
       req.params = { id: "nonexistent" };
       req.body = { status: "IN_PROGRESS", version: 1 };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
   });
 
-  describe("todayQueue", () => {
+  describe("TodayQueue", () => {
     it("should return 200 with queue data", async () => {
-      svc.getTodayQueue.mockResolvedValue({ queued: 5, inProgress: 3, completed: 2 });
+      svc.GetTodayQueue.mockResolvedValue({ queued: 5, inProgress: 3, completed: 2 });
       const { req, res } = mockReqRes();
-      await handler.todayQueue(req, res);
+      await handler.TodayQueue(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("error cases", () => {
     it("should handle AppError", async () => {
-      svc.getById.mockRejectedValue(new AppError(404, "Job not found"));
+      svc.GetById.mockRejectedValue(new AppError(404, "Job not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "nonexistent" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
     it("should handle ZodError", async () => {
       const { req, res } = mockReqRes();
       req.body = {};
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("should handle 500 on unexpected error in todayQueue", async () => {
-      svc.getTodayQueue.mockRejectedValue(new Error("unexpected"));
+    it("should handle 500 on unexpected error in TodayQueue", async () => {
+      svc.GetTodayQueue.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
-      await handler.todayQueue(req, res);
+      await handler.TodayQueue(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it("should handle AppError in filter", async () => {
-      svc.filter.mockRejectedValue(new AppError(400, "Invalid filter"));
+    it("should handle AppError in Filter", async () => {
+      svc.Filter.mockRejectedValue(new AppError(400, "Invalid filter"));
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20 };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("should handle ZodError in filter", async () => {
+    it("should handle ZodError in Filter", async () => {
       const { req, res } = mockReqRes();
       req.body = { page: "abc" };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("should handle 500 in filter", async () => {
-      svc.filter.mockRejectedValue(new Error("unexpected"));
+    it("should handle 500 in Filter", async () => {
+      svc.Filter.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it("should handle 500 in getById", async () => {
-      svc.getById.mockRejectedValue(new Error("unexpected"));
+    it("should handle 500 in GetById", async () => {
+      svc.GetById.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it("should handle AppError in create", async () => {
-      svc.create.mockRejectedValue(new AppError(400, "Invalid job data"));
+    it("should handle AppError in Create", async () => {
+      svc.Create.mockRejectedValue(new AppError(400, "Invalid job data"));
       const { req, res } = mockReqRes();
       req.body = { customerId: "cust-1", vehicleId: "veh-1", jobType: "INSTALL" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("should handle 500 in create", async () => {
-      svc.create.mockRejectedValue(new Error("unexpected"));
+    it("should handle 500 in Create", async () => {
+      svc.Create.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.body = { customerId: "cust-1", vehicleId: "veh-1", jobType: "INSTALL" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it("should handle AppError in updateStatus", async () => {
-      svc.updateStatus.mockRejectedValue(new AppError(403, "Forbidden"));
+    it("should handle AppError in UpdateStatus", async () => {
+      svc.UpdateStatus.mockRejectedValue(new AppError(403, "Forbidden"));
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(403);
     });
 
-    it("should handle ZodError in updateStatus", async () => {
+    it("should handle ZodError in UpdateStatus", async () => {
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "INVALID" };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it("should handle 500 in updateStatus", async () => {
-      svc.updateStatus.mockRejectedValue(new Error("unexpected"));
+    it("should handle 500 in UpdateStatus", async () => {
+      svc.UpdateStatus.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "job-1" };
       req.body = { status: "IN_PROGRESS", version: 1 };
-      await handler.updateStatus(req, res);
+      await handler.UpdateStatus(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it("should handle AppError in todayQueue", async () => {
-      svc.getTodayQueue.mockRejectedValue(new AppError(500, "DB error"));
+    it("should handle AppError in TodayQueue", async () => {
+      svc.GetTodayQueue.mockRejectedValue(new AppError(500, "DB error"));
       const { req, res } = mockReqRes();
-      await handler.todayQueue(req, res);
+      await handler.TodayQueue(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });

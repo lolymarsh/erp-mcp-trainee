@@ -9,7 +9,7 @@ export interface PaginationResponse {
   hasPreviousPage: boolean;
 }
 
-export function calculatePagination(
+export function CalculatePagination(
   page: number,
   pageSize: number,
   totalData: number,
@@ -25,7 +25,7 @@ export function calculatePagination(
   };
 }
 
-export function sendSuccess<T>(
+export function SendSuccess<T>(
   res: Response,
   code: number,
   message: string,
@@ -41,7 +41,7 @@ export function sendSuccess<T>(
   res.status(code).json(body);
 }
 
-export function sendError(
+export function SendError(
   res: Response,
   code: number,
   message: string,

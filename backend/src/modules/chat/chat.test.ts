@@ -14,8 +14,8 @@ jest.mock("openai", () => ({
 
 jest.mock("./repo_mongo", () => ({
   ChatMongoRepository: jest.fn().mockImplementation(() => ({
-    save: jest.fn().mockResolvedValue(undefined),
-    getHistory: jest.fn(),
+    Save: jest.fn().mockResolvedValue(undefined),
+    GetHistory: jest.fn(),
   })),
 }));
 
@@ -28,7 +28,7 @@ jest.mock("../../config/logger", () => ({
 }));
 
 jest.mock("./sanitizer", () => ({
-  sanitizeSql: jest.fn((sql: string) => sql),
+  SanitizeSql: jest.fn((sql: string) => sql),
 }));
 
 import Redis from "ioredis";
@@ -74,7 +74,7 @@ describe("ChatService", () => {
         release: jest.fn(),
       });
 
-      const result = await svc.ask(
+      const result = await svc.Ask(
         { question: "ยอดขายวันนี้", format: "text", provider: "openai" },
         "user-1",
         "session-1",
@@ -96,7 +96,7 @@ describe("ChatService", () => {
         release: jest.fn(),
       });
 
-      const result = await svc.ask(
+      const result = await svc.Ask(
         { question: "ค้นหาที่ไม่มี", format: "text", provider: "openai" },
         "user-1",
         "session-1",
@@ -107,7 +107,7 @@ describe("ChatService", () => {
     });
   });
 
-  describe("getHistory", () => {
+  describe("GetHistory", () => {
     it("should return chat history from mongo repo", async () => {
       const history = [
         {
@@ -125,15 +125,15 @@ describe("ChatService", () => {
       ];
       const { ChatMongoRepository } = await import("./repo_mongo");
       const mockInstance = (ChatMongoRepository as jest.Mock).mock.results[0].value;
-      mockInstance.getHistory.mockResolvedValue(history);
+      mockInstance.GetHistory.mockResolvedValue(history);
 
-      const result = await svc.getHistory("session-1", 10);
+      const result = await svc.GetHistory("session-1", 10);
 
       expect(result).toEqual(history);
     });
   });
 
-  describe("executeHeavyQuery", () => {
+  describe("ExecuteHeavyQuery", () => {
     it("should execute SQL and return rows", async () => {
       const rows = [{ count: 100 }];
       pool.getConnection.mockResolvedValue({
@@ -143,7 +143,7 @@ describe("ChatService", () => {
         release: jest.fn(),
       });
 
-      const result = await svc.executeHeavyQuery("SELECT COUNT(*) AS count FROM products");
+      const result = await svc.ExecuteHeavyQuery("SELECT COUNT(*) AS count FROM products");
 
       expect(result).toEqual(rows);
     });
@@ -157,7 +157,7 @@ describe("ChatService", () => {
       };
       pool.getConnection.mockResolvedValue(conn);
 
-      await svc.executeHeavyQuery("SELECT 1");
+      await svc.ExecuteHeavyQuery("SELECT 1");
 
       expect(conn.release).toHaveBeenCalled();
     });

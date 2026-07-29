@@ -4,8 +4,8 @@ import type { RowDataPacket } from "mysql2/promise";
 import crypto from "node:crypto";
 import { logger } from "../config/logger";
 import { consumeFromQueue } from "../config/rabbitmq";
-import { sanitizeSql } from "../modules/chat/sanitizer";
-import { formatResult } from "../modules/chat/formatter";
+import { SanitizeSql } from "../modules/chat/sanitizer";
+import { FormatResult } from "../modules/chat/formatter";
 import type { RabbitMQConnection } from "../config/rabbitmq";
 
 interface HeavyQueryMessage {
@@ -16,7 +16,7 @@ interface HeavyQueryMessage {
 
 const CACHE_TTL = 1800;
 
-export async function startAiWorker(
+export async function StartAiWorker(
   rmq: RabbitMQConnection,
   pool: Pool,
   redis: Redis,
@@ -38,7 +38,7 @@ export async function startAiWorker(
         return;
       }
 
-      sanitizeSql(job.sql);
+      SanitizeSql(job.sql);
 
       const connection = await pool.getConnection();
       let rows: RowDataPacket[];
@@ -51,7 +51,7 @@ export async function startAiWorker(
       }
 
       const data = rows as Record<string, unknown>[];
-      const formatted = formatResult(data, job.format);
+      const formatted = FormatResult(data, job.format);
 
       const result = {
         status: "completed",

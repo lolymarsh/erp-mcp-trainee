@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
-import { sendSuccess, sendError } from "../../shared/response/handler";
+import { SendSuccess, SendError } from "../../shared/response/handler";
 import { AppError } from "../../shared/errors/AppError";
 import { logger } from "../../config/logger";
 import { sendMessageSchema } from "./schema";
@@ -13,52 +13,52 @@ function formatZod(err: ZodError): string {
 export class ChatHandler {
   constructor(private svc: IChatService) {}
 
-  sendMessage = async (req: Request, res: Response): Promise<void> => {
+  SendMessage = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = sendMessageSchema.parse(req.body);
       const userId = req.user?.userId ?? "anonymous";
       const sessionId = (req.headers["x-session-id"] as string) ?? "default";
-      const result = await this.svc.ask(input, userId, sessionId);
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.Ask(input, userId, sessionId);
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
         const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;
-        sendError(res, err.statusCode, message);
+        SendError(res, err.statusCode, message);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZod(err));
+        SendError(res, 400, formatZod(err));
         return;
       }
-      logger.error({ err }, "chat sendMessage failed");
-      sendError(res, 500, "Internal server error");
+      logger.error({ err }, "chat SendMessage failed");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  getHistory = async (req: Request, res: Response): Promise<void> => {
+  GetHistory = async (req: Request, res: Response): Promise<void> => {
     try {
       const sessionId = (req.headers["x-session-id"] as string) ?? "default";
       const limit = req.query.limit
         ? parseInt(req.query.limit as string, 10)
         : 50;
-      const history = await this.svc.getHistory(sessionId, limit);
-      sendSuccess(res, 200, "success", { data: history });
+      const history = await this.svc.GetHistory(sessionId, limit);
+      SendSuccess(res, 200, "success", { data: history });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message);
+        SendError(res, err.statusCode, err.message);
         return;
       }
-      logger.error({ err }, "chat getHistory failed");
-      sendError(res, 500, "Internal server error");
+      logger.error({ err }, "chat GetHistory failed");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  exportResult = async (req: Request, res: Response): Promise<void> => {
+  ExportResult = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = sendMessageSchema.parse(req.body);
       const userId = req.user?.userId ?? "anonymous";
       const sessionId = (req.headers["x-session-id"] as string) ?? "default";
-      const result = await this.svc.ask(input, userId, sessionId);
+      const result = await this.svc.Ask(input, userId, sessionId);
 
       const contentType = getContentType(input.format);
       const extension = getExtension(input.format);
@@ -72,37 +72,37 @@ export class ChatHandler {
     } catch (err: unknown) {
       if (err instanceof AppError) {
         const message = (err.details as { userMessage?: string })?.userMessage ?? err.message;
-        sendError(res, err.statusCode, message);
+        SendError(res, err.statusCode, message);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZod(err));
+        SendError(res, 400, formatZod(err));
         return;
       }
-      logger.error({ err }, "chat exportResult failed");
-      sendError(res, 500, "Internal server error");
+      logger.error({ err }, "chat ExportResult failed");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  listSessions = async (req: Request, res: Response): Promise<void> => {
+  ListSessions = async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?.userId ?? "anonymous";
       const limit = req.query.limit
         ? parseInt(req.query.limit as string, 10)
         : 50;
-      const sessions = await this.svc.listSessions(userId, limit);
-      sendSuccess(res, 200, "success", { data: sessions });
+      const sessions = await this.svc.ListSessions(userId, limit);
+      SendSuccess(res, 200, "success", { data: sessions });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message);
+        SendError(res, err.statusCode, err.message);
         return;
       }
-      logger.error({ err }, "chat listSessions failed");
-      sendError(res, 500, "Internal server error");
+      logger.error({ err }, "chat ListSessions failed");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  streamMessage = async (req: Request, res: Response): Promise<void> => {
+  StreamMessage = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = sendMessageSchema.parse(req.body);
       const userId = req.user?.userId ?? "anonymous";
@@ -116,7 +116,7 @@ export class ChatHandler {
       sendSSE(res, "start", { question: input.question });
 
       try {
-        const result = await this.svc.ask(input, userId, sessionId);
+        const result = await this.svc.Ask(input, userId, sessionId);
         sendSSE(res, "sql_generated", { sql: result.sql });
         sendSSE(res, "result", {
           rows: result.resultCount,
@@ -136,15 +136,15 @@ export class ChatHandler {
       res.end();
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message);
+        SendError(res, err.statusCode, err.message);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZod(err));
+        SendError(res, 400, formatZod(err));
         return;
       }
-      logger.error({ err }, "chat streamMessage failed");
-      sendError(res, 500, "Internal server error");
+      logger.error({ err }, "chat StreamMessage failed");
+      SendError(res, 500, "Internal server error");
     }
   };
 }

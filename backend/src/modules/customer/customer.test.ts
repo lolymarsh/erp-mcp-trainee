@@ -31,34 +31,34 @@ const mockVehicle = {
 describe("CustomerService", () => {
   let repo: jest.Mocked<ICustomerRepository>;
   let svc: CustomerService;
-  const mockAuditService = { insertAuditLog: jest.fn() };
+  const mockAuditService = { Insert: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
     repo = {
-      findFiltered: jest.fn(),
-      findById: jest.fn(),
-      findByIdWithVehicles: jest.fn(),
-      findByPhone: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      softDelete: jest.fn(),
-      findVehicleById: jest.fn(),
-      createVehicle: jest.fn(),
-      updateVehicle: jest.fn(),
-      deleteVehicle: jest.fn(),
+      FindFiltered: jest.fn(),
+      FindById: jest.fn(),
+      FindByIdWithVehicles: jest.fn(),
+      FindByPhone: jest.fn(),
+      Create: jest.fn(),
+      Update: jest.fn(),
+      SoftDelete: jest.fn(),
+      FindVehicleById: jest.fn(),
+      CreateVehicle: jest.fn(),
+      UpdateVehicle: jest.fn(),
+      DeleteVehicle: jest.fn(),
     };
     svc = new CustomerService(repo, mockAuditService as any);
   });
 
   describe("filter", () => {
     it("should return paginated customers", async () => {
-      repo.findFiltered.mockResolvedValue({
+      repo.FindFiltered.mockResolvedValue({
         data: [mockCustomer],
         total: 1,
       });
 
-      const result = await svc.filter({
+      const result = await svc.Filter({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -72,9 +72,9 @@ describe("CustomerService", () => {
     });
 
     it("should return empty list when no customers", async () => {
-      repo.findFiltered.mockResolvedValue({ data: [], total: 0 });
+      repo.FindFiltered.mockResolvedValue({ data: [], total: 0 });
 
-      const result = await svc.filter({
+      const result = await svc.Filter({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -87,9 +87,9 @@ describe("CustomerService", () => {
     });
 
     it("should calculate multi-page pagination", async () => {
-      repo.findFiltered.mockResolvedValue({ data: [], total: 55 });
+      repo.FindFiltered.mockResolvedValue({ data: [], total: 55 });
 
-      const result = await svc.filter({
+      const result = await svc.Filter({
         page: 2,
         pageSize: 20,
         sortBy: "asc",
@@ -104,18 +104,18 @@ describe("CustomerService", () => {
 
   describe("getById", () => {
     it("should throw NotFoundError when customer not found", async () => {
-      repo.findByIdWithVehicles.mockResolvedValue(null);
+      repo.FindByIdWithVehicles.mockResolvedValue(null);
 
-      await expect(svc.getById("nonexistent")).rejects.toThrow(NotFoundError);
+      await expect(svc.GetById("nonexistent")).rejects.toThrow(NotFoundError);
     });
 
     it("should return customer with vehicles", async () => {
-      repo.findByIdWithVehicles.mockResolvedValue({
+      repo.FindByIdWithVehicles.mockResolvedValue({
         customer: mockCustomer,
         vehicles: [mockVehicle],
       });
 
-      const result = await svc.getById("cust-1");
+      const result = await svc.GetById("cust-1");
 
       expect(result.id).toBe("cust-1");
       expect(result.firstName).toBe("สมชาย");
@@ -124,12 +124,12 @@ describe("CustomerService", () => {
     });
 
     it("should return customer with empty vehicles array", async () => {
-      repo.findByIdWithVehicles.mockResolvedValue({
+      repo.FindByIdWithVehicles.mockResolvedValue({
         customer: mockCustomer,
         vehicles: [],
       });
 
-      const result = await svc.getById("cust-1");
+      const result = await svc.GetById("cust-1");
 
       expect(result.vehicles).toHaveLength(0);
     });
@@ -137,10 +137,10 @@ describe("CustomerService", () => {
 
   describe("create", () => {
     it("should throw when phone already exists", async () => {
-      repo.findByPhone.mockResolvedValue(mockCustomer);
+      repo.FindByPhone.mockResolvedValue(mockCustomer);
 
       await expect(
-        svc.create({
+        svc.Create({
           firstName: "สมชาย",
           lastName: "ใจดี",
           phone: "0812345678",
@@ -151,10 +151,9 @@ describe("CustomerService", () => {
     });
 
     it("should create customer with generated id", async () => {
-      repo.findByPhone.mockResolvedValue(null);
-      repo.create.mockResolvedValue(mockCustomer);
-
-      const result = await svc.create({
+      repo.FindByPhone.mockResolvedValue(null);
+      repo.Create.mockResolvedValue(mockCustomer);
+      const result = await svc.Create({
         firstName: "สมชาย",
         lastName: "ใจดี",
         phone: "0812345678",
@@ -164,7 +163,7 @@ describe("CustomerService", () => {
 
       expect(result.firstName).toBe("สมชาย");
       expect(result.version).toBe(1);
-      expect(repo.create).toHaveBeenCalledWith(
+      expect(repo.Create).toHaveBeenCalledWith(
         expect.objectContaining({
           id: "mocked-uuid-customer",
           firstName: "สมชาย",
@@ -174,14 +173,14 @@ describe("CustomerService", () => {
     });
 
     it("should create customer with optional fields null", async () => {
-      repo.findByPhone.mockResolvedValue(null);
-      repo.create.mockResolvedValue({
+      repo.FindByPhone.mockResolvedValue(null);
+      repo.Create.mockResolvedValue({
         ...mockCustomer,
         email: null,
         address: null,
       });
 
-      const result = await svc.create({
+      const result = await svc.Create({
         firstName: "สมชาย",
         lastName: "ใจดี",
         phone: "0812345678",
@@ -194,12 +193,12 @@ describe("CustomerService", () => {
 
   describe("update", () => {
     it("should throw ConflictError on version mismatch", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.findByPhone.mockResolvedValue(null);
-      repo.update.mockResolvedValue(null);
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.FindByPhone.mockResolvedValue(null);
+      repo.Update.mockResolvedValue(null);
 
       await expect(
-        svc.update("cust-1", {
+        svc.Update("cust-1", {
           firstName: "สมหมาย",
           version: 1,
         }, "user-1"),
@@ -207,11 +206,11 @@ describe("CustomerService", () => {
     });
 
     it("should throw when updated phone conflicts", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.findByPhone.mockResolvedValue({ ...mockCustomer, id: "cust-2" });
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.FindByPhone.mockResolvedValue({ ...mockCustomer, id: "cust-2" });
 
       await expect(
-        svc.update("cust-1", {
+        svc.Update("cust-1", {
           phone: "0812345678",
           version: 1,
         }, "user-1"),
@@ -219,22 +218,22 @@ describe("CustomerService", () => {
     });
 
     it("should update customer successfully", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.findByPhone.mockResolvedValue(null);
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.FindByPhone.mockResolvedValue(null);
       const updatedCustomer = {
         ...mockCustomer,
         firstName: "สมหมาย",
         version: 2,
       };
-      repo.update.mockResolvedValue(updatedCustomer);
+      repo.Update.mockResolvedValue(updatedCustomer);
 
-      const result = await svc.update("cust-1", {
+      const result = await svc.Update("cust-1", {
         firstName: "สมหมาย",
         version: 1,
       }, "user-1");
 
       expect(result.firstName).toBe("สมหมาย");
-      expect(repo.update).toHaveBeenCalledWith(
+      expect(repo.Update).toHaveBeenCalledWith(
         "cust-1",
         { firstName: "สมหมาย" },
         1,
@@ -242,53 +241,53 @@ describe("CustomerService", () => {
     });
 
     it("should allow updating with same phone", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.findByPhone.mockResolvedValue(mockCustomer);
-      repo.update.mockResolvedValue({
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.FindByPhone.mockResolvedValue(mockCustomer);
+      repo.Update.mockResolvedValue({
         ...mockCustomer,
         phone: "0812345678",
         version: 2,
       });
 
-      const result = await svc.update("cust-1", {
+      const result = await svc.Update("cust-1", {
         phone: "0812345678",
         version: 1,
       }, "user-1");
 
       expect(result.phone).toBe("0812345678");
-      expect(repo.update).toHaveBeenCalled();
+      expect(repo.Update).toHaveBeenCalled();
     });
   });
 
   describe("softDelete", () => {
     it("should throw ConflictError on version mismatch", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.softDelete.mockResolvedValue(false);
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.SoftDelete.mockResolvedValue(false);
 
-      await expect(svc.softDelete("cust-1", { version: 1 }, "user-1")).rejects.toThrow(
+      await expect(svc.SoftDelete("cust-1", { version: 1 }, "user-1")).rejects.toThrow(
         ConflictError,
       );
     });
 
     it("should soft delete customer successfully", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.softDelete.mockResolvedValue(true);
-      repo.findById.mockResolvedValue({ ...mockCustomer, deletedAt: new Date() });
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.SoftDelete.mockResolvedValue(true);
+      repo.FindById.mockResolvedValue({ ...mockCustomer, deletedAt: new Date() });
 
       await expect(
-        svc.softDelete("cust-1", { version: 1 }, "user-1"),
+        svc.SoftDelete("cust-1", { version: 1 }, "user-1"),
       ).resolves.toBeUndefined();
 
-      expect(repo.softDelete).toHaveBeenCalledWith("cust-1", 1);
+      expect(repo.SoftDelete).toHaveBeenCalledWith("cust-1", 1);
     });
   });
 
   describe("createVehicle", () => {
     it("should throw NotFoundError when customer not found", async () => {
-      repo.findById.mockResolvedValue(null);
+      repo.FindById.mockResolvedValue(null);
 
       await expect(
-        svc.createVehicle(
+        svc.CreateVehicle(
           { customerId: "nonexistent", licensePlate: "กข 1234" },
           "user-1",
         ),
@@ -296,10 +295,10 @@ describe("CustomerService", () => {
     });
 
     it("should create vehicle for existing customer", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.createVehicle.mockResolvedValue(mockVehicle);
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.CreateVehicle.mockResolvedValue(mockVehicle);
 
-      const result = await svc.createVehicle(
+      const result = await svc.CreateVehicle(
         {
           customerId: "cust-1",
           licensePlate: "กข 1234",
@@ -313,14 +312,14 @@ describe("CustomerService", () => {
       );
 
       expect(result.licensePlate).toBe("กข 1234");
-      expect(repo.createVehicle).toHaveBeenCalledWith(
+      expect(repo.CreateVehicle).toHaveBeenCalledWith(
         expect.objectContaining({ customerId: "cust-1", licensePlate: "กข 1234" }),
       );
     });
 
     it("should create vehicle with null optional fields", async () => {
-      repo.findById.mockResolvedValue(mockCustomer);
-      repo.createVehicle.mockResolvedValue({
+      repo.FindById.mockResolvedValue(mockCustomer);
+      repo.CreateVehicle.mockResolvedValue({
         ...mockVehicle,
         brand: null,
         model: null,
@@ -329,7 +328,7 @@ describe("CustomerService", () => {
         fuelType: null,
       });
 
-      const result = await svc.createVehicle(
+      const result = await svc.CreateVehicle(
         { customerId: "cust-1", licensePlate: "กข 1234" },
         "user-1",
       );
@@ -341,58 +340,58 @@ describe("CustomerService", () => {
 
   describe("updateVehicle", () => {
     it("should throw NotFoundError when vehicle not found", async () => {
-      repo.findVehicleById.mockResolvedValue(null);
+      repo.FindVehicleById.mockResolvedValue(null);
 
       await expect(
-        svc.updateVehicle("nonexistent", { licensePlate: " updated" }, "user-1"),
+        svc.UpdateVehicle("nonexistent", { licensePlate: " updated" }, "user-1"),
       ).rejects.toThrow(NotFoundError);
     });
 
     it("should update vehicle successfully", async () => {
-      repo.findVehicleById.mockResolvedValue(mockVehicle);
+      repo.FindVehicleById.mockResolvedValue(mockVehicle);
       const updatedVehicle = { ...mockVehicle, licensePlate: "กข 5678" };
-      repo.updateVehicle.mockResolvedValue(updatedVehicle);
+      repo.UpdateVehicle.mockResolvedValue(updatedVehicle);
 
-      const result = await svc.updateVehicle(
+      const result = await svc.UpdateVehicle(
         "veh-1",
         { licensePlate: "กข 5678" },
         "user-1",
       );
 
       expect(result.licensePlate).toBe("กข 5678");
-      expect(repo.updateVehicle).toHaveBeenCalledWith("veh-1", {
+      expect(repo.UpdateVehicle).toHaveBeenCalledWith("veh-1", {
         licensePlate: "กข 5678",
       });
     });
 
     it("should throw NotFoundError when update returns null", async () => {
-      repo.findVehicleById.mockResolvedValue(mockVehicle);
-      repo.updateVehicle.mockResolvedValue(null);
+      repo.FindVehicleById.mockResolvedValue(mockVehicle);
+      repo.UpdateVehicle.mockResolvedValue(null);
 
       await expect(
-        svc.updateVehicle("veh-1", { licensePlate: "กข 5678" }, "user-1"),
+        svc.UpdateVehicle("veh-1", { licensePlate: "กข 5678" }, "user-1"),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("deleteVehicle", () => {
     it("should throw NotFoundError when vehicle not found", async () => {
-      repo.findVehicleById.mockResolvedValue(null);
+      repo.FindVehicleById.mockResolvedValue(null);
 
       await expect(
-        svc.deleteVehicle("nonexistent", {}, "user-1"),
+        svc.DeleteVehicle("nonexistent", {}, "user-1"),
       ).rejects.toThrow(NotFoundError);
     });
 
     it("should delete vehicle successfully", async () => {
-      repo.findVehicleById.mockResolvedValue(mockVehicle);
-      repo.deleteVehicle.mockResolvedValue(true);
+      repo.FindVehicleById.mockResolvedValue(mockVehicle);
+      repo.DeleteVehicle.mockResolvedValue(true);
 
       await expect(
-        svc.deleteVehicle("veh-1", {}, "user-1"),
+        svc.DeleteVehicle("veh-1", {}, "user-1"),
       ).resolves.toBeUndefined();
 
-      expect(repo.deleteVehicle).toHaveBeenCalledWith("veh-1");
+      expect(repo.DeleteVehicle).toHaveBeenCalledWith("veh-1");
     });
   });
 });

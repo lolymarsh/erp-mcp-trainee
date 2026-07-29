@@ -59,22 +59,22 @@ export interface StockAdjustResult {
 }
 
 export interface IInventoryRepository {
-  findFiltered(
+  FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: ProductEntity[]; total: number }>;
-  findById(id: string): Promise<ProductEntity | null>;
-  findByIds(ids: string[]): Promise<ProductEntity[]>;
-  findByIdWithMovements(
+  FindById(id: string): Promise<ProductEntity | null>;
+  FindByIds(ids: string[]): Promise<ProductEntity[]>;
+  FindByIdWithMovements(
     id: string,
   ): Promise<{ product: ProductEntity; movements: StockMovementEntity[] } | null>;
-  findBySku(sku: string): Promise<ProductEntity | null>;
-  findCategoriesFiltered(input: FilterRequestInput): Promise<{ data: CategoryEntity[]; total: number }>;
-  findCategoryById(id: string): Promise<CategoryEntity | null>;
-  createCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity>;
-  updateCategory(id: string, data: Partial<{ name: string; description: string | null }>, version: number): Promise<CategoryEntity | null>;
-  deleteCategory(id: string, version: number): Promise<boolean>;
-  findAllCategories(): Promise<CategoryEntity[]>;
-  create(data: {
+  FindBySku(sku: string): Promise<ProductEntity | null>;
+  FindCategoriesFiltered(input: FilterRequestInput): Promise<{ data: CategoryEntity[]; total: number }>;
+  FindCategoryById(id: string): Promise<CategoryEntity | null>;
+  CreateCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity>;
+  UpdateCategory(id: string, data: Partial<{ name: string; description: string | null }>, version: number): Promise<CategoryEntity | null>;
+  DeleteCategory(id: string, version: number): Promise<boolean>;
+  FindAllCategories(): Promise<CategoryEntity[]>;
+  Create(data: {
     id: string;
     categoryId: string;
     sku: string;
@@ -87,7 +87,7 @@ export interface IInventoryRepository {
     currentStock: number;
     version: number;
   }): Promise<ProductEntity>;
-  update(
+  Update(
     id: string,
     data: Partial<{
       categoryId: string;
@@ -101,14 +101,14 @@ export interface IInventoryRepository {
     }>,
     version: number,
   ): Promise<ProductEntity | null>;
-  softDelete(id: string, version: number): Promise<boolean>;
-  adjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult>;
+  SoftDelete(id: string, version: number): Promise<boolean>;
+  AdjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult>;
 }
 
 export class InventoryRepository implements IInventoryRepository {
   constructor(private db: MySql2Database) {}
 
-  async findFiltered(
+  async FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: ProductEntity[]; total: number }> {
     const conditions = this.buildFilterConditions(input);
@@ -182,7 +182,7 @@ export class InventoryRepository implements IInventoryRepository {
     return conditions;
   }
 
-  async findById(id: string): Promise<ProductEntity | null> {
+  async FindById(id: string): Promise<ProductEntity | null> {
     const result = await this.db
       .select({
         ...productColumns,
@@ -197,10 +197,10 @@ export class InventoryRepository implements IInventoryRepository {
     return result[0] as unknown as ProductEntity;
   }
 
-  async findByIdWithMovements(
+  async FindByIdWithMovements(
     id: string,
   ): Promise<{ product: ProductEntity; movements: StockMovementEntity[] } | null> {
-    const productRow = await this.findById(id);
+    const productRow = await this.FindById(id);
     if (!productRow) return null;
 
     const movementRows = await this.db
@@ -215,7 +215,7 @@ export class InventoryRepository implements IInventoryRepository {
     };
   }
 
-  async findBySku(sku: string): Promise<ProductEntity | null> {
+  async FindBySku(sku: string): Promise<ProductEntity | null> {
     const result = await this.db
       .select({
         ...productColumns,
@@ -230,7 +230,7 @@ export class InventoryRepository implements IInventoryRepository {
     return result[0] as unknown as ProductEntity;
   }
 
-  async findByIds(ids: string[]): Promise<ProductEntity[]> {
+  async FindByIds(ids: string[]): Promise<ProductEntity[]> {
     const rows = await this.db
       .select({
         ...productColumns,
@@ -243,12 +243,12 @@ export class InventoryRepository implements IInventoryRepository {
     return rows as unknown as ProductEntity[];
   }
 
-  async findAllCategories(): Promise<CategoryEntity[]> {
+  async FindAllCategories(): Promise<CategoryEntity[]> {
     const result = await this.db.select().from(categories);
     return result as CategoryEntity[];
   }
 
-  async findCategoriesFiltered(
+  async FindCategoriesFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: CategoryEntity[]; total: number }> {
     const conditions: SQL[] = [];
@@ -286,18 +286,18 @@ export class InventoryRepository implements IInventoryRepository {
     return { data: rows as CategoryEntity[], total };
   }
 
-  async findCategoryById(id: string): Promise<CategoryEntity | null> {
+  async FindCategoryById(id: string): Promise<CategoryEntity | null> {
     const result = await this.db.select().from(categories).where(eq(categories.id, id)).limit(1);
     return (result[0] as CategoryEntity) ?? null;
   }
 
-  async createCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity> {
+  async CreateCategory(data: { id: string; name: string; description: string | null }): Promise<CategoryEntity> {
     await this.db.insert(categories).values({ ...data, version: 1 });
-    const created = await this.findCategoryById(data.id);
+    const created = await this.FindCategoryById(data.id);
     return created as CategoryEntity;
   }
 
-  async updateCategory(
+  async UpdateCategory(
     id: string,
     data: Partial<{ name: string; description: string | null }>,
     version: number,
@@ -308,10 +308,10 @@ export class InventoryRepository implements IInventoryRepository {
       .where(and(eq(categories.id, id), eq(categories.version, version)));
 
     if (result[0].affectedRows === 0) return null;
-    return this.findCategoryById(id);
+    return this.FindCategoryById(id);
   }
 
-  async deleteCategory(id: string, version: number): Promise<boolean> {
+  async DeleteCategory(id: string, version: number): Promise<boolean> {
     const result = await this.db
       .delete(categories)
       .where(and(eq(categories.id, id), eq(categories.version, version)));
@@ -319,7 +319,7 @@ export class InventoryRepository implements IInventoryRepository {
     return result[0].affectedRows > 0;
   }
 
-  async create(data: {
+  async Create(data: {
     id: string;
     categoryId: string;
     sku: string;
@@ -342,7 +342,7 @@ export class InventoryRepository implements IInventoryRepository {
     return created[0];
   }
 
-  async update(
+  async Update(
     id: string,
     data: Partial<{
       categoryId: string;
@@ -372,7 +372,7 @@ export class InventoryRepository implements IInventoryRepository {
     return updated[0];
   }
 
-  async softDelete(id: string, version: number): Promise<boolean> {
+  async SoftDelete(id: string, version: number): Promise<boolean> {
     const result = await this.db
       .update(products)
       .set({
@@ -385,7 +385,7 @@ export class InventoryRepository implements IInventoryRepository {
     return result[0].affectedRows > 0;
   }
 
-  async adjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult> {
+  async AdjustStock(input: StockAdjustData, tx?: Tx): Promise<StockAdjustResult> {
     const db = tx ?? this.db;
     const [product] = await db
       .select()

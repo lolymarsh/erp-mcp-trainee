@@ -66,7 +66,7 @@ describe('authApi', () => {
   it('login sends POST to /auth/login with correct payload', async () => {
     mockApi.post.mockResolvedValue(mockLoginResult);
 
-    const result = await authApi.login({ username: 'admin', password: 'secret' });
+    const result = await authApi.Login({ username: 'admin', password: 'secret' });
 
     expect(mockApi.post).toHaveBeenCalledWith('/auth/login', {
       username: 'admin',
@@ -79,7 +79,7 @@ describe('authApi', () => {
   it('getProfile sends GET to /auth/profile and returns user', async () => {
     mockApi.get.mockResolvedValue(mockProfileResult);
 
-    const result = await authApi.getProfile();
+    const result = await authApi.GetProfile();
 
     expect(mockApi.get).toHaveBeenCalledWith('/auth/profile');
     expect(result.username).toBe('admin');

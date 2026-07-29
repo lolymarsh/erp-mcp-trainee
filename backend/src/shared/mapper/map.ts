@@ -1,15 +1,15 @@
-export function mapEntity<T, R>(entity: T, mapper: (source: T) => R): R {
+export function MapEntity<T, R>(entity: T, mapper: (source: T) => R): R {
   return mapper(entity);
 }
 
-export function mapEntities<T, R>(
+export function MapEntities<T, R>(
   entities: T[],
   mapper: (source: T) => R,
 ): R[] {
   return entities.map(mapper);
 }
 
-export function pick<T extends Record<string, unknown>, K extends keyof T>(
+export function Pick<T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
   keys: K[],
 ): Pick<T, K> {
@@ -22,7 +22,7 @@ export function pick<T extends Record<string, unknown>, K extends keyof T>(
   return result;
 }
 
-export function omit<T extends Record<string, unknown>, K extends keyof T>(
+export function Omit<T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
   keys: K[],
 ): Omit<T, K> {

@@ -60,7 +60,7 @@ describe("InventoryRepository extra coverage", () => {
           ? countDb
           : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) },
       );
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "name", operator: "contains", value: "แก๊ส" }] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "name", operator: "contains", value: "แก๊ส" }] });
       expect(result.total).toBe(1);
     });
 
@@ -75,7 +75,7 @@ describe("InventoryRepository extra coverage", () => {
           ? countDb
           : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) },
       );
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "sku", operator: "neq", value: "UNKNOWN" }] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "sku", operator: "neq", value: "UNKNOWN" }] });
       expect(result.total).toBe(1);
     });
 
@@ -90,9 +90,9 @@ describe("InventoryRepository extra coverage", () => {
           ? countDb
           : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) },
       );
-      const r1 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "name", sortBy: "asc", filters: [] });
+      const r1 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "name", sortBy: "asc", filters: [] });
       expect(r1.total).toBe(1);
-      const r2 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "sellPrice", sortBy: "asc", filters: [] });
+      const r2 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "sellPrice", sortBy: "asc", filters: [] });
       expect(r2.total).toBe(1);
     });
 
@@ -107,9 +107,9 @@ describe("InventoryRepository extra coverage", () => {
           ? countDb
           : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) },
       );
-      const r1 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "currentStock", sortBy: "desc", filters: [] });
+      const r1 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "currentStock", sortBy: "desc", filters: [] });
       expect(r1.total).toBe(1);
-      const r2 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "updatedAt", sortBy: "desc", filters: [] });
+      const r2 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "updatedAt", sortBy: "desc", filters: [] });
       expect(r2.total).toBe(1);
     });
   });
@@ -122,7 +122,7 @@ describe("InventoryRepository extra coverage", () => {
         .mockReturnValueOnce(db)
         .mockReturnValue({ orderBy: db.orderBy });
 
-      const result = await repo.findByIdWithMovements("prod-1");
+      const result = await repo.FindByIdWithMovements("prod-1");
       expect(result).not.toBeNull();
       expect(result!.product.id).toBe("prod-1");
       expect(result!.movements).toHaveLength(1);
@@ -130,7 +130,7 @@ describe("InventoryRepository extra coverage", () => {
 
     it("should return null when product not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findByIdWithMovements("nonexistent");
+      const result = await repo.FindByIdWithMovements("nonexistent");
       expect(result).toBeNull();
     });
   });
@@ -156,7 +156,7 @@ describe("InventoryRepository extra coverage", () => {
       const mockTx = createTxMock([productRow]);
       mockTx.limit = jest.fn().mockResolvedValue([{ ...mockProduct, currentStock: 50 }]);
 
-      const result = await repo.adjustStock({
+      const result = await repo.AdjustStock({
         productId: "prod-1", type: "ADJUST", quantity: 50,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
       }, mockTx as unknown as Tx);

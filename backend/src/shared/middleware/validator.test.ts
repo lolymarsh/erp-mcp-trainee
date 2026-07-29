@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { validate } from "./validator";
+import { Validate } from "./validator";
 
 function mockReqRes() {
   const req = { body: {}, query: {}, params: {} } as unknown as Request;
@@ -13,10 +13,10 @@ function mockReqRes() {
   return { req, res, next };
 }
 
-describe("validate middleware", () => {
+describe("Validate middleware", () => {
   it("should call next() when schema is valid", () => {
     const schema = z.object({ name: z.string() });
-    const middleware = validate(schema);
+    const middleware = Validate(schema);
 
     const { req, res, next } = mockReqRes();
     req.body = { name: "test" };
@@ -29,7 +29,7 @@ describe("validate middleware", () => {
 
   it("should send 400 when body is invalid", () => {
     const schema = z.object({ name: z.string().min(1) });
-    const middleware = validate(schema);
+    const middleware = Validate(schema);
 
     const { req, res, next } = mockReqRes();
     req.body = { name: "" };
@@ -41,9 +41,9 @@ describe("validate middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("should validate query params with custom source", () => {
+  it("should Validate query params with custom source", () => {
     const schema = z.object({ page: z.coerce.number().int().min(1) });
-    const middleware = validate(schema, "query");
+    const middleware = Validate(schema, "query");
 
     const { req, res, next } = mockReqRes();
     req.query = { page: "1" };
@@ -56,7 +56,7 @@ describe("validate middleware", () => {
 
   it("should send 400 when query param is invalid", () => {
     const schema = z.object({ page: z.coerce.number().int().min(1) });
-    const middleware = validate(schema, "query");
+    const middleware = Validate(schema, "query");
 
     const { req, res, next } = mockReqRes();
     req.query = { page: "abc" };
@@ -67,9 +67,9 @@ describe("validate middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("should validate params with custom source", () => {
+  it("should Validate params with custom source", () => {
     const schema = z.object({ id: z.string().min(1) });
-    const middleware = validate(schema, "params");
+    const middleware = Validate(schema, "params");
 
     const { req, res, next } = mockReqRes();
     req.params = { id: "123" };
@@ -84,7 +84,7 @@ describe("validate middleware", () => {
     const schema = {
       parse: () => { throw new Error("random"); },
     } as any;
-    const middleware = validate(schema);
+    const middleware = Validate(schema);
 
     const { req, res, next } = mockReqRes();
     req.body = {};

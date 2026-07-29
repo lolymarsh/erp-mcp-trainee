@@ -70,7 +70,7 @@ describe('jobApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.filter({
+    const result = await jobApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -100,7 +100,7 @@ describe('jobApi', () => {
       },
     });
 
-    await jobApi.filter({
+    await jobApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -123,7 +123,7 @@ describe('jobApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.getById('j1');
+    const result = await jobApi.GetById('j1');
 
     expect(mockApi.get).toHaveBeenCalledWith('/jobs/j1');
     expect(result.statusLogs).toHaveLength(1);
@@ -138,7 +138,7 @@ describe('jobApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.create({
+    const result = await jobApi.Create({
       customerId: 'c1',
       vehicleId: 'v1',
       jobType: 'INSTALL',
@@ -160,7 +160,7 @@ describe('jobApi', () => {
       },
     });
 
-    await jobApi.create({
+    await jobApi.Create({
       customerId: 'c1',
       vehicleId: 'v1',
       jobType: 'REPAIR',
@@ -200,7 +200,7 @@ describe('jobApi', () => {
     };
     mockApi.patch.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.updateStatus('j1', {
+    const result = await jobApi.UpdateStatus('j1', {
       status: 'IN_PROGRESS',
       version: 1,
     });
@@ -231,7 +231,7 @@ describe('jobApi', () => {
       },
     });
 
-    await jobApi.updateStatus('j1', {
+    await jobApi.UpdateStatus('j1', {
       status: 'CANCELLED',
       version: 1,
       note: 'Customer cancelled',
@@ -252,7 +252,7 @@ describe('jobApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.getTodayQueue();
+    const result = await jobApi.GetTodayQueue();
 
     expect(mockApi.get).toHaveBeenCalledWith('/jobs/today-queue');
     expect(result.queued).toBe(3);
@@ -268,7 +268,7 @@ describe('jobApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await jobApi.getTodayQueue();
+    const result = await jobApi.GetTodayQueue();
 
     expect(result.queued).toBe(0);
     expect(result.inProgress).toBe(0);

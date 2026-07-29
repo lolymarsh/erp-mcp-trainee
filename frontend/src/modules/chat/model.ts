@@ -56,7 +56,7 @@ export const PROVIDER_MODELS: Record<Provider, { value: string; label: string }[
   ],
 };
 
-export function getDefaultModel(provider: Provider): string {
+export function GetDefaultModel(provider: Provider): string {
   return PROVIDER_MODELS[provider][0].value;
 }
 
@@ -76,23 +76,23 @@ export interface StreamError {
 
 let sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
 
-export function getSessionId(): string {
+export function GetSessionId(): string {
   return sessionId;
 }
 
-export function setSessionId(id: string): void {
+export function SetSessionId(id: string): void {
   sessionId = id;
 }
 
 export const chatApi = {
-  send: async (input: SendMessageInput): Promise<ChatResponse> => {
+  Send: async (input: SendMessageInput): Promise<ChatResponse> => {
     const { data } = await api.post("/chat/send", input, {
       headers: { "X-Session-Id": sessionId },
     });
     return data.data;
   },
 
-  getHistory: async (sessionIdOverride?: string, limit = 50): Promise<ChatMessageDocument[]> => {
+  GetHistory: async (sessionIdOverride?: string, limit = 50): Promise<ChatMessageDocument[]> => {
     const sid = sessionIdOverride || sessionId;
     const { data } = await api.get("/chat/history", {
       params: { limit },
@@ -101,14 +101,14 @@ export const chatApi = {
     return data.data;
   },
 
-  listSessions: async (limit = 50): Promise<SessionSummary[]> => {
+  ListSessions: async (limit = 50): Promise<SessionSummary[]> => {
     const { data } = await api.get("/chat/sessions", {
       params: { limit },
     });
     return data.data;
   },
 
-  exportResult: async (input: SendMessageInput): Promise<Blob> => {
+  ExportResult: async (input: SendMessageInput): Promise<Blob> => {
     const { data } = await api.post("/chat/export", input, {
       responseType: "blob",
       headers: { "X-Session-Id": sessionId },
@@ -116,7 +116,7 @@ export const chatApi = {
     return data;
   },
 
-  stream: (
+  Stream: (
     input: SendMessageInput,
     onEvent: (event: string, payload: Record<string, unknown>) => void,
     onError: (error: StreamError) => void,

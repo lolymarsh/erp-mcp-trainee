@@ -68,7 +68,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -97,7 +97,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -125,7 +125,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -152,7 +152,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortName: "firstName",
@@ -180,7 +180,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortName: "updatedAt",
@@ -208,7 +208,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -235,7 +235,7 @@ describe("CustomerRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1,
         pageSize: 20,
         sortBy: "desc",
@@ -248,13 +248,13 @@ describe("CustomerRepository", () => {
   describe("findById", () => {
     it("should return customer when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockCustomer]);
-      const result = await repo.findById("cust-1");
+      const result = await repo.FindById("cust-1");
       expect(result).toEqual(mockCustomer);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findById("nonexistent");
+      const result = await repo.FindById("nonexistent");
       expect(result).toBeNull();
     });
   });
@@ -266,7 +266,7 @@ describe("CustomerRepository", () => {
         .mockReturnValueOnce(db)
         .mockResolvedValueOnce([mockVehicle]);
 
-      const result = await repo.findByIdWithVehicles("cust-1");
+      const result = await repo.FindByIdWithVehicles("cust-1");
       expect(result).not.toBeNull();
       expect(result!.customer.id).toBe("cust-1");
       expect(result!.vehicles).toHaveLength(1);
@@ -274,7 +274,7 @@ describe("CustomerRepository", () => {
 
     it("should return null when customer not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findByIdWithVehicles("nonexistent");
+      const result = await repo.FindByIdWithVehicles("nonexistent");
       expect(result).toBeNull();
     });
 
@@ -284,7 +284,7 @@ describe("CustomerRepository", () => {
         .mockReturnValueOnce(db)
         .mockResolvedValueOnce([]);
 
-      const result = await repo.findByIdWithVehicles("cust-1");
+      const result = await repo.FindByIdWithVehicles("cust-1");
       expect(result).not.toBeNull();
       expect(result!.vehicles).toHaveLength(0);
     });
@@ -293,13 +293,13 @@ describe("CustomerRepository", () => {
   describe("findByPhone", () => {
     it("should return customer when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockCustomer]);
-      const result = await repo.findByPhone("0812345678");
+      const result = await repo.FindByPhone("0812345678");
       expect(result).toEqual(mockCustomer);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findByPhone("0000000000");
+      const result = await repo.FindByPhone("0000000000");
       expect(result).toBeNull();
     });
   });
@@ -307,7 +307,7 @@ describe("CustomerRepository", () => {
   describe("create", () => {
     it("should insert and return customer", async () => {
       db.limit = jest.fn().mockResolvedValue([mockCustomer]);
-      const result = await repo.create({
+      const result = await repo.Create({
         id: "cust-new",
         firstName: "ใหม่",
         lastName: "สุดสวย",
@@ -331,7 +331,7 @@ describe("CustomerRepository", () => {
       db.where = whereFn;
       db.limit = jest.fn().mockResolvedValue([updatedCustomer]);
 
-      const result = await repo.update("cust-1", { firstName: "สมหมาย" }, 1);
+      const result = await repo.Update("cust-1", { firstName: "สมหมาย" }, 1);
       expect(result).not.toBeNull();
       expect(result!.firstName).toBe("สมหมาย");
       expect(result!.version).toBe(2);
@@ -344,7 +344,7 @@ describe("CustomerRepository", () => {
         .mockReturnThis();
       db.where = whereFn;
 
-      const result = await repo.update("cust-1", { firstName: "สมหมาย" }, 99);
+      const result = await repo.Update("cust-1", { firstName: "สมหมาย" }, 99);
       expect(result).toBeNull();
     });
   });
@@ -352,13 +352,13 @@ describe("CustomerRepository", () => {
   describe("softDelete", () => {
     it("should return true when deleted", async () => {
       db.where = jest.fn().mockResolvedValue([{ affectedRows: 1 }]);
-      const result = await repo.softDelete("cust-1", 1);
+      const result = await repo.SoftDelete("cust-1", 1);
       expect(result).toBe(true);
     });
 
     it("should return false when version mismatch", async () => {
       db.where = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
-      const result = await repo.softDelete("cust-1", 99);
+      const result = await repo.SoftDelete("cust-1", 99);
       expect(result).toBe(false);
     });
   });

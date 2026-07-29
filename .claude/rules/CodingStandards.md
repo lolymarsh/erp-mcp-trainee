@@ -31,10 +31,10 @@ const user = userSchema.parse(data);  // Zod validates + infers type
 ### 1.3 Return Types Required
 ```ts
 // ❌ BAD
-async function getCustomer(id: string) { ... }
+async function GetCustomer(id: string) { ... }
 
 // ✅ GOOD
-async function getCustomer(id: string): Promise<CustomerEntity | null> { ... }
+async function GetCustomer(id: string): Promise<CustomerEntity | null> { ... }
 ```
 
 ### 1.4 Nullable Types
@@ -52,16 +52,16 @@ deletedAt: Date | null;
 
 ```ts
 // ✅ GOOD — guard clause at top
-async getCustomer(id: string): Promise<CustomerEntity> {
-  const customer = await this.repo.findById(id);
+async GetCustomer(id: string): Promise<CustomerEntity> {
+  const customer = await this.repo.FindById(id);
   if (!customer) throw new NotFoundError('Customer not found');
   if (!customer.isActive) throw new ForbiddenError('Customer is inactive');
   return customer;
 }
 
 // ❌ BAD — nested if
-async getCustomer(id: string): Promise<CustomerEntity> {
-  const customer = await this.repo.findById(id);
+async GetCustomer(id: string): Promise<CustomerEntity> {
+  const customer = await this.repo.FindById(id);
   if (customer) {
     if (customer.isActive) {
       return customer;
@@ -86,17 +86,47 @@ const SESSION_TTL = 60 * 60 * 24; // 24 hours in seconds
 res.status(HttpStatus.UNAUTHORIZED).json({ message: ERROR_MSGS.UNAUTHORIZED });
 ```
 
-## 4. Naming Conventions
+## 4. Naming Conventions — Go-style
 
 | Element | Convention | Example |
 |---------|-----------|---------|
 | Interfaces | `I` prefix | `ICustomerService` |
 | Classes | PascalCase | `CustomerHandler` |
-| Functions | camelCase (verb-first) | `getCustomer`, `createInvoice` |
+| Public functions/methods | PascalCase (exported = uppercase) | `GetCustomer`, `CreateInvoice` |
+| Private functions/methods | camelCase (unexported = lowercase) | `toResponse`, `buildFilterConditions` |
 | Files | kebab-case in folder, PascalCase for component files | `entity.ts`, `CustomerView.tsx` |
 | DB columns | snake_case | `created_at`, `first_name` |
 | JSON keys | camelCase | `createdAt`, `firstName` |
 | Env vars | UPPER_SNAKE | `MYSQL_HOST`, `JWT_SECRET` |
+
+### Go-style Public/Private Rule
+
+```ts
+// ✅ Public methods — PascalCase (exported, like Go)
+export interface ICustomerService {
+  GetCustomer(id: string): Promise<CustomerEntity | null>;
+  CreateCustomer(input: CreateCustomerInput): Promise<CustomerEntity>;
+}
+
+// Private helpers — camelCase (unexported, like Go)
+class CustomerService implements ICustomerService {
+  async CreateCustomer(input: CreateCustomerInput): Promise<CustomerEntity> {
+    const existing = await this.repo.FindByPhone(input.phone);
+    const hash = this.hashPassword(input.password); // ← private helper
+    return this.repo.Create({ ...input, passwordHash: hash });
+  }
+
+  private hashPassword(password: string): string { // ← camelCase
+    return bcrypt.hashSync(password, 12);
+  }
+}
+
+// Local module-scoped functions — camelCase (not exported)
+function formatError(err: unknown): string {
+  if (err instanceof ZodError) return err.issues.map(i => i.message).join(', ');
+  return 'Unknown error';
+}
+```
 
 ## 5. Imports Order
 

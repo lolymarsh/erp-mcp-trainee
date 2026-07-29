@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { createAuthMiddleware } from './auth';
+import { CreateAuthMiddleware } from './auth';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'versus-dev-secret-key';
 
@@ -15,10 +15,10 @@ function mockReqRes() {
   return { req, res, next };
 }
 
-describe('createAuthMiddleware', () => {
+describe('CreateAuthMiddleware', () => {
   it('should return 401 when no authorization header', async () => {
     const redis = { exists: jest.fn() } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
 
     await auth()(req, res, next);
@@ -29,7 +29,7 @@ describe('createAuthMiddleware', () => {
 
   it('should return 401 when token is not Bearer', async () => {
     const redis = { exists: jest.fn() } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     req.headers.authorization = 'Basic token123';
 
@@ -41,7 +41,7 @@ describe('createAuthMiddleware', () => {
 
   it('should return 401 when token is invalid', async () => {
     const redis = { exists: jest.fn() } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     req.headers.authorization = 'Bearer invalid-token';
 
@@ -53,7 +53,7 @@ describe('createAuthMiddleware', () => {
 
   it('should return 401 when session does not exist in redis', async () => {
     const redis = { exists: jest.fn().mockResolvedValue(0) } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     const token = jwt.sign({ userId: 'user-1', role: 'ADMIN' }, JWT_SECRET);
     req.headers.authorization = `Bearer ${token}`;
@@ -67,7 +67,7 @@ describe('createAuthMiddleware', () => {
 
   it('should call next when token and session are valid', async () => {
     const redis = { exists: jest.fn().mockResolvedValue(1) } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     const token = jwt.sign({ userId: 'user-1', role: 'ADMIN' }, JWT_SECRET);
     req.headers.authorization = `Bearer ${token}`;
@@ -81,7 +81,7 @@ describe('createAuthMiddleware', () => {
 
   it('should return 403 when role is not allowed', async () => {
     const redis = { exists: jest.fn().mockResolvedValue(1) } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     const token = jwt.sign({ userId: 'user-1', role: 'STAFF' }, JWT_SECRET);
     req.headers.authorization = `Bearer ${token}`;
@@ -94,7 +94,7 @@ describe('createAuthMiddleware', () => {
 
   it('should pass when role matches allowed roles', async () => {
     const redis = { exists: jest.fn().mockResolvedValue(1) } as any;
-    const auth = createAuthMiddleware(redis);
+    const auth = CreateAuthMiddleware(redis);
     const { req, res, next } = mockReqRes();
     const token = jwt.sign({ userId: 'user-1', role: 'MANAGER' }, JWT_SECRET);
     req.headers.authorization = `Bearer ${token}`;

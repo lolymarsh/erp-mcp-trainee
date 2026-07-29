@@ -31,23 +31,23 @@ describe("ChatHandler", () => {
 
   beforeEach(() => {
     svc = {
-      ask: jest.fn(),
-      getHistory: jest.fn(),
-      listSessions: jest.fn(),
-      executeHeavyQuery: jest.fn(),
+      Ask: jest.fn(),
+      GetHistory: jest.fn(),
+      ListSessions: jest.fn(),
+      ExecuteHeavyQuery: jest.fn(),
     };
     handler = new ChatHandler(svc);
   });
 
-  describe("sendMessage", () => {
+  describe("SendMessage", () => {
     it("should return 200 on success", async () => {
-      svc.ask.mockResolvedValue(mockChatResponse);
+      svc.Ask.mockResolvedValue(mockChatResponse);
       const { req, res } = mockReqRes();
       req.body = { question: "ยอดขายวันนี้", format: "text" };
       req.headers["x-session-id"] = "session-1";
       req.user = { userId: "user-1", role: "ADMIN" };
 
-      await handler.sendMessage(req, res);
+      await handler.SendMessage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -58,13 +58,13 @@ describe("ChatHandler", () => {
     });
 
     it("should use anonymous when no req.user", async () => {
-      svc.ask.mockResolvedValue(mockChatResponse);
+      svc.Ask.mockResolvedValue(mockChatResponse);
       const { req, res } = mockReqRes();
       req.body = { question: "ยอดขายวันนี้" };
 
-      await handler.sendMessage(req, res);
+      await handler.SendMessage(req, res);
 
-      expect(svc.ask).toHaveBeenCalledWith(expect.any(Object), "anonymous", "default");
+      expect(svc.Ask).toHaveBeenCalledWith(expect.any(Object), "anonymous", "default");
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
@@ -72,82 +72,82 @@ describe("ChatHandler", () => {
       const { req, res } = mockReqRes();
       req.body = {};
 
-      await handler.sendMessage(req, res);
+      await handler.SendMessage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle AppError", async () => {
-      svc.ask.mockRejectedValue(new AppError(500, "Chat error"));
+      svc.Ask.mockRejectedValue(new AppError(500, "Chat error"));
       const { req, res } = mockReqRes();
       req.body = { question: "test" };
 
-      await handler.sendMessage(req, res);
+      await handler.SendMessage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle unexpected error as 500", async () => {
-      svc.ask.mockRejectedValue(new Error("unexpected"));
+      svc.Ask.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.body = { question: "test" };
 
-      await handler.sendMessage(req, res);
+      await handler.SendMessage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 
-  describe("getHistory", () => {
+  describe("GetHistory", () => {
     it("should return 200 with history", async () => {
       const history = [{ _id: "msg-1", sessionId: "s1", userId: "u1", question: "test", sql: "SELECT 1", resultCount: 1, format: "text", response: "1", cached: false, createdAt: new Date() }];
-      svc.getHistory.mockResolvedValue(history);
+      svc.GetHistory.mockResolvedValue(history);
       const { req, res } = mockReqRes();
       req.headers["x-session-id"] = "session-1";
 
-      await handler.getHistory(req, res);
+      await handler.GetHistory(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(svc.getHistory).toHaveBeenCalledWith("session-1", 50);
+      expect(svc.GetHistory).toHaveBeenCalledWith("session-1", 50);
     });
 
     it("should use custom limit from query", async () => {
-      svc.getHistory.mockResolvedValue([]);
+      svc.GetHistory.mockResolvedValue([]);
       const { req, res } = mockReqRes();
       req.headers["x-session-id"] = "session-1";
       req.query = { limit: "10" };
 
-      await handler.getHistory(req, res);
+      await handler.GetHistory(req, res);
 
-      expect(svc.getHistory).toHaveBeenCalledWith("session-1", 10);
+      expect(svc.GetHistory).toHaveBeenCalledWith("session-1", 10);
     });
 
     it("should handle AppError", async () => {
-      svc.getHistory.mockRejectedValue(new AppError(400, "Bad request"));
+      svc.GetHistory.mockRejectedValue(new AppError(400, "Bad request"));
       const { req, res } = mockReqRes();
 
-      await handler.getHistory(req, res);
+      await handler.GetHistory(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle unexpected error as 500", async () => {
-      svc.getHistory.mockRejectedValue(new Error("unexpected"));
+      svc.GetHistory.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
 
-      await handler.getHistory(req, res);
+      await handler.GetHistory(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 
-  describe("exportResult", () => {
+  describe("ExportResult", () => {
     it("should return file with correct headers", async () => {
-      svc.ask.mockResolvedValue(mockChatResponse);
+      svc.Ask.mockResolvedValue(mockChatResponse);
       const { req, res } = mockReqRes();
       req.body = { question: "ยอดขายวันนี้", format: "csv" };
 
-      await handler.exportResult(req, res);
+      await handler.ExportResult(req, res);
 
       expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/csv");
       expect(res.setHeader).toHaveBeenCalledWith(
@@ -161,17 +161,17 @@ describe("ChatHandler", () => {
       const { req, res } = mockReqRes();
       req.body = {};
 
-      await handler.exportResult(req, res);
+      await handler.ExportResult(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle AppError", async () => {
-      svc.ask.mockRejectedValue(new AppError(500, "Export error"));
+      svc.Ask.mockRejectedValue(new AppError(500, "Export error"));
       const { req, res } = mockReqRes();
       req.body = { question: "test", format: "json" };
 
-      await handler.exportResult(req, res);
+      await handler.ExportResult(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
     });

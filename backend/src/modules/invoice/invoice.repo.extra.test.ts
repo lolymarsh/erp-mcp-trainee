@@ -52,13 +52,13 @@ describe("InvoiceRepository extra coverage", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockInvoiceEntity]) });
 
-      const r1 = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "neq", value: "REFUNDED" }] });
+      const r1 = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "neq", value: "REFUNDED" }] });
       expect(r1.total).toBe(1);
 
-      const r2 = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "invoiceNumber", operator: "contains", value: "INV" }] });
+      const r2 = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "invoiceNumber", operator: "contains", value: "INV" }] });
       expect(r2.total).toBe(1);
 
-      const r3 = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "in", value: ["PENDING", "PAID"] }] });
+      const r3 = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "in", value: ["PENDING", "PAID"] }] });
       expect(r3.total).toBe(1);
     });
 
@@ -66,10 +66,10 @@ describe("InvoiceRepository extra coverage", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockInvoiceEntity]) });
 
-      const r1 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "grandTotal", sortBy: "desc", filters: [] });
+      const r1 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "grandTotal", sortBy: "desc", filters: [] });
       expect(r1.total).toBe(1);
 
-      const r2 = await repo.findFiltered({ page: 1, pageSize: 20, sortName: "paymentStatus", sortBy: "asc", filters: [] });
+      const r2 = await repo.FindFiltered({ page: 1, pageSize: 20, sortName: "paymentStatus", sortBy: "asc", filters: [] });
       expect(r2.total).toBe(1);
     });
 
@@ -77,7 +77,7 @@ describe("InvoiceRepository extra coverage", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockInvoiceEntity]) });
 
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "nonexistent", operator: "eq", value: "x" }] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "nonexistent", operator: "eq", value: "x" }] });
       expect(result.total).toBe(1);
     });
   });
@@ -89,7 +89,7 @@ describe("InvoiceRepository extra coverage", () => {
         .mockReturnValueOnce(db)
         .mockResolvedValueOnce([{ id: "item-1", invoiceId: "inv-1", productId: "prod-1", quantity: 1, unitPrice: "5000.00", total: "5000.00" }]);
 
-      const result = await repo.findByIdWithItems("inv-1");
+      const result = await repo.FindByIdWithItems("inv-1");
       expect(result).not.toBeNull();
       expect(result!.invoice.id).toBe("inv-1");
       expect(result!.items).toHaveLength(1);
@@ -97,7 +97,7 @@ describe("InvoiceRepository extra coverage", () => {
 
     it("should return null when invoice not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findByIdWithItems("nonexistent");
+      const result = await repo.FindByIdWithItems("nonexistent");
       expect(result).toBeNull();
     });
   });
@@ -128,21 +128,21 @@ describe("InvoiceRepository extra coverage", () => {
         items: [{ productId: "prod-1", quantity: 1, unitPrice: "100.00", total: "100.00" }],
       };
 
-      await expect(repo.createInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("INSUFFICIENT_STOCK");
+      await expect(repo.CreateInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("INSUFFICIENT_STOCK");
     });
   });
 
   describe("getTodaySummary", () => {
     it("should return today summary", async () => {
       db.where = jest.fn().mockResolvedValue([{ totalAmount: "15000.00", count: 3 }]);
-      const result = await repo.getTodaySummary();
+      const result = await repo.GetTodaySummary();
       expect(result.totalAmount).toBe("15000.00");
       expect(result.count).toBe(3);
     });
 
     it("should return zeros when no invoices today", async () => {
       db.where = jest.fn().mockResolvedValue([]);
-      const result = await repo.getTodaySummary();
+      const result = await repo.GetTodaySummary();
       expect(result.totalAmount).toBe("0.00");
       expect(result.count).toBe(0);
     });

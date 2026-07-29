@@ -76,22 +76,22 @@ export interface FilterRequest {
 }
 
 export const jobApi = {
-  filter: async (input: FilterRequest): Promise<PaginatedJobs> => {
+  Filter: async (input: FilterRequest): Promise<PaginatedJobs> => {
     const { data } = await api.post("/jobs/filter", input);
     return { data: data.data, pagination: data.pagination };
   },
 
-  getById: async (id: string): Promise<JobWithLogsResponse> => {
+  GetById: async (id: string): Promise<JobWithLogsResponse> => {
     const { data } = await api.get(`/jobs/${id}`);
     return data.data;
   },
 
-  create: async (input: CreateJobInput): Promise<JobWithLogsResponse> => {
+  Create: async (input: CreateJobInput): Promise<JobWithLogsResponse> => {
     const { data } = await api.post("/jobs", input);
     return data.data;
   },
 
-  updateStatus: async (
+  UpdateStatus: async (
     id: string,
     input: UpdateJobStatusInput,
   ): Promise<{ job: JobResponse; log: JobStatusLogResponse }> => {
@@ -99,7 +99,7 @@ export const jobApi = {
     return data.data;
   },
 
-  getTodayQueue: async (): Promise<TodayQueueResponse> => {
+  GetTodayQueue: async (): Promise<TodayQueueResponse> => {
     const { data } = await api.get("/jobs/today-queue");
     return data.data;
   },

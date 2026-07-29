@@ -51,7 +51,7 @@ export function useCustomerList(): UseCustomerListReturn {
         ];
       }
 
-      const result = await customerApi.filter(params);
+      const result = await customerApi.Filter(params);
       setCustomers(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -101,7 +101,7 @@ export function useCustomerDetail(id: string): UseCustomerDetailReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await customerApi.getById(id);
+      const result = await customerApi.GetById(id);
       setCustomer(result.data);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load customer';
@@ -159,7 +159,7 @@ export function useCustomerCreate(onSuccess: () => void): UseCustomerCreateRetur
     setError(null);
     setFieldErrors({});
     try {
-      await customerApi.create(parsed.data);
+      await customerApi.Create(parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -232,7 +232,7 @@ export function useCustomerUpdate(id: string, onSuccess: () => void): UseCustome
     setError(null);
     setFieldErrors({});
     try {
-      await customerApi.update(id, { ...parsed.data, version });
+      await customerApi.Update(id, { ...parsed.data, version });
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -280,7 +280,7 @@ export function useCustomerDelete(
     setLoading(true);
     setError(null);
     try {
-      await customerApi.softDelete(id, { version });
+      await customerApi.SoftDelete(id, { version });
       handleClose();
       onSuccess();
     } catch (err: unknown) {
@@ -340,7 +340,7 @@ export function useVehicleCreate(onSuccess: () => void): UseVehicleCreateReturn 
     setLoading(true);
     setError(null);
     try {
-      await customerApi.createVehicle(input);
+      await customerApi.CreateVehicle(input);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -427,7 +427,7 @@ export function useVehicleUpdate(onSuccess: () => void): UseVehicleUpdateReturn 
     setLoading(true);
     setError(null);
     try {
-      await customerApi.updateVehicle(vehicleId, input);
+      await customerApi.UpdateVehicle(vehicleId, input);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -476,7 +476,7 @@ export function useVehicleDelete(onSuccess: () => void): UseVehicleDeleteReturn 
     setLoading(true);
     setError(null);
     try {
-      await customerApi.deleteVehicle(vehicleInfo.id);
+      await customerApi.DeleteVehicle(vehicleInfo.id);
       onSuccess();
       handleClose();
     } catch (err: unknown) {

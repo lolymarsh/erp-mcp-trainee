@@ -59,7 +59,7 @@ describe("InventoryRepository", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), leftJoin: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockProduct]) });
 
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "sku", operator: "eq", value: "GS-001" }] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "sku", operator: "eq", value: "GS-001" }] });
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
     });
@@ -68,13 +68,13 @@ describe("InventoryRepository", () => {
   describe("findById", () => {
     it("should return product when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockProduct]);
-      const result = await repo.findById("prod-1");
+      const result = await repo.FindById("prod-1");
       expect(result).toEqual(mockProduct);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findById("nonexistent");
+      const result = await repo.FindById("nonexistent");
       expect(result).toBeNull();
     });
   });
@@ -82,13 +82,13 @@ describe("InventoryRepository", () => {
   describe("findBySku", () => {
     it("should return product when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockProduct]);
-      const result = await repo.findBySku("GS-001");
+      const result = await repo.FindBySku("GS-001");
       expect(result).toEqual(mockProduct);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findBySku("UNKNOWN");
+      const result = await repo.FindBySku("UNKNOWN");
       expect(result).toBeNull();
     });
   });
@@ -96,7 +96,7 @@ describe("InventoryRepository", () => {
   describe("findAllCategories", () => {
     it("should return all categories", async () => {
       db.select = jest.fn().mockReturnValue({ from: jest.fn().mockResolvedValue([mockCategory]) });
-      const result = await repo.findAllCategories();
+      const result = await repo.FindAllCategories();
       expect(result).toHaveLength(1);
     });
   });
@@ -104,7 +104,7 @@ describe("InventoryRepository", () => {
   describe("create", () => {
     it("should insert and return product", async () => {
       db.limit = jest.fn().mockResolvedValue([mockProduct]);
-      const result = await repo.create({
+      const result = await repo.Create({
         id: "prod-1", categoryId: "cat-1", sku: "GS-001", name: "ถังแก๊ส",
         description: null, unit: "piece", costPrice: "3500.00", sellPrice: "5000.00",
         minStock: 5, currentStock: 10, version: 1,
@@ -122,7 +122,7 @@ describe("InventoryRepository", () => {
         .mockReturnThis();
       db.where = whereFn;
       db.limit = jest.fn().mockResolvedValue([updatedProduct]);
-      const result = await repo.update("prod-1", { name: "Updated" }, 1);
+      const result = await repo.Update("prod-1", { name: "Updated" }, 1);
       expect(result).not.toBeNull();
       expect(result!.name).toBe("Updated");
     });
@@ -132,7 +132,7 @@ describe("InventoryRepository", () => {
         .mockResolvedValueOnce([{ affectedRows: 0 }])
         .mockReturnThis();
       db.where = whereFn;
-      const result = await repo.update("prod-1", { name: "Updated" }, 99);
+      const result = await repo.Update("prod-1", { name: "Updated" }, 99);
       expect(result).toBeNull();
     });
   });
@@ -140,13 +140,13 @@ describe("InventoryRepository", () => {
   describe("softDelete", () => {
     it("should return true when deleted", async () => {
       db.where = jest.fn().mockResolvedValue([{ affectedRows: 1 }]);
-      const result = await repo.softDelete("prod-1", 1);
+      const result = await repo.SoftDelete("prod-1", 1);
       expect(result).toBe(true);
     });
 
     it("should return false when not found", async () => {
       db.where = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
-      const result = await repo.softDelete("prod-1", 99);
+      const result = await repo.SoftDelete("prod-1", 99);
       expect(result).toBe(false);
     });
   });
@@ -171,7 +171,7 @@ describe("InventoryRepository", () => {
       const mockTx = createTxMock([productRow]);
       mockTx.limit = jest.fn().mockResolvedValue([{ ...mockProduct, currentStock: 15 }]);
 
-      const result = await repo.adjustStock({
+      const result = await repo.AdjustStock({
         productId: "prod-1", type: "IN", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
       }, mockTx as unknown as Tx);
@@ -181,7 +181,7 @@ describe("InventoryRepository", () => {
     it("should throw PRODUCT_NOT_FOUND when product missing", async () => {
       const mockTx = createTxMock([]);
 
-      await expect(repo.adjustStock({
+      await expect(repo.AdjustStock({
         productId: "nonexistent", type: "IN", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
       }, mockTx as unknown as Tx)).rejects.toThrow("PRODUCT_NOT_FOUND");
@@ -191,7 +191,7 @@ describe("InventoryRepository", () => {
       const productRow = { ...mockProduct, currentStock: 0 };
       const mockTx = createTxMock([productRow]);
 
-      await expect(repo.adjustStock({
+      await expect(repo.AdjustStock({
         productId: "prod-1", type: "OUT", quantity: 5,
         referenceType: null, referenceId: null, createdBy: "user-1", note: null,
       }, mockTx as unknown as Tx)).rejects.toThrow("INSUFFICIENT_STOCK");

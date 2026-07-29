@@ -14,17 +14,17 @@ description: |
 **MUST use custom error classes from `shared/errors/AppError.ts`:**
 
 ```ts
-// ✅ GOOD — service.ts
+// ✅ GOOD — service.ts (Go-style: public = PascalCase)
 import { NotFoundError, ConflictError, AppError } from '../../shared/errors/AppError';
 
-async getCustomer(id: string): Promise<CustomerEntity> {
-  const customer = await this.repo.findById(id);
+async GetCustomer(id: string): Promise<CustomerEntity> {
+  const customer = await this.repo.FindById(id);
   if (!customer) throw new NotFoundError('Customer not found');
   return customer;
 }
 
-async updateCustomer(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity> {
-  const updated = await this.repo.update(id, data, version);
+async UpdateCustomer(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity> {
+  const updated = await this.repo.Update(id, data, version);
   if (!updated) throw new ConflictError('Version mismatch', { currentVersion: version });
   return updated;
 }
@@ -45,15 +45,15 @@ Error types:
 class CustomerHandler {
   constructor(private svc: ICustomerService) {}
 
-  filterCustomers = async (req: Request, res: Response, next: NextFunction) => {
+  FilterCustomers = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filters = filterRequestSchema.parse(req.body);
-      const { data, total } = await this.svc.filterCustomers(filters);
+      const { data, total } = await this.svc.FilterCustomers(filters);
       const pagination = calculatePagination(filters.page, filters.pageSize, total);
       return sendSuccess(res, 200, 'success', { data, pagination });
     } catch (err) {
       if (err instanceof AppError) return sendError(res, err.statusCode, err.message);
-      logger.error('filterCustomers failed', err);
+      logger.error('FilterCustomers failed', err);
       return sendError(res, 500, 'Internal server error');
     }
   };
@@ -63,21 +63,21 @@ class CustomerHandler {
 ### 3. Service Layer Pattern
 
 ```ts
-// ✅ Interface + Implementation — same as Go
+// ✅ Interface + Implementation — same as Go (public = PascalCase)
 export interface ICustomerService {
-  filterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }>;
-  getById(id: string): Promise<CustomerEntity>;
-  create(input: CreateCustomerInput): Promise<CustomerEntity>;
-  update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity>;
+  FilterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }>;
+  GetById(id: string): Promise<CustomerEntity>;
+  Create(input: CreateCustomerInput): Promise<CustomerEntity>;
+  Update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity>;
 }
 
 export class CustomerService implements ICustomerService {
   constructor(private repo: ICustomerRepository) {}
 
-  async filterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }> {
+  async FilterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }> {
     const [data, total] = await Promise.all([
-      this.repo.findByFilters(filters),
-      this.repo.countByFilters(filters),
+      this.repo.FindByFilters(filters),
+      this.repo.CountByFilters(filters),
     ]);
     return { data, total };
   }
@@ -87,18 +87,18 @@ export class CustomerService implements ICustomerService {
 ### 4. Repository Layer Pattern
 
 ```ts
-// ✅ Interface + Implementation
+// ✅ Interface + Implementation (Go-style: public = PascalCase)
 export interface ICustomerRepository {
-  findById(id: string): Promise<CustomerEntity | null>;
-  findByFilters(filters: FilterRequest): Promise<CustomerEntity[]>;
-  countByFilters(filters: FilterRequest): Promise<number>;
-  create(data: CreateCustomerData): Promise<CustomerEntity>;
-  update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null>;
-  softDelete(id: string, version: number): Promise<boolean>;
+  FindById(id: string): Promise<CustomerEntity | null>;
+  FindByFilters(filters: FilterRequest): Promise<CustomerEntity[]>;
+  CountByFilters(filters: FilterRequest): Promise<number>;
+  Create(data: CreateCustomerData): Promise<CustomerEntity>;
+  Update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null>;
+  SoftDelete(id: string, version: number): Promise<boolean>;
 }
 
 export class CustomerRepository implements ICustomerRepository {
-  async update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null> {
+  async Update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null> {
     const [updated] = await db
       .update(customers)
       .set({ ...data, version: version + 1, updatedAt: new Date() })
@@ -113,7 +113,7 @@ export class CustomerRepository implements ICustomerRepository {
 
 ```ts
 // ✅ Multi-table write — MUST use db.transaction()
-async createInvoice(data: CreateInvoiceData): Promise<InvoiceEntity> {
+async CreateInvoice(data: CreateInvoiceData): Promise<InvoiceEntity> {
   return await db.transaction(async (tx) => {
     const [inv] = await tx.insert(invoices).values(data.invoice).$returningId();
 

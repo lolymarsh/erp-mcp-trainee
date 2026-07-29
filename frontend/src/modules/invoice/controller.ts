@@ -56,7 +56,7 @@ export function useInvoiceList(): UseInvoiceListReturn {
         filters.push({ field: 'paymentMethod', operator: 'eq', value: paymentMethodFilter });
       }
       const filter: FilterRequest = { page, pageSize: 20, sortBy: 'desc', filters };
-      const result = await invoiceApi.filter(filter);
+      const result = await invoiceApi.Filter(filter);
       setInvoices(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -150,7 +150,7 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
       const filters = search
         ? [{ field: 'firstName', operator: 'contains' as const, value: search }]
         : [];
-      const result = await customerApi.filter({
+      const result = await customerApi.Filter({
         page,
         pageSize: 10,
         sortBy: 'asc',
@@ -179,7 +179,7 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
       const filters = search
         ? [{ field: 'name', operator: 'contains' as const, value: search }]
         : [];
-      const result = await inventoryApi.filter({
+      const result = await inventoryApi.Filter({
         page,
         pageSize: 10,
         sortBy: 'asc',
@@ -303,7 +303,7 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
         input.paymentMethod = selectedPaymentMethod as 'CASH' | 'BANK_TRANSFER' | 'CREDIT' | 'PROMPTPAY';
       }
 
-      const result = await invoiceApi.create(input);
+      const result = await invoiceApi.Create(input);
       reset();
       return result;
     } catch (err: unknown) {
@@ -361,7 +361,7 @@ export function useTodaySummary(): UseTodaySummaryReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await invoiceApi.getTodaySummary();
+      const result = await invoiceApi.GetTodaySummary();
       setSummary(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load summary';
@@ -397,7 +397,7 @@ export function useInvoiceDetail(id: string | null): UseInvoiceDetailReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await invoiceApi.getById(id);
+      const result = await invoiceApi.GetById(id);
       setInvoice(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to load invoice";
@@ -434,7 +434,7 @@ export function useInvoicePaymentUpdate(onSuccess: () => void): UseInvoicePaymen
     setSubmitting(true);
     setError(null);
     try {
-      await invoiceApi.updatePaymentStatus(id, data);
+      await invoiceApi.UpdatePaymentStatus(id, data);
       onSuccess();
       setOpen(false);
       return true;

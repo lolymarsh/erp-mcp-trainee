@@ -53,16 +53,16 @@ export interface InvoiceWithItemsResult {
 }
 
 export interface IInvoiceRepository {
-  findFiltered(
+  FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: InvoiceEntity[]; total: number }>;
-  findById(id: string): Promise<InvoiceEntity | null>;
-  findByIdWithItems(
+  FindById(id: string): Promise<InvoiceEntity | null>;
+  FindByIdWithItems(
     id: string,
   ): Promise<InvoiceWithItemsResult | null>;
-  createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult>;
-  getTodaySummary(): Promise<{ totalAmount: string; count: number }>;
-  updatePaymentStatus(
+  CreateInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult>;
+  GetTodaySummary(): Promise<{ totalAmount: string; count: number }>;
+  UpdatePaymentStatus(
     id: string,
     data: { paymentStatus: string; paymentMethod: string | null },
     version: number,
@@ -72,7 +72,7 @@ export interface IInvoiceRepository {
 export class InvoiceRepository implements IInvoiceRepository {
   constructor(private db: MySql2Database) {}
 
-  async findFiltered(
+  async FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: InvoiceEntity[]; total: number }> {
     const conditions = this.buildFilterConditions(input);
@@ -146,7 +146,7 @@ export class InvoiceRepository implements IInvoiceRepository {
     return conditions;
   }
 
-  async findById(id: string): Promise<InvoiceEntity | null> {
+  async FindById(id: string): Promise<InvoiceEntity | null> {
     const result = await this.db
       .select()
       .from(invoices)
@@ -159,10 +159,10 @@ export class InvoiceRepository implements IInvoiceRepository {
     return result[0];
   }
 
-  async findByIdWithItems(
+  async FindByIdWithItems(
     id: string,
   ): Promise<InvoiceWithItemsResult | null> {
-    const inv = await this.findById(id);
+    const inv = await this.FindById(id);
     if (!inv) {
       return null;
     }
@@ -178,7 +178,7 @@ export class InvoiceRepository implements IInvoiceRepository {
     };
   }
 
-  async createInvoice(
+  async CreateInvoice(
     data: CreateInvoiceData,
     tx?: Tx,
   ): Promise<InvoiceWithItemsResult> {
@@ -300,7 +300,7 @@ export class InvoiceRepository implements IInvoiceRepository {
     return this.db.transaction((innerTx) => doWork(innerTx));
   }
 
-  async getTodaySummary(): Promise<{
+  async GetTodaySummary(): Promise<{
     totalAmount: string;
     count: number;
   }> {
@@ -332,7 +332,7 @@ export class InvoiceRepository implements IInvoiceRepository {
     };
   }
 
-  async updatePaymentStatus(
+  async UpdatePaymentStatus(
     id: string,
     data: { paymentStatus: string; paymentMethod: string | null },
     version: number,
@@ -348,7 +348,7 @@ export class InvoiceRepository implements IInvoiceRepository {
       .where(and(eq(invoices.id, id), eq(invoices.version, version)));
 
     if (result[0].affectedRows === 0) return null;
-    return this.findById(id);
+    return this.FindById(id);
   }
 
   private resolveColumn(field: string): Column | null {

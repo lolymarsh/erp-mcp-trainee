@@ -26,13 +26,13 @@ export interface JobWithLogsResult {
 }
 
 export interface IJobRepository {
-  findFiltered(
+  FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: JobEntity[]; total: number }>;
-  findById(id: string): Promise<JobEntity | null>;
-  findByIdWithLogs(id: string): Promise<JobWithLogsResult | null>;
-  create(data: CreateJobData): Promise<JobEntity>;
-  updateStatus(
+  FindById(id: string): Promise<JobEntity | null>;
+  FindByIdWithLogs(id: string): Promise<JobWithLogsResult | null>;
+  Create(data: CreateJobData): Promise<JobEntity>;
+  UpdateStatus(
     id: string,
     newStatus: JobStatus,
     changedBy: string,
@@ -40,7 +40,7 @@ export interface IJobRepository {
     note: string | null,
     tx?: Tx,
   ): Promise<{ job: JobEntity; log: JobStatusLogEntity }>;
-  getTodayQueue(): Promise<{
+  GetTodayQueue(): Promise<{
     queued: number;
     inProgress: number;
     completed: number;
@@ -60,7 +60,7 @@ export interface CreateJobData {
 export class JobRepository implements IJobRepository {
   constructor(private db: MySql2Database) {}
 
-  async findFiltered(
+  async FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: JobEntity[]; total: number }> {
     const conditions = this.buildFilterConditions(input);
@@ -134,7 +134,7 @@ export class JobRepository implements IJobRepository {
     return conditions;
   }
 
-  async findById(id: string): Promise<JobEntity | null> {
+  async FindById(id: string): Promise<JobEntity | null> {
     const result = await this.db
       .select()
       .from(jobs)
@@ -147,8 +147,8 @@ export class JobRepository implements IJobRepository {
     return result[0] as JobEntity;
   }
 
-  async findByIdWithLogs(id: string): Promise<JobWithLogsResult | null> {
-    const job = await this.findById(id);
+  async FindByIdWithLogs(id: string): Promise<JobWithLogsResult | null> {
+    const job = await this.FindById(id);
     if (!job) {
       return null;
     }
@@ -165,7 +165,7 @@ export class JobRepository implements IJobRepository {
     };
   }
 
-  async create(data: CreateJobData): Promise<JobEntity> {
+  async Create(data: CreateJobData): Promise<JobEntity> {
     const id = uuidv4();
     const now = new Date();
 
@@ -204,7 +204,7 @@ export class JobRepository implements IJobRepository {
     };
   }
 
-  async updateStatus(
+  async UpdateStatus(
     id: string,
     newStatus: JobStatus,
     changedBy: string,
@@ -289,7 +289,7 @@ export class JobRepository implements IJobRepository {
     return this.db.transaction((innerTx) => doWork(innerTx));
   }
 
-  async getTodayQueue(): Promise<{
+  async GetTodayQueue(): Promise<{
     queued: number;
     inProgress: number;
     completed: number;

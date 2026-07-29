@@ -30,7 +30,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useState, useEffect } from 'react';
 import type { UserEntity, PaginationResponse } from './model';
-import { getRoleLabel } from './model';
+import { GetRoleLabel } from './model';
 
 // ============== User List ==============
 
@@ -93,10 +93,10 @@ export function UserListView({
             onChange={(e) => onRoleFilterChange(e.target.value || null)}
           >
             <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="ADMIN">{getRoleLabel('ADMIN')}</MenuItem>
-            <MenuItem value="MANAGER">{getRoleLabel('MANAGER')}</MenuItem>
-            <MenuItem value="STAFF">{getRoleLabel('STAFF')}</MenuItem>
-            <MenuItem value="TECHNICIAN">{getRoleLabel('TECHNICIAN')}</MenuItem>
+            <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
+            <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
+            <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
+            <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -134,7 +134,7 @@ export function UserListView({
                 <TableRow key={user.id}>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.displayName}</TableCell>
-                  <TableCell>{getRoleLabel(user.role)}</TableCell>
+                  <TableCell>{GetRoleLabel(user.role)}</TableCell>
                   <TableCell>
                     <Chip
                       label={user.isActive ? 'Active' : 'Inactive'}
@@ -266,10 +266,10 @@ export function UserCreateDialog({
               value={role}
               onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN')}
             >
-              <MenuItem value="ADMIN">{getRoleLabel('ADMIN')}</MenuItem>
-              <MenuItem value="MANAGER">{getRoleLabel('MANAGER')}</MenuItem>
-              <MenuItem value="STAFF">{getRoleLabel('STAFF')}</MenuItem>
-              <MenuItem value="TECHNICIAN">{getRoleLabel('TECHNICIAN')}</MenuItem>
+              <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
+              <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
+              <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
+              <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -347,10 +347,10 @@ export function UserEditDialog({
               value={role}
               onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN')}
             >
-              <MenuItem value="ADMIN">{getRoleLabel('ADMIN')}</MenuItem>
-              <MenuItem value="MANAGER">{getRoleLabel('MANAGER')}</MenuItem>
-              <MenuItem value="STAFF">{getRoleLabel('STAFF')}</MenuItem>
-              <MenuItem value="TECHNICIAN">{getRoleLabel('TECHNICIAN')}</MenuItem>
+              <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
+              <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
+              <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
+              <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
             </Select>
           </FormControl>
         </Box>

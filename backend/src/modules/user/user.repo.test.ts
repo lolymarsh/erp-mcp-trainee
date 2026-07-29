@@ -39,10 +39,10 @@ describe("UserRepository", () => {
     repo = new UserRepository(db);
   });
 
-  describe("findById", () => {
+  describe("FindById", () => {
     it("should return user when found", async () => {
       db.limit.mockResolvedValue([mockUserEntity]);
-      const result = await repo.findById("user-1");
+      const result = await repo.FindById("user-1");
       expect(result).toEqual(mockUserEntity);
       expect(db.select).toHaveBeenCalled();
       expect(db.where).toHaveBeenCalled();
@@ -50,44 +50,44 @@ describe("UserRepository", () => {
 
     it("should return null when not found", async () => {
       db.limit.mockResolvedValue([]);
-      const result = await repo.findById("nonexistent");
+      const result = await repo.FindById("nonexistent");
       expect(result).toBeNull();
     });
   });
 
-  describe("findByUsername", () => {
+  describe("FindByUsername", () => {
     it("should return user when found", async () => {
       db.limit.mockResolvedValue([mockUserEntity]);
-      const result = await repo.findByUsername("admin");
+      const result = await repo.FindByUsername("admin");
       expect(result).toEqual(mockUserEntity);
     });
 
     it("should return null when not found", async () => {
       db.limit.mockResolvedValue([]);
-      const result = await repo.findByUsername("unknown");
+      const result = await repo.FindByUsername("unknown");
       expect(result).toBeNull();
     });
   });
 
-  describe("create", () => {
+  describe("Create", () => {
     it("should insert and return data", async () => {
       db.values.mockResolvedValue(undefined);
       const data = { id: "user-2", username: "newuser", passwordHash: "hash", displayName: "New", role: "STAFF" as const, isActive: true, version: 1 };
-      const result = await repo.create(data);
+      const result = await repo.Create(data);
       expect(db.insert).toHaveBeenCalled();
       expect(db.values).toHaveBeenCalledWith(data);
       expect(result).toEqual(data);
     });
   });
 
-  describe("update", () => {
+  describe("Update", () => {
     it("should return updated user when affectedRows > 0", async () => {
       db.set.mockReturnThis();
       const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 1 }]);
       db.where = mockWhere;
-      const findBySpy = jest.spyOn(repo, "findById").mockResolvedValue({ ...mockUserEntity, displayName: "Updated", version: 2 });
+      const findBySpy = jest.spyOn(repo, "FindById").mockResolvedValue({ ...mockUserEntity, displayName: "Updated", version: 2 });
 
-      const result = await repo.update("user-1", { displayName: "Updated" }, 1);
+      const result = await repo.Update("user-1", { displayName: "Updated" }, 1);
       expect(result).not.toBeNull();
       expect(result!.displayName).toBe("Updated");
       findBySpy.mockRestore();
@@ -96,12 +96,12 @@ describe("UserRepository", () => {
     it("should return null when affectedRows === 0", async () => {
       const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
       db.where = mockWhere;
-      const result = await repo.update("user-1", { displayName: "Updated" }, 99);
+      const result = await repo.Update("user-1", { displayName: "Updated" }, 99);
       expect(result).toBeNull();
     });
   });
 
-  describe("findFiltered", () => {
+  describe("FindFiltered", () => {
     it("should return filtered data with total", async () => {
       const countDb = {
         select: jest.fn().mockReturnThis(),
@@ -120,33 +120,33 @@ describe("UserRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc" });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc" });
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe("user-1");
     });
   });
 
-  describe("softDelete", () => {
+  describe("SoftDelete", () => {
     it("should return true when affectedRows > 0", async () => {
       const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 1 }]);
       db.where = mockWhere;
-      const result = await repo.softDelete("user-1", 1);
+      const result = await repo.SoftDelete("user-1", 1);
       expect(result).toBe(true);
     });
 
     it("should return false when affectedRows === 0", async () => {
       const mockWhere = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
       db.where = mockWhere;
-      const result = await repo.softDelete("user-1", 99);
+      const result = await repo.SoftDelete("user-1", 99);
       expect(result).toBe(false);
     });
   });
 
-  describe("findAll", () => {
+  describe("FindAll", () => {
     it("should return all non-deleted users", async () => {
       db.where = jest.fn().mockResolvedValue([mockUserEntity]);
-      const result = await repo.findAll();
+      const result = await repo.FindAll();
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("user-1");
     });

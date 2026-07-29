@@ -41,24 +41,24 @@ describe("CustomerHandler", () => {
 
   beforeEach(() => {
     svc = {
-      filter: jest.fn(),
-      getById: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      softDelete: jest.fn(),
-      createVehicle: jest.fn(),
-      updateVehicle: jest.fn(),
-      deleteVehicle: jest.fn(),
+      Filter: jest.fn(),
+      GetById: jest.fn(),
+      Create: jest.fn(),
+      Update: jest.fn(),
+      SoftDelete: jest.fn(),
+      CreateVehicle: jest.fn(),
+      UpdateVehicle: jest.fn(),
+      DeleteVehicle: jest.fn(),
     };
     handler = new CustomerHandler(svc);
   });
 
   describe("filter", () => {
     it("should return 200 with data and pagination", async () => {
-      svc.filter.mockResolvedValue({ data: [mockCustomer], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
+      svc.Filter.mockResolvedValue({ data: [mockCustomer], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ code: 200, message: "success", data: [mockCustomer], pagination: expect.any(Object) });
     });
@@ -66,93 +66,93 @@ describe("CustomerHandler", () => {
     it("should return 400 on validation error", async () => {
       const { req, res } = mockReqRes();
       req.body = { page: -1 };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe("getById", () => {
     it("should return 200 with customer", async () => {
-      svc.getById.mockResolvedValue({ ...mockCustomer, vehicles: [mockVehicle] });
+      svc.GetById.mockResolvedValue({ ...mockCustomer, vehicles: [mockVehicle] });
       const { req, res } = mockReqRes();
       req.params = { id: "cust-1" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it("should return 404 when not found", async () => {
-      svc.getById.mockRejectedValue(new AppError(404, "Customer not found"));
+      svc.GetById.mockRejectedValue(new AppError(404, "Customer not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "nonexistent" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
   });
 
   describe("create", () => {
     it("should return 201 on success", async () => {
-      svc.create.mockResolvedValue(mockCustomer);
+      svc.Create.mockResolvedValue(mockCustomer);
       const { req, res } = mockReqRes();
       req.body = { firstName: "สมชาย", lastName: "ใจดี", phone: "0812345678" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(201);
     });
 
     it("should return 400 on validation error", async () => {
       const { req, res } = mockReqRes();
       req.body = {};
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
   });
 
   describe("update", () => {
     it("should return 200 on success", async () => {
-      svc.update.mockResolvedValue({ ...mockCustomer, firstName: "สมหมาย", version: 2 });
+      svc.Update.mockResolvedValue({ ...mockCustomer, firstName: "สมหมาย", version: 2 });
       const { req, res } = mockReqRes();
       req.params = { id: "cust-1" };
       req.body = { firstName: "สมหมาย", version: 1 };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it("should return 409 on version conflict", async () => {
-      svc.update.mockRejectedValue(new AppError(409, "Version mismatch"));
+      svc.Update.mockRejectedValue(new AppError(409, "Version mismatch"));
       const { req, res } = mockReqRes();
       req.params = { id: "cust-1" };
       req.body = { firstName: "สมหมาย", version: 1 };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(409);
     });
   });
 
   describe("softDelete", () => {
     it("should return 200 on success", async () => {
-      svc.softDelete.mockResolvedValue(undefined);
+      svc.SoftDelete.mockResolvedValue(undefined);
       const { req, res } = mockReqRes();
       req.params = { id: "cust-1" };
       req.body = { version: 1 };
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ code: 200, message: "deleted" });
     });
 
     it("should return 404 when not found", async () => {
-      svc.softDelete.mockRejectedValue(new AppError(404, "Customer not found"));
+      svc.SoftDelete.mockRejectedValue(new AppError(404, "Customer not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "nonexistent" };
       req.body = { version: 1 };
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
   });
 
   describe("error cases", () => {
-    it("should call sendError with details for AppError", async () => {
-      svc.filter.mockRejectedValue(new AppError(422, "Custom error", { field: "phone" }));
+    it("should call SendError with details for AppError", async () => {
+      svc.Filter.mockRejectedValue(new AppError(422, "Custom error", { field: "phone" }));
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(422);
       expect(res.json).toHaveBeenCalledWith({ code: 422, message: "Custom error", details: { field: "phone" } });
     });

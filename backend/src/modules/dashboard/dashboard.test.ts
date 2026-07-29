@@ -20,11 +20,11 @@ describe("DashboardService", () => {
 
   beforeEach(() => {
     repo = {
-      getTodaySales: jest.fn(),
-      getTodayJobs: jest.fn(),
-      getLowStockProducts: jest.fn(),
-      getMonthlySales: jest.fn(),
-      getTopTechnicians: jest.fn(),
+      GetTodaySales: jest.fn(),
+      GetTodayJobs: jest.fn(),
+      GetLowStockProducts: jest.fn(),
+      GetMonthlySales: jest.fn(),
+      GetTopTechnicians: jest.fn(),
     };
     redis = {
       get: jest.fn(),
@@ -34,32 +34,32 @@ describe("DashboardService", () => {
     svc = new DashboardService(repo, redis);
   });
 
-  describe("getSummary", () => {
+  describe("GetSummary", () => {
     it("should return cached data when cache hit", async () => {
       (redis.get as jest.Mock).mockResolvedValue(JSON.stringify(mockSummary));
 
-      const result = await svc.getSummary();
+      const result = await svc.GetSummary();
 
       expect(result).toEqual(mockSummary);
-      expect(repo.getTodaySales).not.toHaveBeenCalled();
+      expect(repo.GetTodaySales).not.toHaveBeenCalled();
     });
 
     it("should aggregate from repo and cache when cache miss", async () => {
       (redis.get as jest.Mock).mockResolvedValue(null);
-      repo.getTodaySales.mockResolvedValue(mockSummary.todaySales);
-      repo.getTodayJobs.mockResolvedValue(mockSummary.todayJobs);
-      repo.getLowStockProducts.mockResolvedValue(mockSummary.lowStockProducts);
-      repo.getMonthlySales.mockResolvedValue(mockSummary.monthlySales);
-      repo.getTopTechnicians.mockResolvedValue(mockSummary.topTechnicians);
+      repo.GetTodaySales.mockResolvedValue(mockSummary.todaySales);
+      repo.GetTodayJobs.mockResolvedValue(mockSummary.todayJobs);
+      repo.GetLowStockProducts.mockResolvedValue(mockSummary.lowStockProducts);
+      repo.GetMonthlySales.mockResolvedValue(mockSummary.monthlySales);
+      repo.GetTopTechnicians.mockResolvedValue(mockSummary.topTechnicians);
 
-      const result = await svc.getSummary();
+      const result = await svc.GetSummary();
 
       expect(result).toEqual(mockSummary);
-      expect(repo.getTodaySales).toHaveBeenCalledTimes(1);
-      expect(repo.getTodayJobs).toHaveBeenCalledTimes(1);
-      expect(repo.getLowStockProducts).toHaveBeenCalledTimes(1);
-      expect(repo.getMonthlySales).toHaveBeenCalledTimes(1);
-      expect(repo.getTopTechnicians).toHaveBeenCalledTimes(1);
+      expect(repo.GetTodaySales).toHaveBeenCalledTimes(1);
+      expect(repo.GetTodayJobs).toHaveBeenCalledTimes(1);
+      expect(repo.GetLowStockProducts).toHaveBeenCalledTimes(1);
+      expect(repo.GetMonthlySales).toHaveBeenCalledTimes(1);
+      expect(repo.GetTopTechnicians).toHaveBeenCalledTimes(1);
       expect(redis.setex).toHaveBeenCalledWith(
         "dashboard:summary",
         300,
@@ -77,13 +77,13 @@ describe("DashboardService", () => {
       };
 
       (redis.get as jest.Mock).mockResolvedValue(null);
-      repo.getTodaySales.mockResolvedValue(emptySummary.todaySales);
-      repo.getTodayJobs.mockResolvedValue(emptySummary.todayJobs);
-      repo.getLowStockProducts.mockResolvedValue(emptySummary.lowStockProducts);
-      repo.getMonthlySales.mockResolvedValue(emptySummary.monthlySales);
-      repo.getTopTechnicians.mockResolvedValue(emptySummary.topTechnicians);
+      repo.GetTodaySales.mockResolvedValue(emptySummary.todaySales);
+      repo.GetTodayJobs.mockResolvedValue(emptySummary.todayJobs);
+      repo.GetLowStockProducts.mockResolvedValue(emptySummary.lowStockProducts);
+      repo.GetMonthlySales.mockResolvedValue(emptySummary.monthlySales);
+      repo.GetTopTechnicians.mockResolvedValue(emptySummary.topTechnicians);
 
-      const result = await svc.getSummary();
+      const result = await svc.GetSummary();
 
       expect(result.todaySales.amount).toBe("0.00");
       expect(result.todaySales.count).toBe(0);
@@ -93,9 +93,9 @@ describe("DashboardService", () => {
     });
   });
 
-  describe("invalidateCache", () => {
+  describe("InvalidateCache", () => {
     it("should delete the cache key", async () => {
-      await svc.invalidateCache();
+      await svc.InvalidateCache();
       expect(redis.del).toHaveBeenCalledWith("dashboard:summary");
     });
   });

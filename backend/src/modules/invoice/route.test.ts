@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from "express";
-import { registerInvoiceRoutes } from "./route";
+import { RegisterInvoiceRoutes } from "./route";
 
 describe("Invoice routes", () => {
   it("should return a Router instance", () => {
     const handler = {
-      filter: jest.fn(),
-      getById: jest.fn(),
-      create: jest.fn(),
-      todaySummary: jest.fn(),
-      updatePaymentStatus: jest.fn(),
+      Filter: jest.fn(),
+      GetById: jest.fn(),
+      Create: jest.fn(),
+      TodaySummary: jest.fn(),
+      UpdatePaymentStatus: jest.fn(),
     } as any;
     const auth = (() => jest.fn()) as any;
-    const router = registerInvoiceRoutes(handler, auth);
+    const router = RegisterInvoiceRoutes(handler, auth);
     expect(router).toBeInstanceOf(Router);
   });
 });

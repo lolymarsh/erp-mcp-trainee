@@ -6,6 +6,7 @@ type ErrorCallback = (error: string) => void;
 type CompleteCallback = () => void;
 
 const mockStream = vi.hoisted(() => vi.fn());
+const mockSend = vi.hoisted(() => vi.fn());
 const mockExportResult = vi.hoisted(() => vi.fn());
 
 function getStreamEventCb(): StreamCallback {
@@ -26,9 +27,13 @@ function fireError(msg: string) {
 
 vi.mock('./model', () => ({
   chatApi: {
-    stream: mockStream,
-    exportResult: mockExportResult,
+    Stream: mockStream,
+    ExportResult: mockExportResult,
+    Send: vi.fn(),
   },
+  GetDefaultModel: vi.fn(() => 'openrouter/gpt-4o'),
+  GetSessionId: vi.fn(() => 'test-session-id'),
+  SetSessionId: vi.fn(),
 }));
 
 import { useChat } from './controller';

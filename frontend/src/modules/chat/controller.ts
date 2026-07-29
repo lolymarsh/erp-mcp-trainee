@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { chatApi, setSessionId, getDefaultModel } from './model';
+import { chatApi, SetSessionId, GetDefaultModel } from './model';
 import type { SendMessageInput, ExportFormat, Provider, SessionSummary } from './model';
 
 const SESSION_KEY = 'chat_session_id';
@@ -57,7 +57,7 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
   const [format, setFormat] = useState<ExportFormat>('text');
   const [provider, setProvider] = useState<Provider>('openrouter');
-  const [model, setModel] = useState<string>(() => getDefaultModel('openrouter'));
+  const [model, setModel] = useState<string>(() => GetDefaultModel('openrouter'));
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [sessionId, setSessionIdState] = useState<string>(() => {
     return localStorage.getItem(SESSION_KEY) || generateSessionId();
@@ -98,7 +98,7 @@ export function useChat() {
 
   const loadSessions = useCallback(async () => {
     try {
-      const list = await chatApi.listSessions(50);
+      const list = await chatApi.ListSessions(50);
       setSessions(list);
     } catch {
       // silent
@@ -107,7 +107,7 @@ export function useChat() {
 
   const loadHistory = useCallback(async (sid?: string) => {
     try {
-      const history = await chatApi.getHistory(sid, 50);
+      const history = await chatApi.GetHistory(sid, 50);
       const loaded: ChatMessage[] = [];
       for (const msg of history) {
         loaded.push({
@@ -137,7 +137,7 @@ export function useChat() {
   }, []);
 
   useEffect(() => {
-    setSessionId(sessionId);
+    SetSessionId(sessionId);
     const existing = localStorage.getItem(SESSION_KEY);
     if (existing) {
       loadHistory();
@@ -148,12 +148,12 @@ export function useChat() {
 
   const handleProviderChange = useCallback((newProvider: Provider) => {
     setProvider(newProvider);
-    setModel(getDefaultModel(newProvider));
+    setModel(GetDefaultModel(newProvider));
   }, []);
 
   const switchSession = useCallback(async (sid: string) => {
     setSessionIdState(sid);
-    setSessionId(sid);
+    SetSessionId(sid);
     localStorage.setItem(SESSION_KEY, sid);
     await loadHistory(sid);
   }, [loadHistory]);
@@ -256,7 +256,7 @@ export function useChat() {
 
       setStreaming({ active: true, sql: '', resultCount: 0, data: [] });
 
-      controllerRef.current = chatApi.stream(
+      controllerRef.current = chatApi.Stream(
         input,
         (event, payload) => {
           switch (event) {
@@ -331,7 +331,7 @@ export function useChat() {
     setError(null);
     const newId = generateSessionId();
     setSessionIdState(newId);
-    setSessionId(newId);
+    SetSessionId(newId);
     localStorage.setItem(SESSION_KEY, newId);
   }, []);
 
@@ -351,7 +351,7 @@ export function useChat() {
     }
 
     try {
-      const blob = await chatApi.exportResult({
+      const blob = await chatApi.ExportResult({
         question: lastAssistant.content.slice(0, 100),
         format: (lastAssistant.format as ExportFormat) ?? 'text',
         provider,

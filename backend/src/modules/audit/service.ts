@@ -8,7 +8,7 @@ import type {
 } from "./schema";
 import type { AuditMeta } from "../../shared/middleware/auditMeta";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import { logger } from "../../config/logger";
 
 const IGNORED_FIELDS = new Set([
@@ -22,18 +22,18 @@ const IGNORED_FIELDS = new Set([
 const VALID_ACTIONS = new Set(["CREATE", "UPDATE", "DELETE"]);
 
 export interface IAuditLogService {
-  filter(
+  Filter(
     input: FilterAuditLogInput,
     currentUserId: string,
     isAdmin: boolean,
   ): Promise<{ data: AuditLogResponse[]; pagination: PaginationResponse }>;
-  getDetail(
+  GetDetail(
     resourceId: string,
     tableName: string,
     currentUserId: string,
     isAdmin: boolean,
   ): Promise<AuditLogDetailResponse[]>;
-  insertAuditLog(
+  Insert(
     action: string,
     tableName: string,
     recordId: string,
@@ -47,7 +47,7 @@ export interface IAuditLogService {
 export class AuditLogService implements IAuditLogService {
   constructor(private repo: IAuditLogRepository) {}
 
-  async filter(
+  async Filter(
     input: FilterAuditLogInput,
     currentUserId: string,
     isAdmin: boolean,
@@ -62,11 +62,11 @@ export class AuditLogService implements IAuditLogService {
     }
 
     const [data, total] = await Promise.all([
-      this.repo.findByFilters(input),
-      this.repo.countByFilters(input),
+      this.repo.FindByFilters(input),
+      this.repo.CountByFilters(input),
     ]);
 
-    const pagination = calculatePagination(input.page, input.pageSize, total);
+    const pagination = CalculatePagination(input.page, input.pageSize, total);
 
     return {
       data: data.map((d) => this.toResponse(d)),
@@ -74,13 +74,13 @@ export class AuditLogService implements IAuditLogService {
     };
   }
 
-  async getDetail(
+  async GetDetail(
     resourceId: string,
     tableName: string,
     currentUserId: string,
     isAdmin: boolean,
   ): Promise<AuditLogDetailResponse[]> {
-    const records = await this.repo.findByRecord(tableName, resourceId);
+    const records = await this.repo.FindByRecord(tableName, resourceId);
 
     if (!isAdmin) {
       return this.toDetailResponse(
@@ -91,7 +91,7 @@ export class AuditLogService implements IAuditLogService {
     return this.toDetailResponse(records);
   }
 
-  insertAuditLog(
+  Insert(
     action: string,
     tableName: string,
     recordId: string,
@@ -137,7 +137,7 @@ export class AuditLogService implements IAuditLogService {
 
     setImmediate(async () => {
       try {
-        await this.repo.insertAuditLog(doc);
+        await this.repo.Insert(doc);
       } catch (err: unknown) {
         logger.error({ err }, "Failed to insert audit log");
       }

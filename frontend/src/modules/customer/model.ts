@@ -91,7 +91,7 @@ export interface UpdateVehicleInput {
 }
 
 export const customerApi = {
-  filter: async (
+  Filter: async (
     params: FilterParams,
   ): Promise<{
     code: number;
@@ -103,7 +103,7 @@ export const customerApi = {
     return data;
   },
 
-  getById: async (
+  GetById: async (
     id: string,
   ): Promise<{
     code: number;
@@ -114,7 +114,7 @@ export const customerApi = {
     return data;
   },
 
-  create: async (
+  Create: async (
     input: CreateCustomerInput,
   ): Promise<{
     code: number;
@@ -125,7 +125,7 @@ export const customerApi = {
     return data;
   },
 
-  update: async (
+  Update: async (
     id: string,
     input: UpdateCustomerInput,
   ): Promise<{
@@ -137,7 +137,7 @@ export const customerApi = {
     return data;
   },
 
-  softDelete: async (
+  SoftDelete: async (
     id: string,
     input: DeleteCustomerInput,
   ): Promise<{
@@ -148,14 +148,14 @@ export const customerApi = {
     return data;
   },
 
-  createVehicle: async (
+  CreateVehicle: async (
     input: CreateVehicleInput,
   ): Promise<{ code: number; message: string; data: VehicleEntity }> => {
     const { data } = await api.post('/customers/vehicles', input);
     return data;
   },
 
-  updateVehicle: async (
+  UpdateVehicle: async (
     id: string,
     input: UpdateVehicleInput,
   ): Promise<{ code: number; message: string; data: VehicleEntity }> => {
@@ -163,7 +163,7 @@ export const customerApi = {
     return data;
   },
 
-  deleteVehicle: async (
+  DeleteVehicle: async (
     id: string,
   ): Promise<{ code: number; message: string }> => {
     const { data } = await api.delete(`/customers/vehicles/${id}`);

@@ -62,7 +62,7 @@ describe("JobRepository", () => {
     repo = new JobRepository(db);
   });
 
-  describe("findFiltered", () => {
+  describe("FindFiltered", () => {
     it("should return filtered data with total", async () => {
       const countDb = {
         select: jest.fn().mockReturnThis(),
@@ -81,7 +81,7 @@ describe("JobRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1, pageSize: 20, sortBy: "desc",
         filters: [{ field: "status", operator: "eq", value: "QUEUED" }],
       });
@@ -107,7 +107,7 @@ describe("JobRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1, pageSize: 20, sortBy: "desc", filters: [],
       });
       expect(result.total).toBe(0);
@@ -132,7 +132,7 @@ describe("JobRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1, pageSize: 20, sortName: "scheduledDate", sortBy: "asc", filters: [],
       });
       expect(result.total).toBe(1);
@@ -156,7 +156,7 @@ describe("JobRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1, pageSize: 20, sortBy: "desc",
         filters: [{ field: "status", operator: "in", value: "QUEUED" }],
       });
@@ -181,7 +181,7 @@ describe("JobRepository", () => {
             },
       );
 
-      const result = await repo.findFiltered({
+      const result = await repo.FindFiltered({
         page: 1, pageSize: 20, sortBy: "desc",
         filters: [{ field: "unknown", operator: "eq", value: "x" }],
       });
@@ -189,21 +189,21 @@ describe("JobRepository", () => {
     });
   });
 
-  describe("findById", () => {
+  describe("FindById", () => {
     it("should return job when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockJob]);
-      const result = await repo.findById("job-1");
+      const result = await repo.FindById("job-1");
       expect(result).toEqual(mockJob);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findById("nonexistent");
+      const result = await repo.FindById("nonexistent");
       expect(result).toBeNull();
     });
   });
 
-  describe("findByIdWithLogs", () => {
+  describe("FindByIdWithLogs", () => {
     it("should return job with logs when found", async () => {
       db.limit = jest.fn().mockResolvedValueOnce([mockJob]);
       const mockOrderBy = jest.fn().mockResolvedValue([mockLog]);
@@ -211,7 +211,7 @@ describe("JobRepository", () => {
         .mockReturnValueOnce(db)
         .mockReturnValue({ orderBy: mockOrderBy });
 
-      const result = await repo.findByIdWithLogs("job-1");
+      const result = await repo.FindByIdWithLogs("job-1");
       expect(result).not.toBeNull();
       expect(result!.job.id).toBe("job-1");
       expect(result!.logs).toHaveLength(1);
@@ -219,7 +219,7 @@ describe("JobRepository", () => {
 
     it("should return null when job not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findByIdWithLogs("nonexistent");
+      const result = await repo.FindByIdWithLogs("nonexistent");
       expect(result).toBeNull();
     });
 
@@ -230,13 +230,13 @@ describe("JobRepository", () => {
         .mockReturnValueOnce(db)
         .mockReturnValue({ orderBy: mockOrderBy });
 
-      const result = await repo.findByIdWithLogs("job-1");
+      const result = await repo.FindByIdWithLogs("job-1");
       expect(result).not.toBeNull();
       expect(result!.logs).toHaveLength(0);
     });
   });
 
-  describe("create", () => {
+  describe("Create", () => {
     it("should insert and return job", async () => {
       db.values.mockResolvedValue(undefined);
 
@@ -250,7 +250,7 @@ describe("JobRepository", () => {
         notes: "Install LPG kit",
       };
 
-      const result = await repo.create(input);
+      const result = await repo.Create(input);
       expect(db.insert).toHaveBeenCalled();
       expect(result.customerId).toBe("cust-1");
       expect(result.status).toBe("QUEUED");
@@ -258,7 +258,7 @@ describe("JobRepository", () => {
     });
   });
 
-  describe("updateStatus", () => {
+  describe("UpdateStatus", () => {
     function createTxMock(forResult: any[]) {
       const txMock = {
         select: jest.fn().mockReturnThis(),
@@ -277,7 +277,7 @@ describe("JobRepository", () => {
     it("should execute transaction successfully (QUEUED → IN_PROGRESS)", async () => {
       const mockTx = createTxMock([mockJob]);
 
-      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
+      const result = await repo.UpdateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.status).toBe("IN_PROGRESS");
       expect(result.job.version).toBe(2);
@@ -290,7 +290,7 @@ describe("JobRepository", () => {
     it("should set startTime when moving to IN_PROGRESS", async () => {
       const mockTx = createTxMock([{ ...mockJob, startTime: null }]);
 
-      const result = await repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
+      const result = await repo.UpdateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.startTime).toBeInstanceOf(Date);
     });
@@ -298,7 +298,7 @@ describe("JobRepository", () => {
     it("should set endTime when moving to COMPLETED", async () => {
       const mockTx = createTxMock([{ ...mockJob, status: "IN_PROGRESS" as const, endTime: null }]);
 
-      const result = await repo.updateStatus("job-1", "COMPLETED", "user-1", 1, null, mockTx as unknown as Tx);
+      const result = await repo.UpdateStatus("job-1", "COMPLETED", "user-1", 1, null, mockTx as unknown as Tx);
 
       expect(result.job.endTime).toBeInstanceOf(Date);
       expect(result.job.status).toBe("COMPLETED");
@@ -308,7 +308,7 @@ describe("JobRepository", () => {
       const mockTx = createTxMock([{ ...mockJob, version: 5 }]);
 
       await expect(
-        repo.updateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
+        repo.UpdateStatus("job-1", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
       ).rejects.toThrow("VERSION_MISMATCH");
     });
 
@@ -316,12 +316,12 @@ describe("JobRepository", () => {
       const mockTx = createTxMock([]);
 
       await expect(
-        repo.updateStatus("nonexistent", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
+        repo.UpdateStatus("nonexistent", "IN_PROGRESS", "user-1", 1, null, mockTx as unknown as Tx),
       ).rejects.toThrow("JOB_NOT_FOUND");
     });
   });
 
-  describe("getTodayQueue", () => {
+  describe("GetTodayQueue", () => {
     it("should return correct counts for all statuses", async () => {
       db.where = jest.fn().mockReturnThis();
       db.groupBy = jest.fn().mockResolvedValue([
@@ -330,7 +330,7 @@ describe("JobRepository", () => {
         { status: "COMPLETED", count: 2 },
       ]);
 
-      const result = await repo.getTodayQueue();
+      const result = await repo.GetTodayQueue();
 
       expect(result.queued).toBe(5);
       expect(result.inProgress).toBe(3);
@@ -341,7 +341,7 @@ describe("JobRepository", () => {
       db.where = jest.fn().mockReturnThis();
       db.groupBy = jest.fn().mockResolvedValue([]);
 
-      const result = await repo.getTodayQueue();
+      const result = await repo.GetTodayQueue();
 
       expect(result.queued).toBe(0);
       expect(result.inProgress).toBe(0);

@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-export function auditMetaMiddleware(
+export function AuditMetaMiddleware(
   req: Request,
   _res: Response,
   next: NextFunction,

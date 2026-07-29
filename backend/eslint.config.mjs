@@ -57,6 +57,27 @@ export default tseslint.config(
       // 🚀 Performance (≈ prealloc, makezero)
       'no-console': 'warn',
 
+      // 📛 Naming Convention (≈ Go-style: public=PascalCase, private=camelCase)
+      '@typescript-eslint/naming-convention': [
+        'warn',
+        {
+          selector: ['method'],
+          modifiers: ['public'],
+          format: ['PascalCase'],
+          leadingUnderscore: 'forbid',
+        },
+        {
+          selector: ['method'],
+          modifiers: ['private'],
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+        {
+          selector: ['function'],
+          format: ['PascalCase', 'camelCase'],
+        },
+      ],
+
       // 🚫 Forbidden (≈ forbidigo: ห้ามเช็ค string == "")
       'no-restricted-syntax': [
         'error',

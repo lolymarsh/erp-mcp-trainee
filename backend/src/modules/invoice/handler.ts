@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import type { IInvoiceService } from "./service";
 import { createInvoiceSchema, updatePaymentStatusSchema } from "./schema";
 import { filterRequestSchema } from "../../shared/pagination/schema";
-import { sendSuccess, sendError } from "../../shared/response/handler";
+import { SendSuccess, SendError } from "../../shared/response/handler";
 import { AppError } from "../../shared/errors/AppError";
 import { logger } from "../../config/logger";
 
@@ -23,91 +23,91 @@ function extractId(id: unknown): string {
 export class InvoiceHandler {
   constructor(private svc: IInvoiceService) {}
 
-  filter = async (req: Request, res: Response): Promise<void> => {
+  Filter = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = filterRequestSchema.parse(req.body);
-      const result = await this.svc.filter(input);
-      sendSuccess(res, 200, "success", {
+      const result = await this.svc.Filter(input);
+      SendSuccess(res, 200, "success", {
         data: result.data,
         pagination: result.pagination,
       });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Invoice filter failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  getById = async (req: Request, res: Response): Promise<void> => {
+  GetById = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
-      const invoice = await this.svc.getById(id);
-      sendSuccess(res, 200, "success", { data: invoice });
+      const invoice = await this.svc.GetById(id);
+      SendSuccess(res, 200, "success", { data: invoice });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       logger.error({ err }, "Invoice getById failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  create = async (req: Request, res: Response): Promise<void> => {
+  Create = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createInvoiceSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const invoice = await this.svc.create(input, userId, meta);
-      sendSuccess(res, 201, "created", { data: invoice });
+      const invoice = await this.svc.Create(input, userId, meta);
+      SendSuccess(res, 201, "created", { data: invoice });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Invoice create failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  updatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
+  UpdatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = updatePaymentStatusSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const result = await this.svc.updatePaymentStatus(id, input, userId, meta);
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.UpdatePaymentStatus(id, input, userId, meta);
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
-      if (err instanceof AppError) { sendError(res, err.statusCode, err.message, err.details); return; }
-      if (err instanceof ZodError) { sendError(res, 400, formatZodError(err)); return; }
+      if (err instanceof AppError) { SendError(res, err.statusCode, err.message, err.details); return; }
+      if (err instanceof ZodError) { SendError(res, 400, formatZodError(err)); return; }
       logger.error({ err }, "Invoice updatePaymentStatus failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  todaySummary = async (_req: Request, res: Response): Promise<void> => {
+  TodaySummary = async (_req: Request, res: Response): Promise<void> => {
     try {
-      const result = await this.svc.getTodaySummary();
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.GetTodaySummary();
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       logger.error({ err }, "Invoice todaySummary failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 }

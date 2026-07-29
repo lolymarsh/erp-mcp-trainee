@@ -39,24 +39,24 @@ const handler = new CustomerHandler(svc);
 ```ts
 export interface ICustomerRepository {
   // Single entity
-  findById(id: string): Promise<CustomerEntity | null>;
-  findByPhone(phone: string): Promise<CustomerEntity | null>;
+  FindById(id: string): Promise<CustomerEntity | null>;
+  FindByPhone(phone: string): Promise<CustomerEntity | null>;
 
   // Filter + Pagination
-  findByFilters(filters: FilterRequest): Promise<CustomerEntity[]>;
-  countByFilters(filters: FilterRequest): Promise<number>;
+  FindByFilters(filters: FilterRequest): Promise<CustomerEntity[]>;
+  CountByFilters(filters: FilterRequest): Promise<number>;
 
   // Mutations
-  create(data: CreateCustomerData): Promise<CustomerEntity>;
-  update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null>;
-  softDelete(id: string, version: number): Promise<boolean>;
+  Create(data: CreateCustomerData): Promise<CustomerEntity>;
+  Update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null>;
+  SoftDelete(id: string, version: number): Promise<boolean>;
 }
 ```
 
 ## 2. Find by ID
 
 ```ts
-async findById(id: string): Promise<CustomerEntity | null> {
+async FindById(id: string): Promise<CustomerEntity | null> {
   const result = await db
     .select()
     .from(customers)
@@ -69,7 +69,7 @@ async findById(id: string): Promise<CustomerEntity | null> {
 ## 3. Filter with Drizzle
 
 ```ts
-async findByFilters(filters: FilterRequest): Promise<CustomerEntity[]> {
+async FindByFilters(filters: FilterRequest): Promise<CustomerEntity[]> {
   let query = db.select().from(customers);
 
   for (const filter of filters.filters ?? []) {
@@ -105,7 +105,7 @@ async findByFilters(filters: FilterRequest): Promise<CustomerEntity[]> {
   return query;
 }
 
-async countByFilters(filters: FilterRequest): Promise<number> {
+async CountByFilters(filters: FilterRequest): Promise<number> {
   // Same filter logic without pagination
   let query = db.select({ count: count() }).from(customers);
   // ... apply same filters ...
@@ -117,7 +117,7 @@ async countByFilters(filters: FilterRequest): Promise<number> {
 ## 4. Create
 
 ```ts
-async create(data: CreateCustomerData): Promise<CustomerEntity> {
+async Create(data: CreateCustomerData): Promise<CustomerEntity> {
   const [customer] = await db
     .insert(customers)
     .values({
@@ -134,7 +134,7 @@ async create(data: CreateCustomerData): Promise<CustomerEntity> {
 ## 5. Update with Optimistic Locking
 
 ```ts
-async update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null> {
+async Update(id: string, data: Partial<CustomerEntity>, version: number): Promise<CustomerEntity | null> {
   const [updated] = await db
     .update(customers)
     .set({
@@ -153,7 +153,7 @@ async update(id: string, data: Partial<CustomerEntity>, version: number): Promis
 ## 6. Soft Delete
 
 ```ts
-async softDelete(id: string, version: number): Promise<boolean> {
+async SoftDelete(id: string, version: number): Promise<boolean> {
   const result = await db
     .update(customers)
     .set({
@@ -173,7 +173,7 @@ async softDelete(id: string, version: number): Promise<boolean> {
 // Repo: accept optional tx, use db as fallback
 import type { Tx } from "../../shared/transaction";
 
-async createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult> {
+async CreateInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsResult> {
   const db = tx ?? this.db;
   // All queries use `db` — transaction-safe when tx is passed
   const [product] = await db
@@ -185,9 +185,9 @@ async createInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceWithItemsR
 }
 
 // Service: start transaction, pass tx to repo
-async create(input: CreateInvoiceInput, userId: string): Promise<InvoiceWithItemsResponse> {
+async Create(input: CreateInvoiceInput, userId: string): Promise<InvoiceWithItemsResponse> {
   return this.db.transaction(async (tx) => {
-    return this.repo.createInvoice(data, tx);
+    return this.repo.CreateInvoice(data, tx);
   });
 }
 ```
@@ -205,14 +205,14 @@ export class ChatMongoRepository {
     this.collection = mongoDb.collection('chat_messages');
   }
 
-  async save(message: ChatMessage): Promise<void> {
+  async Save(message: ChatMessage): Promise<void> {
     await this.collection.insertOne({
       ...message,
       createdAt: new Date(),
     });
   }
 
-  async getHistory(sessionId: string, limit = 50): Promise<ChatMessage[]> {
+  async GetHistory(sessionId: string, limit = 50): Promise<ChatMessage[]> {
     return this.collection
       .find({ sessionId })
       .sort({ createdAt: -1 })
@@ -246,15 +246,15 @@ export class InvoiceService implements IInvoiceService {
     private inventoryRepo: IInventoryRepository,  // ✅ inject repo ของ module อื่น
   ) {}
 
-  async createInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
+  async CreateInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
     // validate stock ผ่าน inventoryRepo
     for (const item of input.items) {
-      const stock = await this.inventoryRepo.getStock(item.productId);
+      const stock = await this.inventoryRepo.GetStock(item.productId);
       if (stock < item.quantity) {
         throw new BadRequestError(`Insufficient stock for ${item.productId}`);
       }
     }
-    return this.invoiceRepo.createInvoice(input);
+    return this.invoiceRepo.CreateInvoice(input);
   }
 }
 ```
@@ -268,8 +268,8 @@ export interface IInvoiceRepository {
   // ... methods ปกติ
 
   // ✅ cross-table method — repo จัดการ join เอง
-  findWithCustomerDetails(id: string): Promise<InvoiceWithCustomer>;
-  getMonthlySales(year: number): Promise<MonthlySales[]>;
+  FindWithCustomerDetails(id: string): Promise<InvoiceWithCustomer>;
+  GetMonthlySales(year: number): Promise<MonthlySales[]>;
 }
 ```
 

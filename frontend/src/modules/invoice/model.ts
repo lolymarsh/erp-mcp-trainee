@@ -71,27 +71,27 @@ export interface TodaySummaryResponse {
 }
 
 export const invoiceApi = {
-  filter: async (input: FilterRequest): Promise<PaginatedInvoices> => {
+  Filter: async (input: FilterRequest): Promise<PaginatedInvoices> => {
     const { data } = await api.post('/sales/invoices/filter', input);
     return { data: data.data, pagination: data.pagination };
   },
 
-  getById: async (id: string): Promise<InvoiceWithItemsResponse> => {
+  GetById: async (id: string): Promise<InvoiceWithItemsResponse> => {
     const { data } = await api.get(`/sales/invoices/${id}`);
     return data.data;
   },
 
-  create: async (input: CreateInvoiceInput): Promise<InvoiceWithItemsResponse> => {
+  Create: async (input: CreateInvoiceInput): Promise<InvoiceWithItemsResponse> => {
     const { data } = await api.post('/sales/invoices', input);
     return data.data;
   },
 
-  getTodaySummary: async (): Promise<TodaySummaryResponse> => {
+  GetTodaySummary: async (): Promise<TodaySummaryResponse> => {
     const { data } = await api.get('/sales/invoices/today-summary');
     return data.data;
   },
 
-  updatePaymentStatus: async (id: string, input: {
+  UpdatePaymentStatus: async (id: string, input: {
     paymentStatus: string;
     paymentMethod?: string | null;
     version: number;

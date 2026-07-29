@@ -29,7 +29,7 @@ function hasBlockedKeyword(sql: string): string | null {
   return null;
 }
 
-export function sanitizeSql(sql: string): string {
+export function SanitizeSql(sql: string): string {
   const trimmed = sql.trim();
   const upper = trimmed.toUpperCase();
   const blocked = hasBlockedKeyword(trimmed);

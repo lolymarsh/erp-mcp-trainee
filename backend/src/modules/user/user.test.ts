@@ -23,18 +23,18 @@ describe('UserService', () => {
   let repo: jest.Mocked<IUserRepository>;
   let redis: jest.Mocked<Redis>;
   let svc: UserService;
-  const mockAuditService = { insertAuditLog: jest.fn() };
+  const mockAuditService = { Insert: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
     repo = {
-      findById: jest.fn(),
-      findByUsername: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      findFiltered: jest.fn(),
-      softDelete: jest.fn(),
-      findAll: jest.fn(),
+      FindById: jest.fn(),
+      FindByUsername: jest.fn(),
+      Create: jest.fn(),
+      Update: jest.fn(),
+      FindFiltered: jest.fn(),
+      SoftDelete: jest.fn(),
+      FindAll: jest.fn(),
     };
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
@@ -42,40 +42,40 @@ describe('UserService', () => {
     svc = new UserService(repo, redis, mockAuditService as any);
   });
 
-  describe('login', () => {
+  describe('Login', () => {
     it('should throw UnauthorizedError when user not found', async () => {
-      repo.findByUsername.mockResolvedValue(null);
-      await expect(svc.login({ username: 'unknown', password: 'pass' }))
+      repo.FindByUsername.mockResolvedValue(null);
+      await expect(svc.Login({ username: 'unknown', password: 'pass' }))
         .rejects.toThrow(UnauthorizedError);
     });
 
     it('should throw UnauthorizedError when password is wrong', async () => {
-      repo.findByUsername.mockResolvedValue({
+      repo.FindByUsername.mockResolvedValue({
         ...mockUser,
         passwordHash: '$2b$12$correcthash',
       });
-      await expect(svc.login({ username: 'admin', password: 'wrongpass' }))
+      await expect(svc.Login({ username: 'admin', password: 'wrongpass' }))
         .rejects.toThrow(UnauthorizedError);
     });
 
     it('should throw UnauthorizedError when account is inactive', async () => {
       const bcrypt = await import('bcrypt');
       const hash = await bcrypt.hash('password123', 4);
-      repo.findByUsername.mockResolvedValue({
+      repo.FindByUsername.mockResolvedValue({
         ...mockUser,
         passwordHash: hash,
         isActive: false,
       });
-      await expect(svc.login({ username: 'admin', password: 'password123' }))
+      await expect(svc.Login({ username: 'admin', password: 'password123' }))
         .rejects.toThrow('Account is disabled');
     });
 
     it('should return token and user on success', async () => {
       const bcrypt = await import('bcrypt');
       const hash = await bcrypt.hash('password123', 4);
-      repo.findByUsername.mockResolvedValue({ ...mockUser, passwordHash: hash });
+      repo.FindByUsername.mockResolvedValue({ ...mockUser, passwordHash: hash });
 
-      const result = await svc.login({ username: 'admin', password: 'password123' });
+      const result = await svc.Login({ username: 'admin', password: 'password123' });
 
       expect(result.token).toBeDefined();
       expect(result.user.username).toBe('admin');
@@ -88,25 +88,25 @@ describe('UserService', () => {
     });
   });
 
-  describe('getProfile', () => {
+  describe('GetProfile', () => {
     it('should throw NotFoundError when user not found', async () => {
-      repo.findById.mockResolvedValue(null);
-      await expect(svc.getProfile('nonexistent'))
+      repo.FindById.mockResolvedValue(null);
+      await expect(svc.GetProfile('nonexistent'))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should return user response on success', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      const result = await svc.getProfile('user-1');
+      repo.FindById.mockResolvedValue(mockUser);
+      const result = await svc.GetProfile('user-1');
       expect(result.id).toBe('user-1');
       expect(result.displayName).toBe('Admin');
     });
   });
 
-  describe('createUser', () => {
+  describe('CreateUser', () => {
     it('should throw when username already exists', async () => {
-      repo.findByUsername.mockResolvedValue(mockUser);
-      await expect(svc.createUser({
+      repo.FindByUsername.mockResolvedValue(mockUser);
+      await expect(svc.CreateUser({
         username: 'admin',
         password: 'password123',
         displayName: 'Admin',
@@ -115,10 +115,10 @@ describe('UserService', () => {
     });
 
     it('should create and return user', async () => {
-      repo.findByUsername.mockResolvedValue(null);
-      repo.create.mockResolvedValue(mockUser);
+      repo.FindByUsername.mockResolvedValue(null);
+      repo.Create.mockResolvedValue(mockUser);
 
-      const result = await svc.createUser({
+      const result = await svc.CreateUser({
         username: 'admin',
         password: 'password123',
         displayName: 'Admin',
@@ -126,92 +126,92 @@ describe('UserService', () => {
       }, 'admin-user-id');
 
       expect(result.username).toBe('admin');
-      expect(repo.create).toHaveBeenCalled();
+      expect(repo.Create).toHaveBeenCalled();
     });
   });
 
-  describe('filter', () => {
+  describe('Filter', () => {
     it('should return paginated results', async () => {
-      repo.findFiltered.mockResolvedValue({ data: [mockUser], total: 1 });
-      const result = await svc.filter({ page: 1, pageSize: 20, sortBy: 'desc' });
+      repo.FindFiltered.mockResolvedValue({ data: [mockUser], total: 1 });
+      const result = await svc.Filter({ page: 1, pageSize: 20, sortBy: 'desc' });
       expect(result.data).toHaveLength(1);
       expect(result.pagination.totalData).toBe(1);
     });
   });
 
-  describe('update', () => {
+  describe('Update', () => {
     it('should throw NotFoundError when user not found', async () => {
-      repo.findById.mockResolvedValue(null);
-      await expect(svc.update('nonexistent', { displayName: 'New', version: 1 }, 'admin'))
+      repo.FindById.mockResolvedValue(null);
+      await expect(svc.Update('nonexistent', { displayName: 'New', version: 1 }, 'admin'))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should throw ConflictError on version mismatch', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      repo.update.mockResolvedValue(null);
-      await expect(svc.update('user-1', { displayName: 'New', version: 99 }, 'admin'))
+      repo.FindById.mockResolvedValue(mockUser);
+      repo.Update.mockResolvedValue(null);
+      await expect(svc.Update('user-1', { displayName: 'New', version: 99 }, 'admin'))
         .rejects.toThrow(ConflictError);
     });
 
     it('should update and return user on success', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      repo.update.mockResolvedValue({ ...mockUser, displayName: 'Updated', version: 2 });
-      const result = await svc.update('user-1', { displayName: 'Updated', version: 1 }, 'admin');
+      repo.FindById.mockResolvedValue(mockUser);
+      repo.Update.mockResolvedValue({ ...mockUser, displayName: 'Updated', version: 2 });
+      const result = await svc.Update('user-1', { displayName: 'Updated', version: 1 }, 'admin');
       expect(result.displayName).toBe('Updated');
-      expect(mockAuditService.insertAuditLog).toHaveBeenCalledWith(
+      expect(mockAuditService.Insert).toHaveBeenCalledWith(
         'UPDATE', 'users', 'user-1', 'admin', mockUser, expect.any(Object), undefined,
       );
     });
   });
 
-  describe('softDelete', () => {
+  describe('SoftDelete', () => {
     it('should throw NotFoundError when user not found', async () => {
-      repo.findById.mockResolvedValue(null);
-      await expect(svc.softDelete('nonexistent', { version: 1 }, 'admin'))
+      repo.FindById.mockResolvedValue(null);
+      await expect(svc.SoftDelete('nonexistent', { version: 1 }, 'admin'))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should throw ConflictError on version mismatch', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      repo.softDelete.mockResolvedValue(false);
-      await expect(svc.softDelete('user-1', { version: 99 }, 'admin'))
+      repo.FindById.mockResolvedValue(mockUser);
+      repo.SoftDelete.mockResolvedValue(false);
+      await expect(svc.SoftDelete('user-1', { version: 99 }, 'admin'))
         .rejects.toThrow(ConflictError);
     });
 
     it('should soft delete on success', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      repo.softDelete.mockResolvedValue(true);
-      await svc.softDelete('user-1', { version: 1 }, 'admin');
-      expect(mockAuditService.insertAuditLog).toHaveBeenCalledWith(
+      repo.FindById.mockResolvedValue(mockUser);
+      repo.SoftDelete.mockResolvedValue(true);
+      await svc.SoftDelete('user-1', { version: 1 }, 'admin');
+      expect(mockAuditService.Insert).toHaveBeenCalledWith(
         'DELETE', 'users', 'user-1', 'admin', mockUser, null, undefined,
       );
     });
   });
 
-  describe('deactivate', () => {
+  describe('Deactivate', () => {
     it('should throw NotFoundError when user not found', async () => {
-      repo.findById.mockResolvedValue(null);
-      await expect(svc.deactivate('nonexistent', 'admin'))
+      repo.FindById.mockResolvedValue(null);
+      await expect(svc.Deactivate('nonexistent', 'admin'))
         .rejects.toThrow(NotFoundError);
     });
 
     it('should toggle isActive', async () => {
-      repo.findById.mockResolvedValue(mockUser);
-      repo.update.mockResolvedValue({ ...mockUser, isActive: false, version: 2 });
-      const result = await svc.deactivate('user-1', 'admin');
+      repo.FindById.mockResolvedValue(mockUser);
+      repo.Update.mockResolvedValue({ ...mockUser, isActive: false, version: 2 });
+      const result = await svc.Deactivate('user-1', 'admin');
       expect(result.isActive).toBe(false);
-      expect(mockAuditService.insertAuditLog).toHaveBeenCalledWith(
+      expect(mockAuditService.Insert).toHaveBeenCalledWith(
         'DEACTIVATE', 'users', 'user-1', 'admin', mockUser, expect.any(Object), undefined,
       );
     });
 
     it('should activate inactive user', async () => {
       const inactiveUser = { ...mockUser, isActive: false };
-      repo.findById.mockResolvedValue(inactiveUser);
-      repo.update.mockResolvedValue({ ...inactiveUser, isActive: true, version: 2 });
-      const result = await svc.deactivate('user-1', 'admin');
+      repo.FindById.mockResolvedValue(inactiveUser);
+      repo.Update.mockResolvedValue({ ...inactiveUser, isActive: true, version: 2 });
+      const result = await svc.Deactivate('user-1', 'admin');
       expect(result.isActive).toBe(true);
-      expect(mockAuditService.insertAuditLog).toHaveBeenCalledWith(
+      expect(mockAuditService.Insert).toHaveBeenCalledWith(
         'ACTIVATE', 'users', 'user-1', 'admin', inactiveUser, expect.any(Object), undefined,
       );
     });

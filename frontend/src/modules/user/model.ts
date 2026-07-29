@@ -52,40 +52,40 @@ const ROLE_LABELS: Record<string, string> = {
   TECHNICIAN: 'ช่าง',
 };
 
-export function getRoleLabel(role: string): string {
+export function GetRoleLabel(role: string): string {
   return ROLE_LABELS[role] ?? role;
 }
 
 export const userApi = {
-  filter: async (params: FilterParams): Promise<{
+  Filter: async (params: FilterParams): Promise<{
     code: number; message: string; data: UserEntity[]; pagination: PaginationResponse;
   }> => {
     const { data } = await api.post('/auth/filter', params);
     return data;
   },
 
-  create: async (input: CreateUserInput): Promise<{
+  Create: async (input: CreateUserInput): Promise<{
     code: number; message: string; data: UserEntity;
   }> => {
     const { data } = await api.post('/auth', input);
     return data;
   },
 
-  update: async (id: string, input: UpdateUserInput): Promise<{
+  Update: async (id: string, input: UpdateUserInput): Promise<{
     code: number; message: string; data: UserEntity;
   }> => {
     const { data } = await api.patch(`/auth/${id}`, input);
     return data;
   },
 
-  softDelete: async (id: string, input: DeleteUserInput): Promise<{
+  SoftDelete: async (id: string, input: DeleteUserInput): Promise<{
     code: number; message: string;
   }> => {
     const { data } = await api.delete(`/auth/${id}`, { data: input });
     return data;
   },
 
-  deactivate: async (id: string): Promise<{
+  Deactivate: async (id: string): Promise<{
     code: number; message: string; data: UserEntity;
   }> => {
     const { data } = await api.patch(`/auth/${id}/deactivate`);

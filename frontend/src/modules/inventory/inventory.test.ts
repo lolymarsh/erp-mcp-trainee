@@ -65,7 +65,7 @@ describe('inventoryApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.filter({
+    const result = await inventoryApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -98,7 +98,7 @@ describe('inventoryApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    await inventoryApi.filter({
+    await inventoryApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -136,7 +136,7 @@ describe('inventoryApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.getById('p1');
+    const result = await inventoryApi.GetById('p1');
 
     expect(mockApi.get).toHaveBeenCalledWith('/inventory/products/p1');
     expect(result.data.movements).toHaveLength(1);
@@ -149,7 +149,7 @@ describe('inventoryApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.create({
+    const result = await inventoryApi.Create({
       categoryId: 'cat1',
       sku: 'OIL-001',
       name: 'น้ำมันเครื่อง 5W30',
@@ -165,7 +165,7 @@ describe('inventoryApi', () => {
   it('create with all optional fields sends correct payload', async () => {
     mockApi.post.mockResolvedValue({ data: { code: 201, message: 'created', data: mockProduct } });
 
-    await inventoryApi.create({
+    await inventoryApi.Create({
       categoryId: 'cat1',
       sku: 'OIL-001',
       name: 'น้ำมันเครื่อง 5W30',
@@ -196,7 +196,7 @@ describe('inventoryApi', () => {
     };
     mockApi.patch.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.update('p1', {
+    const result = await inventoryApi.Update('p1', {
       name: 'น้ำมันเครื่อง 10W40',
       version: 1,
     });
@@ -212,7 +212,7 @@ describe('inventoryApi', () => {
     const apiResponse = { data: { code: 200, message: 'deleted' } };
     mockApi.delete.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.softDelete('p1', { version: 1 });
+    const result = await inventoryApi.SoftDelete('p1', { version: 1 });
 
     expect(mockApi.delete).toHaveBeenCalledWith(
       '/inventory/products/p1',
@@ -244,7 +244,7 @@ describe('inventoryApi', () => {
     };
     mockApi.post.mockResolvedValue(adjustResponse);
 
-    const result = await inventoryApi.adjustStock('p1', {
+    const result = await inventoryApi.AdjustStock('p1', {
       type: 'IN',
       quantity: 10,
       referenceType: 'PURCHASE_ORDER',
@@ -282,7 +282,7 @@ describe('inventoryApi', () => {
     };
     mockApi.post.mockResolvedValue(adjustResponse);
 
-    const result = await inventoryApi.adjustStock('p1', {
+    const result = await inventoryApi.AdjustStock('p1', {
       type: 'OUT',
       quantity: -10,
       note: 'sale',
@@ -301,7 +301,7 @@ describe('inventoryApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.listCategories();
+    const result = await inventoryApi.ListCategories();
 
     expect(mockApi.get).toHaveBeenCalledWith('/inventory/categories');
     expect(result.data).toHaveLength(1);
@@ -314,7 +314,7 @@ describe('inventoryApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await inventoryApi.listCategories();
+    const result = await inventoryApi.ListCategories();
 
     expect(result.data).toHaveLength(0);
   });

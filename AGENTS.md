@@ -148,13 +148,13 @@ throw new NotFoundError('Customer not found');
 throw new ConflictError('Version mismatch', { currentVersion: 5 });
 throw new UnauthorizedError('Invalid credentials');
 
-// Handler — try/catch every async
+// Handler — try/catch every async (public = PascalCase)
 try {
-  const result = await this.svc.doSomething(req.body);
+  const result = await this.svc.DoSomething(req.body);
   return sendSuccess(res, 200, 'success', { data: result });
 } catch (err) {
   if (err instanceof AppError) return sendError(res, err.statusCode, err.message);
-  logger.error('handler error', err);
+  logger.error('Handler error', err);
   return sendError(res, 500, 'Internal server error');
 }
 ```
@@ -179,6 +179,39 @@ controller.ts   → useXxx() hook: state, logic, calls model, returns data for v
 ✓ model.ts     ✗ CustomerModel.ts     (frontend — same rule)
 ✓ view.tsx     ✗ CustomerView.tsx     (frontend — same rule)
 ✓ controller.ts ✗ useCustomer.ts      (frontend — same rule)
+```
+
+### Function Naming — Go-style
+
+ใช้ Go convention: **Public = PascalCase (ขึ้นต้นใหญ่), Private = camelCase (ขึ้นต้นเล็ก)**
+
+```
+Backend:
+  ✅ Interface methods     → PascalCase    → GetCustomer, CreateInvoice
+  ✅ Public class methods  → PascalCase    → GetById, UpdateCustomer
+  ✅ Private helpers       → camelCase     → toResponse, buildFilter
+  ✅ Module-scoped fns     → camelCase     → formatError, extractId
+
+Frontend:
+  ✅ React hooks          → useXxx        (React rules-of-hooks)
+  ✅ Model API methods    → PascalCase    → GetAll, Create
+  ✅ Helper functions     → camelCase     → formatDate, parseInput
+  ✅ Component functions  → PascalCase    → CustomerListView
+```
+
+```ts
+// ✅ Public = PascalCase
+export class CustomerService implements ICustomerService {
+  async GetById(id: string): Promise<CustomerEntity | null> {
+    const customer = await this.repo.FindById(id);
+    return customer;
+  }
+
+  // Private = camelCase
+  private toResponse(entity: CustomerEntity): CustomerResponse {
+    return { id: entity.id, name: entity.displayName };
+  }
+}
 ```
 
 ## 6. Testing

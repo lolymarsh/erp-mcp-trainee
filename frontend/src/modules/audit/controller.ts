@@ -22,7 +22,7 @@ export function useAuditHistory(
     setLoading(true);
     setError(null);
     try {
-      const result = await auditApi.getDetail(tableName, recordId);
+      const result = await auditApi.GetDetail(tableName, recordId);
       setLogs(result.data);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load audit history';
@@ -55,7 +55,7 @@ export function useAuditLogList(): UseAuditLogListReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await auditApi.filter({ page, pageSize: 20 });
+      const result = await auditApi.Filter({ page, pageSize: 20 });
       setLogs(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {

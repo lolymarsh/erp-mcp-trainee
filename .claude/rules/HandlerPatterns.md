@@ -25,16 +25,16 @@ Parse Input → Validate (Zod) → Call Service → Format Response
 ```
 
 ```ts
-getProfile = async (req: Request, res: Response, next: NextFunction) => {
+GetProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;          // from auth middleware
-    const profile = await this.svc.getProfile(userId);
+    const profile = await this.svc.GetProfile(userId);
     return sendSuccess(res, 200, 'success', { data: profile });
   } catch (err) {
     if (err instanceof AppError) {
       return sendError(res, err.statusCode, err.message);
     }
-    logger.error('getProfile failed', err);
+    logger.error('GetProfile failed', err);
     return sendError(res, 500, 'Internal server error');
   }
 };
@@ -43,11 +43,11 @@ getProfile = async (req: Request, res: Response, next: NextFunction) => {
 ## 3. Filter Endpoint (POST with body)
 
 ```ts
-filterCustomers = async (req: Request, res: Response, next: NextFunction) => {
+FilterCustomers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Zod validates pagination + filters in one shot
     const filters = filterRequestSchema.parse(req.body);
-    const { data, total } = await this.svc.filterCustomers(filters);
+    const { data, total } = await this.svc.FilterCustomers(filters);
     const pagination = calculatePagination(filters.page, filters.pageSize, total);
     return sendSuccess(res, 200, 'success', { data, pagination });
   } catch (err) {
@@ -55,7 +55,7 @@ filterCustomers = async (req: Request, res: Response, next: NextFunction) => {
       return sendError(res, 400, 'Validation error', err.errors);
     }
     if (err instanceof AppError) return sendError(res, err.statusCode, err.message);
-    logger.error('filterCustomers failed', err);
+    logger.error('FilterCustomers failed', err);
     return sendError(res, 500, 'Internal server error');
   }
 };
@@ -64,15 +64,15 @@ filterCustomers = async (req: Request, res: Response, next: NextFunction) => {
 ## 4. Create Endpoint
 
 ```ts
-createCustomer = async (req: Request, res: Response, next: NextFunction) => {
+CreateCustomer = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input = createCustomerSchema.parse(req.body);
-    const customer = await this.svc.create(input);
+    const customer = await this.svc.Create(input);
     return sendSuccess(res, 201, 'created', { data: customer });
   } catch (err) {
     if (err instanceof ZodError) return sendError(res, 400, 'Validation error', err.errors);
     if (err instanceof AppError) return sendError(res, err.statusCode, err.message);
-    logger.error('createCustomer failed', err);
+    logger.error('CreateCustomer failed', err);
     return sendError(res, 500, 'Internal server error');
   }
 };
@@ -81,10 +81,10 @@ createCustomer = async (req: Request, res: Response, next: NextFunction) => {
 ## 5. Update Endpoint (with version check)
 
 ```ts
-updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+UpdateCustomer = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input = updateCustomerSchema.parse(req.body);  // Zod validates version present
-    const customer = await this.svc.update(req.params.id, input);
+    const customer = await this.svc.Update(req.params.id, input);
     return sendSuccess(res, 200, 'updated', { data: customer });
   } catch (err) {
     if (err instanceof ZodError) return sendError(res, 400, 'Validation error', err.errors);
@@ -92,7 +92,7 @@ updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
       return sendError(res, 409, err.message, err.data);  // version mismatch
     }
     if (err instanceof NotFoundError) return sendError(res, 404, err.message);
-    logger.error('updateCustomer failed', err);
+    logger.error('UpdateCustomer failed', err);
     return sendError(res, 500, 'Internal server error');
   }
 };
@@ -101,13 +101,13 @@ updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
 ## 6. Get by ID
 
 ```ts
-getById = async (req: Request, res: Response, next: NextFunction) => {
+GetById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const customer = await this.svc.getById(req.params.id);
+    const customer = await this.svc.GetById(req.params.id);
     return sendSuccess(res, 200, 'success', { data: customer });
   } catch (err) {
     if (err instanceof NotFoundError) return sendError(res, 404, err.message);
-    logger.error('getById failed', err);
+    logger.error('GetById failed', err);
     return sendError(res, 500, 'Internal server error');
   }
 };
@@ -123,17 +123,17 @@ import { authMiddleware } from '../../shared/middleware/auth';
 import { validate } from '../../shared/middleware/validator';
 import { createUserSchema, loginSchema } from './schema';
 
-export function registerUserRoutes(handler: UserHandler): Router {
+export function RegisterUserRoutes(handler: UserHandler): Router {
   const router = Router();
 
   // Public
-  router.post('/login', validate(loginSchema), handler.login);
+  router.post('/login', validate(loginSchema), handler.Login);
 
   // Authenticated
-  router.get('/profile', authMiddleware, handler.getProfile);
+  router.get('/profile', authMiddleware, handler.GetProfile);
 
   // Admin
-  router.post('/', authMiddleware('ADMIN'), validate(createUserSchema), handler.createUser);
+  router.post('/', authMiddleware('ADMIN'), validate(createUserSchema), handler.CreateUser);
 
   return router;
 }

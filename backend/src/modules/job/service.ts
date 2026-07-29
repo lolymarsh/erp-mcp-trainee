@@ -11,7 +11,7 @@ import type {
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import {
   NotFoundError,
   BadRequestError,
@@ -28,22 +28,22 @@ const ALLOWED_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
 };
 
 export interface IJobService {
-  filter(
+  Filter(
     input: FilterRequestInput,
   ): Promise<{ data: JobResponse[]; pagination: PaginationResponse }>;
-  getById(id: string): Promise<JobWithLogsResponse>;
-  create(
+  GetById(id: string): Promise<JobWithLogsResponse>;
+  Create(
     input: CreateJobInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<JobWithLogsResponse>;
-  updateStatus(
+  UpdateStatus(
     id: string,
     input: UpdateJobStatusInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<{ job: JobResponse; log: JobStatusLogResponse }>;
-  getTodayQueue(): Promise<TodayQueueResponse>;
+  GetTodayQueue(): Promise<TodayQueueResponse>;
 }
 
 const DASHBOARD_CACHE_KEY = "dashboard:summary";
@@ -56,11 +56,11 @@ export class JobService implements IJobService {
     private auditService: IAuditLogService,
   ) {}
 
-  async filter(
+  async Filter(
     input: FilterRequestInput,
   ): Promise<{ data: JobResponse[]; pagination: PaginationResponse }> {
-    const result = await this.repo.findFiltered(input);
-    const pagination = calculatePagination(
+    const result = await this.repo.FindFiltered(input);
+    const pagination = CalculatePagination(
       input.page,
       input.pageSize,
       result.total,
@@ -72,8 +72,8 @@ export class JobService implements IJobService {
     };
   }
 
-  async getById(id: string): Promise<JobWithLogsResponse> {
-    const result = await this.repo.findByIdWithLogs(id);
+  async GetById(id: string): Promise<JobWithLogsResponse> {
+    const result = await this.repo.FindByIdWithLogs(id);
     if (!result) {
       throw new NotFoundError("Job not found");
     }
@@ -84,22 +84,22 @@ export class JobService implements IJobService {
     };
   }
 
-  async create(
+  async Create(
     input: CreateJobInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<JobWithLogsResponse> {
-    const customer = await this.customerRepo.findById(input.customerId);
+    const customer = await this.customerRepo.FindById(input.customerId);
     if (!customer) {
       throw new BadRequestError("Customer not found");
     }
 
-    const vehicle = await this.customerRepo.findVehicleById(input.vehicleId);
+    const vehicle = await this.customerRepo.FindVehicleById(input.vehicleId);
     if (!vehicle) {
       throw new BadRequestError("Vehicle not found");
     }
 
-    const job = await this.repo.create({
+    const job = await this.repo.Create({
       customerId: input.customerId,
       vehicleId: input.vehicleId,
       invoiceId: input.invoiceId ?? null,
@@ -109,7 +109,7 @@ export class JobService implements IJobService {
       notes: input.notes ?? null,
     });
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "jobs",
       job.id,
@@ -125,13 +125,13 @@ export class JobService implements IJobService {
     };
   }
 
-  async updateStatus(
+  async UpdateStatus(
     id: string,
     input: UpdateJobStatusInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<{ job: JobResponse; log: JobStatusLogResponse }> {
-    const current = await this.repo.findById(id);
+    const current = await this.repo.FindById(id);
     if (!current) {
       throw new NotFoundError("Job not found");
     }
@@ -149,7 +149,7 @@ export class JobService implements IJobService {
       );
     }
 
-    const result = await this.repo.updateStatus(
+    const result = await this.repo.UpdateStatus(
       id,
       input.status,
       userId,
@@ -159,7 +159,7 @@ export class JobService implements IJobService {
 
     await this.redis.del(DASHBOARD_CACHE_KEY);
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "jobs",
       id,
@@ -175,8 +175,8 @@ export class JobService implements IJobService {
     };
   }
 
-  async getTodayQueue(): Promise<TodayQueueResponse> {
-    return this.repo.getTodayQueue();
+  async GetTodayQueue(): Promise<TodayQueueResponse> {
+    return this.repo.GetTodayQueue();
   }
 
   private toJobResponse(entity: JobEntity): JobResponse {

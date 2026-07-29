@@ -12,7 +12,7 @@ interface AuditMessage {
   timestamp: string;
 }
 
-export async function startAuditWorker(
+export async function StartAuditWorker(
   rmq: RabbitMQConnection,
   mongoDb: Db,
 ): Promise<void> {

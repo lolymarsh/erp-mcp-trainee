@@ -73,7 +73,7 @@ export function useJobQueue(): UseJobQueueReturn {
         sortBy: "desc",
         filters,
       };
-      const result = await jobApi.filter(filter);
+      const result = await jobApi.Filter(filter);
       setJobs(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -128,7 +128,7 @@ export function useJobDetail(id: string | null): UseJobDetailReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await jobApi.getById(id);
+      const result = await jobApi.GetById(id);
       setJob(result);
     } catch (err: unknown) {
       const message =
@@ -168,7 +168,7 @@ export function useStatusUpdate(onSuccess?: () => void): UseStatusUpdateReturn {
       setUpdating(true);
       setError(null);
       try {
-        await jobApi.updateStatus(id, {
+        await jobApi.UpdateStatus(id, {
           status: status as "QUEUED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
           version,
         });
@@ -205,7 +205,7 @@ export function useTodayQueue(): UseTodayQueueReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await jobApi.getTodayQueue();
+      const result = await jobApi.GetTodayQueue();
       setQueue(result);
     } catch (err: unknown) {
       const message =
@@ -281,7 +281,7 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
       const filters = search
         ? [{ field: 'firstName', operator: 'contains' as const, value: search }]
         : [];
-      const result = await customerApi.filter({
+      const result = await customerApi.Filter({
         page,
         pageSize: 10,
         sortBy: 'asc',
@@ -305,7 +305,7 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
 
   const loadVehicles = useCallback(async (id: string) => {
     try {
-      const result = await customerApi.getById(id);
+      const result = await customerApi.GetById(id);
       setVehicles(result.data.vehicles ?? []);
     } catch {
       setVehicles([]);
@@ -397,7 +397,7 @@ export function useJobCreate(onSuccess: () => void): UseJobCreateReturn {
         technicianId: parsed.data.technicianId ?? null,
         notes: parsed.data.notes ?? null,
       };
-      await jobApi.create(input);
+      await jobApi.Create(input);
       onSuccess();
       handleClose();
     } catch (err: unknown) {

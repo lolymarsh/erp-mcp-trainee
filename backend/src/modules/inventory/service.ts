@@ -19,7 +19,7 @@ import type {
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import {
   NotFoundError,
   ConflictError,
@@ -30,38 +30,38 @@ import type { IAuditLogService } from "../audit/service";
 import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface IInventoryService {
-  filter(
+  Filter(
     input: FilterRequestInput,
   ): Promise<{ data: ProductResponse[]; pagination: PaginationResponse }>;
-  getById(id: string): Promise<ProductWithMovementsResponse>;
-  create(
+  GetById(id: string): Promise<ProductWithMovementsResponse>;
+  Create(
     input: CreateProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<ProductResponse>;
-  update(
+  Update(
     id: string,
     input: UpdateProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<ProductResponse>;
-  softDelete(
+  SoftDelete(
     id: string,
     input: DeleteProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void>;
-  adjustStock(
+  AdjustStock(
     productId: string,
     input: StockAdjustInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<StockAdjustResponse>;
-  filterCategories(input: FilterRequestInput): Promise<{ data: CategoryResponse[]; pagination: PaginationResponse }>;
-  listCategories(): Promise<CategoryResponse[]>;
-  createCategory(input: CreateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
-  updateCategory(id: string, input: UpdateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
-  deleteCategory(id: string, input: DeleteCategoryInput, userId: string, meta?: AuditMeta): Promise<void>;
+  FilterCategories(input: FilterRequestInput): Promise<{ data: CategoryResponse[]; pagination: PaginationResponse }>;
+  ListCategories(): Promise<CategoryResponse[]>;
+  CreateCategory(input: CreateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
+  UpdateCategory(id: string, input: UpdateCategoryInput, userId: string, meta?: AuditMeta): Promise<CategoryResponse>;
+  DeleteCategory(id: string, input: DeleteCategoryInput, userId: string, meta?: AuditMeta): Promise<void>;
 }
 
 const DASHBOARD_CACHE_KEY = "dashboard:summary";
@@ -74,11 +74,11 @@ export class InventoryService implements IInventoryService {
     private auditService: IAuditLogService,
   ) {}
 
-  async filter(
+  async Filter(
     input: FilterRequestInput,
   ): Promise<{ data: ProductResponse[]; pagination: PaginationResponse }> {
-    const result = await this.repo.findFiltered(input);
-    const pagination = calculatePagination(
+    const result = await this.repo.FindFiltered(input);
+    const pagination = CalculatePagination(
       input.page,
       input.pageSize,
       result.total,
@@ -90,8 +90,8 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async getById(id: string): Promise<ProductWithMovementsResponse> {
-    const result = await this.repo.findByIdWithMovements(id);
+  async GetById(id: string): Promise<ProductWithMovementsResponse> {
+    const result = await this.repo.FindByIdWithMovements(id);
     if (!result) throw new NotFoundError("Product not found");
 
     return {
@@ -100,15 +100,15 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async create(
+  async Create(
     input: CreateProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<ProductResponse> {
-    const existing = await this.repo.findBySku(input.sku);
+    const existing = await this.repo.FindBySku(input.sku);
     if (existing) throw new AppError(409, "SKU already exists");
 
-    const entity = await this.repo.create({
+    const entity = await this.repo.Create({
       id: uuidv4(),
       categoryId: input.categoryId,
       sku: input.sku,
@@ -122,7 +122,7 @@ export class InventoryService implements IInventoryService {
       version: 1,
     });
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "products",
       entity.id,
@@ -135,19 +135,19 @@ export class InventoryService implements IInventoryService {
     return this.toProductResponse(entity);
   }
 
-  async update(
+  async Update(
     id: string,
     input: UpdateProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<ProductResponse> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("Product not found");
 
     const { version, ...fields } = input;
 
     if (typeof fields.sku === "string") {
-      const existingSku = await this.repo.findBySku(fields.sku);
+      const existingSku = await this.repo.FindBySku(fields.sku);
       if (existingSku && existingSku.id !== id) {
         throw new AppError(409, "SKU already exists");
       }
@@ -162,10 +162,10 @@ export class InventoryService implements IInventoryService {
     }
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    const updated = await this.repo.update(id, updateData as any, version);
+    const updated = await this.repo.Update(id, updateData as any, version);
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "products",
       id,
@@ -178,20 +178,20 @@ export class InventoryService implements IInventoryService {
     return this.toProductResponse(updated);
   }
 
-  async softDelete(
+  async SoftDelete(
     id: string,
     input: DeleteProductInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void> {
-    const before = await this.repo.findById(id);
+    const before = await this.repo.FindById(id);
     if (!before) throw new NotFoundError("Product not found");
 
-    const deleted = await this.repo.softDelete(id, input.version);
+    const deleted = await this.repo.SoftDelete(id, input.version);
     if (!deleted) throw new ConflictError("Version mismatch or product not found");
 
-    const after = await this.repo.findById(id);
-    this.auditService.insertAuditLog(
+    const after = await this.repo.FindById(id);
+    this.auditService.Insert(
       "DELETE",
       "products",
       id,
@@ -202,7 +202,7 @@ export class InventoryService implements IInventoryService {
     );
   }
 
-  async adjustStock(
+  async AdjustStock(
     productId: string,
     input: StockAdjustInput,
     userId: string,
@@ -219,7 +219,7 @@ export class InventoryService implements IInventoryService {
 
     try {
       const result = await this.db.transaction(async (tx) => {
-        return this.repo.adjustStock({
+        return this.repo.AdjustStock({
           productId,
           type: input.type,
           quantity: input.quantity,
@@ -232,7 +232,7 @@ export class InventoryService implements IInventoryService {
 
       await this.redis.del(DASHBOARD_CACHE_KEY);
 
-      this.auditService.insertAuditLog(
+      this.auditService.Insert(
         "UPDATE",
         "products",
         productId,
@@ -258,11 +258,11 @@ export class InventoryService implements IInventoryService {
     }
   }
 
-  async filterCategories(
+  async FilterCategories(
     input: FilterRequestInput,
   ): Promise<{ data: CategoryResponse[]; pagination: PaginationResponse }> {
-    const result = await this.repo.findCategoriesFiltered(input);
-    const pagination = calculatePagination(input.page, input.pageSize, result.total);
+    const result = await this.repo.FindCategoriesFiltered(input);
+    const pagination = CalculatePagination(input.page, input.pageSize, result.total);
 
     return {
       data: result.data.map((c) => ({
@@ -275,8 +275,8 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async listCategories(): Promise<CategoryResponse[]> {
-    const categories = await this.repo.findAllCategories();
+  async ListCategories(): Promise<CategoryResponse[]> {
+    const categories = await this.repo.FindAllCategories();
     return categories.map((c) => ({
       id: c.id,
       name: c.name,
@@ -285,18 +285,18 @@ export class InventoryService implements IInventoryService {
     }));
   }
 
-  async createCategory(
+  async CreateCategory(
     input: CreateCategoryInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CategoryResponse> {
-    const entity = await this.repo.createCategory({
+    const entity = await this.repo.CreateCategory({
       id: uuidv4(),
       name: input.name,
       description: input.description ?? null,
     });
 
-    this.auditService.insertAuditLog("CREATE", "categories", entity.id, userId, null, entity, meta);
+    this.auditService.Insert("CREATE", "categories", entity.id, userId, null, entity, meta);
 
     return {
       id: entity.id,
@@ -306,20 +306,20 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async updateCategory(
+  async UpdateCategory(
     id: string,
     input: UpdateCategoryInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CategoryResponse> {
-    const existing = await this.repo.findCategoryById(id);
+    const existing = await this.repo.FindCategoryById(id);
     if (!existing) throw new NotFoundError("Category not found");
 
     const { version, ...fields } = input;
-    const updated = await this.repo.updateCategory(id, fields, version);
+    const updated = await this.repo.UpdateCategory(id, fields, version);
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog("UPDATE", "categories", id, userId, existing, updated, meta);
+    this.auditService.Insert("UPDATE", "categories", id, userId, existing, updated, meta);
 
     return {
       id: updated.id,
@@ -329,19 +329,19 @@ export class InventoryService implements IInventoryService {
     };
   }
 
-  async deleteCategory(
+  async DeleteCategory(
     id: string,
     input: DeleteCategoryInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void> {
-    const existing = await this.repo.findCategoryById(id);
+    const existing = await this.repo.FindCategoryById(id);
     if (!existing) throw new NotFoundError("Category not found");
 
-    const deleted = await this.repo.deleteCategory(id, input.version);
+    const deleted = await this.repo.DeleteCategory(id, input.version);
     if (!deleted) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog("DELETE", "categories", id, userId, existing, null, meta);
+    this.auditService.Insert("DELETE", "categories", id, userId, existing, null, meta);
   }
 
   private toProductResponse(entity: ProductEntity): ProductResponse {

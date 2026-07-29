@@ -69,7 +69,7 @@ describe('invoiceApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await invoiceApi.filter({
+    const result = await invoiceApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -102,7 +102,7 @@ describe('invoiceApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    await invoiceApi.filter({
+    await invoiceApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'asc',
@@ -127,7 +127,7 @@ describe('invoiceApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await invoiceApi.getById('inv1');
+    const result = await invoiceApi.GetById('inv1');
 
     expect(mockApi.get).toHaveBeenCalledWith('/sales/invoices/inv1');
     expect(result.items).toHaveLength(1);
@@ -143,7 +143,7 @@ describe('invoiceApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await invoiceApi.create({
+    const result = await invoiceApi.Create({
       customerId: 'c1',
       items: [{ productId: 'p1', quantity: 2 }],
     });
@@ -163,7 +163,7 @@ describe('invoiceApi', () => {
       },
     });
 
-    await invoiceApi.create({
+    await invoiceApi.Create({
       customerId: 'c1',
       vehicleId: 'v1',
       items: [{ productId: 'p1', quantity: 2 }],
@@ -188,7 +188,7 @@ describe('invoiceApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await invoiceApi.getTodaySummary();
+    const result = await invoiceApi.GetTodaySummary();
 
     expect(mockApi.get).toHaveBeenCalledWith('/sales/invoices/today-summary');
     expect(result.totalAmount).toBe('15000.00');
@@ -203,7 +203,7 @@ describe('invoiceApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await invoiceApi.getTodaySummary();
+    const result = await invoiceApi.GetTodaySummary();
 
     expect(result.totalAmount).toBe('0.00');
     expect(result.count).toBe(0);

@@ -10,7 +10,7 @@ import type {
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import {
   NotFoundError,
   BadRequestError,
@@ -23,17 +23,17 @@ import type { IAuditLogService } from "../audit/service";
 import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface IInvoiceService {
-  filter(
+  Filter(
     input: FilterRequestInput,
   ): Promise<{ data: InvoiceResponse[]; pagination: PaginationResponse }>;
-  getById(id: string): Promise<InvoiceWithItemsResponse>;
-  create(
+  GetById(id: string): Promise<InvoiceWithItemsResponse>;
+  Create(
     input: CreateInvoiceInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<InvoiceWithItemsResponse>;
-  getTodaySummary(): Promise<TodaySummaryResponse>;
-  updatePaymentStatus(
+  GetTodaySummary(): Promise<TodaySummaryResponse>;
+  UpdatePaymentStatus(
     id: string,
     input: UpdatePaymentStatusInput,
     userId: string,
@@ -52,11 +52,11 @@ export class InvoiceService implements IInvoiceService {
     private auditService: IAuditLogService,
   ) {}
 
-  async filter(
+  async Filter(
     input: FilterRequestInput,
   ): Promise<{ data: InvoiceResponse[]; pagination: PaginationResponse }> {
-    const result = await this.repo.findFiltered(input);
-    const pagination = calculatePagination(
+    const result = await this.repo.FindFiltered(input);
+    const pagination = CalculatePagination(
       input.page,
       input.pageSize,
       result.total,
@@ -68,8 +68,8 @@ export class InvoiceService implements IInvoiceService {
     };
   }
 
-  async getById(id: string): Promise<InvoiceWithItemsResponse> {
-    const result = await this.repo.findByIdWithItems(id);
+  async GetById(id: string): Promise<InvoiceWithItemsResponse> {
+    const result = await this.repo.FindByIdWithItems(id);
     if (!result) {
       throw new NotFoundError("Invoice not found");
     }
@@ -80,17 +80,17 @@ export class InvoiceService implements IInvoiceService {
     };
   }
 
-  async create(
+  async Create(
     input: CreateInvoiceInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<InvoiceWithItemsResponse> {
-    const customer = await this.customerRepo.findById(input.customerId);
+    const customer = await this.customerRepo.FindById(input.customerId);
     if (!customer) {
       throw new BadRequestError("Customer not found");
     }
 
-    const productRows = await this.inventoryRepo.findByIds(
+    const productRows = await this.inventoryRepo.FindByIds(
       input.items.map((i) => i.productId),
     );
 
@@ -133,7 +133,7 @@ export class InvoiceService implements IInvoiceService {
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     const invoiceNumber = `INV-${dateStr}-${random}`;
 
-    const result = await this.repo.createInvoice({
+    const result = await this.repo.CreateInvoice({
       invoiceNumber,
       customerId: input.customerId,
       vehicleId: input.vehicleId ?? null,
@@ -148,7 +148,7 @@ export class InvoiceService implements IInvoiceService {
 
     await this.redis.del(DASHBOARD_CACHE_KEY);
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "invoices",
       result.invoice.id,
@@ -164,27 +164,27 @@ export class InvoiceService implements IInvoiceService {
     };
   }
 
-  async getTodaySummary(): Promise<TodaySummaryResponse> {
-    return this.repo.getTodaySummary();
+  async GetTodaySummary(): Promise<TodaySummaryResponse> {
+    return this.repo.GetTodaySummary();
   }
 
-  async updatePaymentStatus(
+  async UpdatePaymentStatus(
     id: string,
     input: UpdatePaymentStatusInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<InvoiceResponse> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("Invoice not found");
 
-    const updated = await this.repo.updatePaymentStatus(id, {
+    const updated = await this.repo.UpdatePaymentStatus(id, {
       paymentStatus: input.paymentStatus,
       paymentMethod: input.paymentMethod ?? null,
     }, input.version);
 
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "invoices",
       id,

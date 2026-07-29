@@ -9,10 +9,10 @@ import {
   createRabbitMQ,
   logger,
 } from "./config";
-import { setupRoutes } from "./router";
-import { auditMetaMiddleware } from "./shared/middleware/auditMeta";
-import { startAuditWorker } from "./workers/auditWorker";
-import { startAiWorker } from "./workers/aiWorker";
+import { SetupRoutes } from "./router";
+import { AuditMetaMiddleware } from "./shared/middleware/auditMeta";
+import { StartAuditWorker } from "./workers/auditWorker";
+import { StartAiWorker } from "./workers/aiWorker";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -29,21 +29,21 @@ app.get("/health", (_req, res) => {
   });
 });
 
-async function start(): Promise<void> {
+async function Start(): Promise<void> {
   try {
     const { db, pool } = createDb();
     const { mongoDb } = await createMongo();
     const redis = createRedis();
     const rmq = await createRabbitMQ();
 
-    app.use(auditMetaMiddleware);
+    app.use(AuditMetaMiddleware);
 
-    setupRoutes(app, { db, pool, redis, mongoDb, rmq });
+    SetupRoutes(app, { db, pool, redis, mongoDb, rmq });
 
-    startAuditWorker(rmq, mongoDb).catch((err: unknown) => {
+    StartAuditWorker(rmq, mongoDb).catch((err: unknown) => {
       logger.error({ err }, "Audit worker failed");
     });
-    startAiWorker(rmq, pool, redis).catch((err: unknown) => {
+    StartAiWorker(rmq, pool, redis).catch((err: unknown) => {
       logger.error({ err }, "AI worker failed");
     });
     logger.info("Workers started");
@@ -57,6 +57,6 @@ async function start(): Promise<void> {
   }
 }
 
-start();
+Start();
 
 export default app;

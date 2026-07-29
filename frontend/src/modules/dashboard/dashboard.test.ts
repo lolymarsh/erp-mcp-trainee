@@ -45,7 +45,7 @@ describe('dashboardApi', () => {
   it('getSummary sends GET to /dashboard/summary and returns data', async () => {
     mockApi.get.mockResolvedValue(mockSummary);
 
-    const result = await dashboardApi.getSummary();
+    const result = await dashboardApi.GetSummary();
 
     expect(mockApi.get).toHaveBeenCalledWith('/dashboard/summary');
     expect(result.todaySales.amount).toBe('15000.00');

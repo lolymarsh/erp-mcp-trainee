@@ -48,110 +48,110 @@ describe("InventoryHandler", () => {
 
   beforeEach(() => {
     svc = {
-      filter: jest.fn(),
-      getById: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      softDelete: jest.fn(),
-      adjustStock: jest.fn(),
-      filterCategories: jest.fn(),
-      listCategories: jest.fn(),
-      createCategory: jest.fn(),
-      updateCategory: jest.fn(),
-      deleteCategory: jest.fn(),
+      Filter: jest.fn(),
+      GetById: jest.fn(),
+      Create: jest.fn(),
+      Update: jest.fn(),
+      SoftDelete: jest.fn(),
+      AdjustStock: jest.fn(),
+      FilterCategories: jest.fn(),
+      ListCategories: jest.fn(),
+      CreateCategory: jest.fn(),
+      UpdateCategory: jest.fn(),
+      DeleteCategory: jest.fn(),
     };
     handler = new InventoryHandler(svc);
   });
 
   describe("filter", () => {
     it("should return 200 with data", async () => {
-      svc.filter.mockResolvedValue({ data: [mockProduct], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
+      svc.Filter.mockResolvedValue({ data: [mockProduct], pagination: { page: 1, pageSize: 20, totalData: 1, totalPage: 1, hasNextPage: false, hasPreviousPage: false } });
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("getById", () => {
     it("should return 200 with product", async () => {
-      svc.getById.mockResolvedValue({ ...mockProduct, movements: [mockMovement] });
+      svc.GetById.mockResolvedValue({ ...mockProduct, movements: [mockMovement] });
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("create", () => {
     it("should return 201 on success", async () => {
-      svc.create.mockResolvedValue(mockProduct);
+      svc.Create.mockResolvedValue(mockProduct);
       const { req, res } = mockReqRes();
       req.body = { categoryId: "cat-1", sku: "GS-001", name: "ถังแก๊ส" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(201);
     });
   });
 
   describe("update", () => {
     it("should return 200 on success", async () => {
-      svc.update.mockResolvedValue({ ...mockProduct, name: "Updated", version: 2 });
+      svc.Update.mockResolvedValue({ ...mockProduct, name: "Updated", version: 2 });
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { name: "Updated", version: 1 };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("softDelete", () => {
     it("should return 200 on success", async () => {
-      svc.softDelete.mockResolvedValue(undefined);
+      svc.SoftDelete.mockResolvedValue(undefined);
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { version: 1 };
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("adjustStock", () => {
     it("should return 200 with userId from req.user", async () => {
-      svc.adjustStock.mockResolvedValue({ product: mockProduct, movement: mockMovement });
+      svc.AdjustStock.mockResolvedValue({ product: mockProduct, movement: mockMovement });
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { type: "IN", quantity: 5 };
       req.user = { userId: "user-1", role: "ADMIN" };
-      await handler.adjustStock(req, res);
-      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "user-1", undefined);
+      await handler.AdjustStock(req, res);
+      expect(svc.AdjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "user-1", undefined);
       expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it("should use system when no req.user", async () => {
-      svc.adjustStock.mockResolvedValue({ product: mockProduct, movement: mockMovement });
+      svc.AdjustStock.mockResolvedValue({ product: mockProduct, movement: mockMovement });
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { type: "IN", quantity: 5 };
-      await handler.adjustStock(req, res);
-      expect(svc.adjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "system", undefined);
+      await handler.AdjustStock(req, res);
+      expect(svc.AdjustStock).toHaveBeenCalledWith("prod-1", expect.any(Object), "system", undefined);
     });
   });
 
   describe("listCategories", () => {
     it("should return 200 with categories", async () => {
-      svc.listCategories.mockResolvedValue([{ id: "cat-1", name: "ถังแก๊ส", description: null, version: 1 }]);
+      svc.ListCategories.mockResolvedValue([{ id: "cat-1", name: "ถังแก๊ส", description: null, version: 1 }]);
       const { req, res } = mockReqRes();
-      await handler.listCategories(req, res);
+      await handler.ListCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe("error cases", () => {
     it("should handle AppError with details", async () => {
-      svc.getById.mockRejectedValue(new AppError(404, "Product not found", { id: "xxx" }));
+      svc.GetById.mockRejectedValue(new AppError(404, "Product not found", { id: "xxx" }));
       const { req, res } = mockReqRes();
       req.params = { id: "xxx" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({ code: 404, message: "Product not found", details: { id: "xxx" } });
     });
@@ -160,70 +160,70 @@ describe("InventoryHandler", () => {
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { type: "INVALID" };
-      await handler.adjustStock(req, res);
+      await handler.AdjustStock(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle unexpected error as 500", async () => {
-      svc.filter.mockRejectedValue(new Error("unexpected"));
+      svc.Filter.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20, filters: [] };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in filter", async () => {
-      svc.filter.mockRejectedValue(new AppError(400, "Invalid filter"));
+      svc.Filter.mockRejectedValue(new AppError(400, "Invalid filter"));
       const { req, res } = mockReqRes();
       req.body = { page: 1, pageSize: 20 };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle ZodError in filter", async () => {
       const { req, res } = mockReqRes();
       req.body = { page: "abc" };
-      await handler.filter(req, res);
+      await handler.Filter(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle 500 in getById", async () => {
-      svc.getById.mockRejectedValue(new Error("unexpected"));
+      svc.GetById.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
-      await handler.getById(req, res);
+      await handler.GetById(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in create", async () => {
-      svc.create.mockRejectedValue(new AppError(409, "Duplicate SKU"));
+      svc.Create.mockRejectedValue(new AppError(409, "Duplicate SKU"));
       const { req, res } = mockReqRes();
       req.body = { categoryId: "cat-1", sku: "GS-001", name: "test" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(409);
     });
 
     it("should handle ZodError in create", async () => {
       const { req, res } = mockReqRes();
       req.body = {};
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle 500 in create", async () => {
-      svc.create.mockRejectedValue(new Error("unexpected"));
+      svc.Create.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.body = { categoryId: "cat-1", sku: "GS-001", name: "test" };
-      await handler.create(req, res);
+      await handler.Create(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in update", async () => {
-      svc.update.mockRejectedValue(new AppError(404, "Product not found"));
+      svc.Update.mockRejectedValue(new AppError(404, "Product not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { name: "Updated", version: 1 };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
@@ -231,25 +231,25 @@ describe("InventoryHandler", () => {
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { version: "abc" };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle 500 in update", async () => {
-      svc.update.mockRejectedValue(new Error("unexpected"));
+      svc.Update.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { name: "Updated", version: 1 };
-      await handler.update(req, res);
+      await handler.Update(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in softDelete", async () => {
-      svc.softDelete.mockRejectedValue(new AppError(404, "Product not found"));
+      svc.SoftDelete.mockRejectedValue(new AppError(404, "Product not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { version: 1 };
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
@@ -257,59 +257,59 @@ describe("InventoryHandler", () => {
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = {};
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it("should handle 500 in softDelete", async () => {
-      svc.softDelete.mockRejectedValue(new Error("unexpected"));
+      svc.SoftDelete.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { version: 1 };
-      await handler.softDelete(req, res);
+      await handler.SoftDelete(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in adjustStock", async () => {
-      svc.adjustStock.mockRejectedValue(new AppError(404, "Product not found"));
+      svc.AdjustStock.mockRejectedValue(new AppError(404, "Product not found"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { type: "IN", quantity: 5 };
-      await handler.adjustStock(req, res);
+      await handler.AdjustStock(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
     it("should handle 500 in adjustStock", async () => {
-      svc.adjustStock.mockRejectedValue(new Error("unexpected"));
+      svc.AdjustStock.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
       req.params = { id: "prod-1" };
       req.body = { type: "IN", quantity: 5 };
-      await handler.adjustStock(req, res);
+      await handler.AdjustStock(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle AppError in listCategories", async () => {
-      svc.listCategories.mockRejectedValue(new AppError(500, "DB error"));
+      svc.ListCategories.mockRejectedValue(new AppError(500, "DB error"));
       const { req, res } = mockReqRes();
-      await handler.listCategories(req, res);
+      await handler.ListCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it("should handle 500 in listCategories", async () => {
-      svc.listCategories.mockRejectedValue(new Error("unexpected"));
+      svc.ListCategories.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
-      await handler.listCategories(req, res);
+      await handler.ListCategories(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 
   describe("extractId with array params", () => {
     it("should handle id as array", async () => {
-      svc.getById.mockResolvedValue({ ...mockProduct, movements: [] });
+      svc.GetById.mockResolvedValue({ ...mockProduct, movements: [] });
       const { req, res } = mockReqRes();
       req.params = { id: ["prod-1", "prod-2"] as any };
-      await handler.getById(req, res);
-      expect(svc.getById).toHaveBeenCalledWith("prod-1");
+      await handler.GetById(req, res);
+      expect(svc.GetById).toHaveBeenCalledWith("prod-1");
     });
   });
 });

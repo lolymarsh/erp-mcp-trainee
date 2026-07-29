@@ -105,7 +105,7 @@ export interface StockAdjustInput {
 }
 
 export const inventoryApi = {
-  filter: async (
+  Filter: async (
     params: FilterParams,
   ): Promise<{
     code: number;
@@ -117,7 +117,7 @@ export const inventoryApi = {
     return data;
   },
 
-  getById: async (
+  GetById: async (
     id: string,
   ): Promise<{
     code: number;
@@ -128,7 +128,7 @@ export const inventoryApi = {
     return data;
   },
 
-  create: async (
+  Create: async (
     input: CreateProductInput,
   ): Promise<{
     code: number;
@@ -139,7 +139,7 @@ export const inventoryApi = {
     return data;
   },
 
-  update: async (
+  Update: async (
     id: string,
     input: UpdateProductInput,
   ): Promise<{
@@ -151,7 +151,7 @@ export const inventoryApi = {
     return data;
   },
 
-  softDelete: async (
+  SoftDelete: async (
     id: string,
     input: DeleteProductInput,
   ): Promise<{
@@ -162,7 +162,7 @@ export const inventoryApi = {
     return data;
   },
 
-  adjustStock: async (
+  AdjustStock: async (
     id: string,
     input: StockAdjustInput,
   ): Promise<{
@@ -174,7 +174,7 @@ export const inventoryApi = {
     return data;
   },
 
-  filterCategories: async (
+  FilterCategories: async (
     params: FilterParams,
   ): Promise<{
     code: number;
@@ -186,7 +186,7 @@ export const inventoryApi = {
     return data;
   },
 
-  listCategories: async (): Promise<{
+  ListCategories: async (): Promise<{
     code: number;
     message: string;
     data: CategoryEntity[];
@@ -195,7 +195,7 @@ export const inventoryApi = {
     return data;
   },
 
-  createCategory: async (input: { name: string; description?: string | null }): Promise<{
+  CreateCategory: async (input: { name: string; description?: string | null }): Promise<{
     code: number;
     message: string;
     data: CategoryEntity;
@@ -204,7 +204,7 @@ export const inventoryApi = {
     return data;
   },
 
-  updateCategory: async (id: string, input: { name?: string; description?: string | null; version: number }): Promise<{
+  UpdateCategory: async (id: string, input: { name?: string; description?: string | null; version: number }): Promise<{
     code: number;
     message: string;
     data: CategoryEntity;
@@ -213,7 +213,7 @@ export const inventoryApi = {
     return data;
   },
 
-  deleteCategory: async (id: string, input: { version: number }): Promise<{
+  DeleteCategory: async (id: string, input: { version: number }): Promise<{
     code: number;
     message: string;
   }> => {

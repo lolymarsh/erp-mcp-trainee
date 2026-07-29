@@ -34,12 +34,12 @@ export interface LoginFieldErrors {
 }
 
 export const authApi = {
-  login: async (input: LoginInput): Promise<LoginResult> => {
+  Login: async (input: LoginInput): Promise<LoginResult> => {
     const { data } = await api.post('/auth/login', input);
     return data.data;
   },
 
-  getProfile: async (): Promise<UserResponse> => {
+  GetProfile: async (): Promise<UserResponse> => {
     const { data } = await api.get('/auth/profile');
     return data.data;
   },

@@ -1,20 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from "express";
-import { registerUserRoutes } from "./route";
+import { RegisterUserRoutes } from "./route";
 
 describe("User routes", () => {
   it("should return a Router instance", () => {
     const handler = {
-      login: jest.fn(),
-      getProfile: jest.fn(),
-      createUser: jest.fn(),
-      filter: jest.fn(),
-      update: jest.fn(),
-      softDelete: jest.fn(),
-      deactivate: jest.fn(),
+      Login: jest.fn(),
+      GetProfile: jest.fn(),
+      CreateUser: jest.fn(),
+      Filter: jest.fn(),
+      Update: jest.fn(),
+      SoftDelete: jest.fn(),
+      Deactivate: jest.fn(),
     } as any;
     const auth = (() => jest.fn()) as any;
-    const router = registerUserRoutes(handler, auth);
+    const router = RegisterUserRoutes(handler, auth);
     expect(router).toBeInstanceOf(Router);
   });
 });

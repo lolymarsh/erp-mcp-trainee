@@ -15,17 +15,17 @@ import type {
 } from "./entity";
 
 export interface IDashboardRepository {
-  getTodaySales(): Promise<TodaySalesData>;
-  getTodayJobs(): Promise<TodayJobsData>;
-  getLowStockProducts(): Promise<LowStockProduct[]>;
-  getMonthlySales(): Promise<MonthlySalesItem[]>;
-  getTopTechnicians(): Promise<TopTechnicianItem[]>;
+  GetTodaySales(): Promise<TodaySalesData>;
+  GetTodayJobs(): Promise<TodayJobsData>;
+  GetLowStockProducts(): Promise<LowStockProduct[]>;
+  GetMonthlySales(): Promise<MonthlySalesItem[]>;
+  GetTopTechnicians(): Promise<TopTechnicianItem[]>;
 }
 
 export class DashboardRepository implements IDashboardRepository {
   constructor(private db: MySql2Database) {}
 
-  async getTodaySales(): Promise<TodaySalesData> {
+  async GetTodaySales(): Promise<TodaySalesData> {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -54,7 +54,7 @@ export class DashboardRepository implements IDashboardRepository {
     };
   }
 
-  async getTodayJobs(): Promise<TodayJobsData> {
+  async GetTodayJobs(): Promise<TodayJobsData> {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -98,7 +98,7 @@ export class DashboardRepository implements IDashboardRepository {
     return { total, completed, inProgress, queued };
   }
 
-  async getLowStockProducts(): Promise<LowStockProduct[]> {
+  async GetLowStockProducts(): Promise<LowStockProduct[]> {
     const result = await this.db
       .select({
         id: products.id,
@@ -123,7 +123,7 @@ export class DashboardRepository implements IDashboardRepository {
     }));
   }
 
-  async getMonthlySales(): Promise<MonthlySalesItem[]> {
+  async GetMonthlySales(): Promise<MonthlySalesItem[]> {
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
@@ -155,7 +155,7 @@ export class DashboardRepository implements IDashboardRepository {
     }));
   }
 
-  async getTopTechnicians(): Promise<TopTechnicianItem[]> {
+  async GetTopTechnicians(): Promise<TopTechnicianItem[]> {
     const result = await this.db
       .select({
         name: users.displayName,

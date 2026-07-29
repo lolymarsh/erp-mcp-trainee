@@ -14,7 +14,7 @@ import type {
 } from "./schema";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import {
   NotFoundError,
   ConflictError,
@@ -24,39 +24,39 @@ import type { IAuditLogService } from "../audit/service";
 import type { AuditMeta } from "../../shared/middleware/auditMeta";
 
 export interface ICustomerService {
-  filter(
+  Filter(
     input: FilterRequestInput,
   ): Promise<{ data: CustomerResponse[]; pagination: PaginationResponse }>;
-  getById(id: string): Promise<CustomerWithVehiclesResponse>;
-  create(
+  GetById(id: string): Promise<CustomerWithVehiclesResponse>;
+  Create(
     input: CreateCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CustomerResponse>;
-  update(
+  Update(
     id: string,
     input: UpdateCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CustomerResponse>;
-  softDelete(
+  SoftDelete(
     id: string,
     input: DeleteCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void>;
-  createVehicle(
+  CreateVehicle(
     input: CreateVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<VehicleResponse>;
-  updateVehicle(
+  UpdateVehicle(
     id: string,
     input: UpdateVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<VehicleResponse>;
-  deleteVehicle(
+  DeleteVehicle(
     id: string,
     input: DeleteVehicleInput,
     userId: string,
@@ -70,11 +70,11 @@ export class CustomerService implements ICustomerService {
     private auditService: IAuditLogService,
   ) {}
 
-  async filter(
+  async Filter(
     input: FilterRequestInput,
   ): Promise<{ data: CustomerResponse[]; pagination: PaginationResponse }> {
-    const result = await this.repo.findFiltered(input);
-    const pagination = calculatePagination(
+    const result = await this.repo.FindFiltered(input);
+    const pagination = CalculatePagination(
       input.page,
       input.pageSize,
       result.total,
@@ -86,8 +86,8 @@ export class CustomerService implements ICustomerService {
     };
   }
 
-  async getById(id: string): Promise<CustomerWithVehiclesResponse> {
-    const result = await this.repo.findByIdWithVehicles(id);
+  async GetById(id: string): Promise<CustomerWithVehiclesResponse> {
+    const result = await this.repo.FindByIdWithVehicles(id);
     if (!result) throw new NotFoundError("Customer not found");
 
     return {
@@ -96,15 +96,15 @@ export class CustomerService implements ICustomerService {
     };
   }
 
-  async create(
+  async Create(
     input: CreateCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CustomerResponse> {
-    const existing = await this.repo.findByPhone(input.phone);
+    const existing = await this.repo.FindByPhone(input.phone);
     if (existing) throw new AppError(409, "Phone number already exists");
 
-    const entity = await this.repo.create({
+    const entity = await this.repo.Create({
       id: uuidv4(),
       firstName: input.firstName,
       lastName: input.lastName,
@@ -114,7 +114,7 @@ export class CustomerService implements ICustomerService {
       version: 1,
     });
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "customers",
       entity.id,
@@ -127,29 +127,29 @@ export class CustomerService implements ICustomerService {
     return this.toResponse(entity);
   }
 
-  async update(
+  async Update(
     id: string,
     input: UpdateCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<CustomerResponse> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("Customer not found");
 
     const { version, ...fields } = input;
 
     const phone = fields.phone;
     if (typeof phone === "string") {
-      const existingPhone = await this.repo.findByPhone(phone);
+      const existingPhone = await this.repo.FindByPhone(phone);
       if (existingPhone && existingPhone.id !== id) {
         throw new AppError(409, "Phone number already exists");
       }
     }
 
-    const updated = await this.repo.update(id, fields, version);
+    const updated = await this.repo.Update(id, fields, version);
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "customers",
       id,
@@ -162,20 +162,20 @@ export class CustomerService implements ICustomerService {
     return this.toResponse(updated);
   }
 
-  async softDelete(
+  async SoftDelete(
     id: string,
     input: DeleteCustomerInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void> {
-    const before = await this.repo.findById(id);
+    const before = await this.repo.FindById(id);
     if (!before) throw new NotFoundError("Customer not found");
 
-    const deleted = await this.repo.softDelete(id, input.version);
+    const deleted = await this.repo.SoftDelete(id, input.version);
     if (!deleted) throw new ConflictError("Version mismatch or customer not found");
 
-    const after = await this.repo.findById(id);
-    this.auditService.insertAuditLog(
+    const after = await this.repo.FindById(id);
+    this.auditService.Insert(
       "DELETE",
       "customers",
       id,
@@ -186,15 +186,15 @@ export class CustomerService implements ICustomerService {
     );
   }
 
-  async createVehicle(
+  async CreateVehicle(
     input: CreateVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<VehicleResponse> {
-    const customer = await this.repo.findById(input.customerId);
+    const customer = await this.repo.FindById(input.customerId);
     if (!customer) throw new NotFoundError("Customer not found");
 
-    const entity = await this.repo.createVehicle({
+    const entity = await this.repo.CreateVehicle({
       id: uuidv4(),
       customerId: input.customerId,
       licensePlate: input.licensePlate,
@@ -205,7 +205,7 @@ export class CustomerService implements ICustomerService {
       fuelType: input.fuelType ?? null,
     });
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "vehicles",
       entity.id,
@@ -217,16 +217,16 @@ export class CustomerService implements ICustomerService {
     return this.toVehicleResponse(entity);
   }
 
-  async updateVehicle(
+  async UpdateVehicle(
     id: string,
     input: UpdateVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<VehicleResponse> {
-    const existing = await this.repo.findVehicleById(id);
+    const existing = await this.repo.FindVehicleById(id);
     if (!existing) throw new NotFoundError("Vehicle not found");
 
-    const updated = await this.repo.updateVehicle(id, {
+    const updated = await this.repo.UpdateVehicle(id, {
       licensePlate: input.licensePlate,
       brand: input.brand,
       model: input.model,
@@ -236,7 +236,7 @@ export class CustomerService implements ICustomerService {
     });
     if (!updated) throw new NotFoundError("Vehicle not found after update");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "vehicles",
       id,
@@ -248,17 +248,17 @@ export class CustomerService implements ICustomerService {
     return this.toVehicleResponse(updated);
   }
 
-  async deleteVehicle(
+  async DeleteVehicle(
     id: string,
     _input: DeleteVehicleInput,
     userId: string,
     meta?: AuditMeta,
   ): Promise<void> {
-    const existing = await this.repo.findVehicleById(id);
+    const existing = await this.repo.FindVehicleById(id);
     if (!existing) throw new NotFoundError("Vehicle not found");
 
-    await this.repo.deleteVehicle(id);
-    this.auditService.insertAuditLog(
+    await this.repo.DeleteVehicle(id);
+    this.auditService.Insert(
       "DELETE",
       "vehicles",
       id,

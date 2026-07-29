@@ -14,7 +14,7 @@ describe("ChatMongoRepository", () => {
     repo = new ChatMongoRepository(mongoDb as unknown as Db);
   });
 
-  describe("save", () => {
+  describe("Save", () => {
     it("should insert a message into collection", async () => {
       const insertOne = jest.fn().mockResolvedValue({ insertedId: "msg-1" });
       mongoDb.collection.mockReturnValue({ insertOne });
@@ -31,14 +31,14 @@ describe("ChatMongoRepository", () => {
         createdAt: new Date(),
       };
 
-      await repo.save(message);
+      await repo.Save(message);
 
       expect(mongoDb.collection).toHaveBeenCalledWith(collection);
       expect(insertOne).toHaveBeenCalledWith(message);
     });
   });
 
-  describe("getHistory", () => {
+  describe("GetHistory", () => {
     it("should return documents sorted by createdAt desc", async () => {
       const docs = [
         { _id: "msg-2", createdAt: new Date("2026-07-19") },
@@ -51,7 +51,7 @@ describe("ChatMongoRepository", () => {
 
       mongoDb.collection.mockReturnValue({ find });
 
-      const result = await repo.getHistory("session-1", 10);
+      const result = await repo.GetHistory("session-1", 10);
 
       expect(result).toEqual(docs);
       expect(find).toHaveBeenCalledWith({ sessionId: "session-1" });
@@ -68,7 +68,7 @@ describe("ChatMongoRepository", () => {
 
       mongoDb.collection.mockReturnValue({ find });
 
-      await repo.getHistory("session-1");
+      await repo.GetHistory("session-1");
 
       expect(limit).toHaveBeenCalledWith(50);
     });

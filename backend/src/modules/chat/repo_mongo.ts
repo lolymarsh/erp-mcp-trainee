@@ -2,10 +2,10 @@ import type { Db } from "mongodb";
 import type { ChatMessageDocument, SessionSummary } from "./entity";
 
 export interface IChatMongoRepository {
-  save(message: Omit<ChatMessageDocument, "_id">): Promise<void>;
-  getHistory(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
-  getHistoryAsc(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
-  listSessions(userId: string, limit?: number): Promise<SessionSummary[]>;
+  Save(message: Omit<ChatMessageDocument, "_id">): Promise<void>;
+  GetHistory(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
+  GetHistoryAsc(sessionId: string, limit?: number): Promise<ChatMessageDocument[]>;
+  ListSessions(userId: string, limit?: number): Promise<SessionSummary[]>;
 }
 
 export class ChatMongoRepository implements IChatMongoRepository {
@@ -13,11 +13,11 @@ export class ChatMongoRepository implements IChatMongoRepository {
 
   constructor(private mongoDb: Db) {}
 
-  async save(message: Omit<ChatMessageDocument, "_id">): Promise<void> {
+  async Save(message: Omit<ChatMessageDocument, "_id">): Promise<void> {
     await this.mongoDb.collection(this.collection).insertOne(message);
   }
 
-  async getHistory(
+  async GetHistory(
     sessionId: string,
     limit = 50,
   ): Promise<ChatMessageDocument[]> {
@@ -30,7 +30,7 @@ export class ChatMongoRepository implements IChatMongoRepository {
     return docs;
   }
 
-  async getHistoryAsc(
+  async GetHistoryAsc(
     sessionId: string,
     limit = 20,
   ): Promise<ChatMessageDocument[]> {
@@ -43,7 +43,7 @@ export class ChatMongoRepository implements IChatMongoRepository {
     return docs;
   }
 
-  async listSessions(
+  async ListSessions(
     userId: string,
     limit = 50,
   ): Promise<SessionSummary[]> {

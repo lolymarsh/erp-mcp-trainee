@@ -3,10 +3,10 @@ import type { AuditLogDocument } from "./entity";
 import type { FilterAuditLogInput, AuditLogFilterItem } from "./schema";
 
 export interface IAuditLogRepository {
-  insertAuditLog(doc: AuditLogDocument): Promise<void>;
-  findByFilters(filters: FilterAuditLogInput): Promise<AuditLogDocument[]>;
-  countByFilters(filters: FilterAuditLogInput): Promise<number>;
-  findByRecord(
+  Insert(doc: AuditLogDocument): Promise<void>;
+  FindByFilters(filters: FilterAuditLogInput): Promise<AuditLogDocument[]>;
+  CountByFilters(filters: FilterAuditLogInput): Promise<number>;
+  FindByRecord(
     tableName: string,
     recordId: string,
     limit?: number,
@@ -20,11 +20,11 @@ export class AuditLogRepository implements IAuditLogRepository {
     this.collection = mongoDb.collection<AuditLogDocument>("audit_logs");
   }
 
-  async insertAuditLog(doc: AuditLogDocument): Promise<void> {
+  async Insert(doc: AuditLogDocument): Promise<void> {
     await this.collection.insertOne(doc);
   }
 
-  async findByFilters(
+  async FindByFilters(
     filters: FilterAuditLogInput,
   ): Promise<AuditLogDocument[]> {
     const query = this.buildFilterQuery(filters.filters ?? []);
@@ -43,12 +43,12 @@ export class AuditLogRepository implements IAuditLogRepository {
       .toArray();
   }
 
-  async countByFilters(filters: FilterAuditLogInput): Promise<number> {
+  async CountByFilters(filters: FilterAuditLogInput): Promise<number> {
     const query = this.buildFilterQuery(filters.filters ?? []);
     return this.collection.countDocuments(query);
   }
 
-  async findByRecord(
+  async FindByRecord(
     tableName: string,
     recordId: string,
     limit = 50,

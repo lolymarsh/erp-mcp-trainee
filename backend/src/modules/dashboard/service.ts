@@ -6,8 +6,8 @@ const CACHE_KEY = "dashboard:summary";
 const CACHE_TTL = 300;
 
 export interface IDashboardService {
-  getSummary(): Promise<DashboardSummary>;
-  invalidateCache(): Promise<void>;
+  GetSummary(): Promise<DashboardSummary>;
+  InvalidateCache(): Promise<void>;
 }
 
 export class DashboardService implements IDashboardService {
@@ -16,7 +16,7 @@ export class DashboardService implements IDashboardService {
     private redis: Redis,
   ) {}
 
-  async getSummary(): Promise<DashboardSummary> {
+  async GetSummary(): Promise<DashboardSummary> {
     const cached = await this.redis.get(CACHE_KEY);
     if (cached) {
       return JSON.parse(cached) as DashboardSummary;
@@ -24,11 +24,11 @@ export class DashboardService implements IDashboardService {
 
     const [todaySales, todayJobs, lowStockProducts, monthlySales, topTechnicians] =
       await Promise.all([
-        this.repo.getTodaySales(),
-        this.repo.getTodayJobs(),
-        this.repo.getLowStockProducts(),
-        this.repo.getMonthlySales(),
-        this.repo.getTopTechnicians(),
+        this.repo.GetTodaySales(),
+        this.repo.GetTodayJobs(),
+        this.repo.GetLowStockProducts(),
+        this.repo.GetMonthlySales(),
+        this.repo.GetTopTechnicians(),
       ]);
 
     const summary: DashboardSummary = {
@@ -44,7 +44,7 @@ export class DashboardService implements IDashboardService {
     return summary;
   }
 
-  async invalidateCache(): Promise<void> {
+  async InvalidateCache(): Promise<void> {
     await this.redis.del(CACHE_KEY);
   }
 }

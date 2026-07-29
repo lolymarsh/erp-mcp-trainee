@@ -13,7 +13,7 @@ import type {
 import type { UserEntity } from "./entity";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 import type { PaginationResponse } from "../../shared/response/handler";
-import { calculatePagination } from "../../shared/response/handler";
+import { CalculatePagination } from "../../shared/response/handler";
 import {
   UnauthorizedError,
   AppError,
@@ -26,29 +26,29 @@ import type { AuditMeta } from "../../shared/middleware/auditMeta";
 const JWT_SECRET = process.env.JWT_SECRET || "versus-dev-secret-key";
 
 export interface IUserService {
-  login(input: LoginInput): Promise<{ token: string; user: UserResponse }>;
-  getProfile(userId: string): Promise<UserResponse>;
-  createUser(
+  Login(input: LoginInput): Promise<{ token: string; user: UserResponse }>;
+  GetProfile(userId: string): Promise<UserResponse>;
+  CreateUser(
     input: CreateUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<UserResponse>;
-  filter(
+  Filter(
     input: FilterRequestInput,
   ): Promise<{ data: UserResponse[]; pagination: PaginationResponse }>;
-  update(
+  Update(
     id: string,
     input: UpdateUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<UserResponse>;
-  softDelete(
+  SoftDelete(
     id: string,
     input: DeleteUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<void>;
-  deactivate(
+  Deactivate(
     id: string,
     adminUserId: string,
     meta?: AuditMeta,
@@ -62,10 +62,10 @@ export class UserService implements IUserService {
     private auditService: IAuditLogService,
   ) {}
 
-  async login(
+  async Login(
     input: LoginInput,
   ): Promise<{ token: string; user: UserResponse }> {
-    const user = await this.repo.findByUsername(input.username);
+    const user = await this.repo.FindByUsername(input.username);
     if (!user) throw new UnauthorizedError("Invalid credentials");
 
     const valid = await bcrypt.compare(input.password, user.passwordHash);
@@ -82,22 +82,22 @@ export class UserService implements IUserService {
     return { token, user: this.toResponse(user) };
   }
 
-  async getProfile(userId: string): Promise<UserResponse> {
-    const user = await this.repo.findById(userId);
+  async GetProfile(userId: string): Promise<UserResponse> {
+    const user = await this.repo.FindById(userId);
     if (!user) throw new NotFoundError("User not found");
     return this.toResponse(user);
   }
 
-  async createUser(
+  async CreateUser(
     input: CreateUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<UserResponse> {
-    const existing = await this.repo.findByUsername(input.username);
+    const existing = await this.repo.FindByUsername(input.username);
     if (existing) throw new AppError(409, "Username already exists");
 
     const passwordHash = await bcrypt.hash(input.password, 12);
-    const user = await this.repo.create({
+    const user = await this.repo.Create({
       id: uuidv4(),
       username: input.username,
       passwordHash,
@@ -107,7 +107,7 @@ export class UserService implements IUserService {
       version: 1,
     });
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "CREATE",
       "users",
       user.id,
@@ -120,11 +120,11 @@ export class UserService implements IUserService {
     return this.toResponse(user);
   }
 
-  async filter(
+  async Filter(
     input: FilterRequestInput,
   ): Promise<{ data: UserResponse[]; pagination: PaginationResponse }> {
-    const { data, total } = await this.repo.findFiltered(input);
-    const pagination = calculatePagination(input.page, input.pageSize, total);
+    const { data, total } = await this.repo.FindFiltered(input);
+    const pagination = CalculatePagination(input.page, input.pageSize, total);
 
     return {
       data: data.map((u) => this.toResponse(u)),
@@ -132,13 +132,13 @@ export class UserService implements IUserService {
     };
   }
 
-  async update(
+  async Update(
     id: string,
     input: UpdateUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<UserResponse> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("User not found");
 
     const updateData: Partial<UserEntity> = {};
@@ -146,10 +146,10 @@ export class UserService implements IUserService {
     if (input.role !== undefined) updateData.role = input.role;
     if (input.isActive !== undefined) updateData.isActive = input.isActive;
 
-    const updated = await this.repo.update(id, updateData, input.version);
+    const updated = await this.repo.Update(id, updateData, input.version);
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "UPDATE",
       "users",
       id,
@@ -161,19 +161,19 @@ export class UserService implements IUserService {
     return this.toResponse(updated);
   }
 
-  async softDelete(
+  async SoftDelete(
     id: string,
     input: DeleteUserInput,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<void> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("User not found");
 
-    const deleted = await this.repo.softDelete(id, input.version);
+    const deleted = await this.repo.SoftDelete(id, input.version);
     if (!deleted) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       "DELETE",
       "users",
       id,
@@ -184,23 +184,23 @@ export class UserService implements IUserService {
     );
   }
 
-  async deactivate(
+  async Deactivate(
     id: string,
     adminUserId: string,
     meta?: AuditMeta,
   ): Promise<UserResponse> {
-    const existing = await this.repo.findById(id);
+    const existing = await this.repo.FindById(id);
     if (!existing) throw new NotFoundError("User not found");
 
     const newStatus = !existing.isActive;
-    const updated = await this.repo.update(
+    const updated = await this.repo.Update(
       id,
       { isActive: newStatus } as Partial<UserEntity>,
       existing.version,
     );
     if (!updated) throw new ConflictError("Version mismatch");
 
-    this.auditService.insertAuditLog(
+    this.auditService.Insert(
       newStatus ? "ACTIVATE" : "DEACTIVATE",
       "users",
       id,

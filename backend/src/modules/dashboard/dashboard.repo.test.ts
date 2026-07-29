@@ -23,13 +23,13 @@ describe("DashboardRepository", () => {
     repo = new DashboardRepository(db);
   });
 
-  describe("getTodaySales", () => {
+  describe("GetTodaySales", () => {
     it("should return sales data for today", async () => {
       db.where = jest.fn().mockResolvedValue([
         { amount: "85000.00", count: 6 },
       ]);
 
-      const result = await repo.getTodaySales();
+      const result = await repo.GetTodaySales();
 
       expect(result.amount).toBe("85000.00");
       expect(result.count).toBe(6);
@@ -38,14 +38,14 @@ describe("DashboardRepository", () => {
     it("should return zeros when no sales today", async () => {
       db.where = jest.fn().mockResolvedValue([]);
 
-      const result = await repo.getTodaySales();
+      const result = await repo.GetTodaySales();
 
       expect(result.amount).toBe("0.00");
       expect(result.count).toBe(0);
     });
   });
 
-  describe("getTodayJobs", () => {
+  describe("GetTodayJobs", () => {
     it("should return job counts grouped by status", async () => {
       db.where = jest.fn().mockReturnThis();
       db.groupBy = jest.fn().mockResolvedValue([
@@ -54,7 +54,7 @@ describe("DashboardRepository", () => {
         { status: "QUEUED", count: 5 },
       ]);
 
-      const result = await repo.getTodayJobs();
+      const result = await repo.GetTodayJobs();
 
       expect(result.total).toBe(10);
       expect(result.completed).toBe(3);
@@ -66,7 +66,7 @@ describe("DashboardRepository", () => {
       db.where = jest.fn().mockReturnThis();
       db.groupBy = jest.fn().mockResolvedValue([]);
 
-      const result = await repo.getTodayJobs();
+      const result = await repo.GetTodayJobs();
 
       expect(result.total).toBe(0);
       expect(result.completed).toBe(0);
@@ -80,7 +80,7 @@ describe("DashboardRepository", () => {
         { status: "COMPLETED", count: 2 },
       ]);
 
-      const result = await repo.getTodayJobs();
+      const result = await repo.GetTodayJobs();
 
       expect(result.total).toBe(2);
       expect(result.completed).toBe(2);
@@ -89,7 +89,7 @@ describe("DashboardRepository", () => {
     });
   });
 
-  describe("getLowStockProducts", () => {
+  describe("GetLowStockProducts", () => {
     it("should return products where stock < min stock", async () => {
       db.where = jest.fn().mockReturnThis();
       db.orderBy = jest.fn().mockResolvedValue([
@@ -97,7 +97,7 @@ describe("DashboardRepository", () => {
         { id: "p2", name: "Product B", current: 0, min: 3 },
       ]);
 
-      const result = await repo.getLowStockProducts();
+      const result = await repo.GetLowStockProducts();
 
       expect(result).toHaveLength(2);
       expect(result[0].current).toBe(2);
@@ -108,13 +108,13 @@ describe("DashboardRepository", () => {
       db.where = jest.fn().mockReturnThis();
       db.orderBy = jest.fn().mockResolvedValue([]);
 
-      const result = await repo.getLowStockProducts();
+      const result = await repo.GetLowStockProducts();
 
       expect(result).toHaveLength(0);
     });
   });
 
-  describe("getMonthlySales", () => {
+  describe("GetMonthlySales", () => {
     it("should return 12 months of sales data", async () => {
       db.where = jest.fn().mockReturnThis();
       db.groupBy = jest.fn().mockReturnThis();
@@ -122,7 +122,7 @@ describe("DashboardRepository", () => {
         { month: "2026-07", amount: "1250000.00" },
       ]);
 
-      const result = await repo.getMonthlySales();
+      const result = await repo.GetMonthlySales();
 
       expect(result.length).toBeGreaterThanOrEqual(12);
       expect(result.some((r) => r.month === "2026-07")).toBe(true);
@@ -130,7 +130,7 @@ describe("DashboardRepository", () => {
     });
   });
 
-  describe("getTopTechnicians", () => {
+  describe("GetTopTechnicians", () => {
     it("should return top 5 technicians", async () => {
       db.where = jest.fn().mockReturnThis();
       db.innerJoin = jest.fn().mockReturnThis();
@@ -142,7 +142,7 @@ describe("DashboardRepository", () => {
         { name: "สมหญิง", jobCount: 10, totalAmount: "120000.00" },
       ]);
 
-      const result = await repo.getTopTechnicians();
+      const result = await repo.GetTopTechnicians();
 
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe("สมชาย");
@@ -157,7 +157,7 @@ describe("DashboardRepository", () => {
       db.orderBy = jest.fn().mockReturnThis();
       db.limit = jest.fn().mockResolvedValue([]);
 
-      const result = await repo.getTopTechnicians();
+      const result = await repo.GetTopTechnicians();
 
       expect(result).toHaveLength(0);
     });

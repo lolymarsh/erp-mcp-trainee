@@ -63,7 +63,7 @@ export function useInventoryList(): UseInventoryListReturn {
         ];
       }
 
-      const result = await inventoryApi.filter(params);
+      const result = await inventoryApi.Filter(params);
       setProducts(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -117,7 +117,7 @@ export function useLowStockAlerts(): UseLowStockAlertsReturn {
         sortName: 'currentStock',
       };
 
-      const result = await inventoryApi.filter(params);
+      const result = await inventoryApi.Filter(params);
       setLowStockProducts(
         result.data.filter((p) => p.currentStock <= p.minStock),
       );
@@ -161,7 +161,7 @@ export function useInventoryDetail(id: string): UseInventoryDetailReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await inventoryApi.getById(id);
+      const result = await inventoryApi.GetById(id);
       setProduct(result.data);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load product';
@@ -219,7 +219,7 @@ export function useProductCreate(onSuccess: () => void): UseProductCreateReturn 
     setError(null);
     setFieldErrors({});
     try {
-      await inventoryApi.create(parsed.data);
+      await inventoryApi.Create(parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -297,7 +297,7 @@ export function useProductUpdate(id: string, onSuccess: () => void): UseProductU
     setError(null);
     setFieldErrors({});
     try {
-      await inventoryApi.update(id, { ...parsed.data, version });
+      await inventoryApi.Update(id, { ...parsed.data, version });
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -357,7 +357,7 @@ export function useStockAdjust(id: string, onSuccess: () => void): UseStockAdjus
     setError(null);
     setFieldErrors({});
     try {
-      await inventoryApi.adjustStock(id, parsed.data);
+      await inventoryApi.AdjustStock(id, parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -400,7 +400,7 @@ export function useProductDelete(
     setLoading(true);
     setError(null);
     try {
-      await inventoryApi.softDelete(id, { version });
+      await inventoryApi.SoftDelete(id, { version });
       handleClose();
       onSuccess();
     } catch (err: unknown) {
@@ -457,7 +457,7 @@ export function useCategoryList(): UseCategoryListReturn {
         ];
       }
 
-      const result = await inventoryApi.filterCategories(params);
+      const result = await inventoryApi.FilterCategories(params);
       setCategories(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -527,7 +527,7 @@ export function useCategoryCreate(onSuccess: () => void): UseCategoryCreateRetur
     setError(null);
     setFieldErrors({});
     try {
-      await inventoryApi.createCategory(parsed.data);
+      await inventoryApi.CreateCategory(parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -602,7 +602,7 @@ export function useCategoryUpdate(onSuccess: () => void): UseCategoryUpdateRetur
     setError(null);
     setFieldErrors({});
     try {
-      await inventoryApi.updateCategory(editingId, { ...parsed.data, version });
+      await inventoryApi.UpdateCategory(editingId, { ...parsed.data, version });
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -662,7 +662,7 @@ export function useCategoryDelete(onSuccess: () => void): UseCategoryDeleteRetur
     setLoading(true);
     setError(null);
     try {
-      await inventoryApi.deleteCategory(deletingId, { version });
+      await inventoryApi.DeleteCategory(deletingId, { version });
       handleClose();
       onSuccess();
     } catch (err: unknown) {

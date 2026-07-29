@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type Redis from "ioredis";
-import { sendError } from "../response/handler";
+import { SendError } from "../response/handler";
 
 const JWT_SECRET = process.env.JWT_SECRET || "versus-dev-secret-key";
 
@@ -26,7 +26,7 @@ export type AuthMiddlewareFn = (
 
 export type ReturnedAuthMiddleware = AuthMiddlewareFn;
 
-export function createAuthMiddleware(redis: Redis): AuthMiddlewareFn {
+export function CreateAuthMiddleware(redis: Redis): AuthMiddlewareFn {
   return function authMiddleware(
     ...allowedRoles: ("ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN")[]
   ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
@@ -38,7 +38,7 @@ export function createAuthMiddleware(redis: Redis): AuthMiddlewareFn {
       try {
         const header = req.headers.authorization;
         if (!header?.startsWith("Bearer ")) {
-          sendError(res, 401, "Missing or invalid token");
+          SendError(res, 401, "Missing or invalid token");
           return;
         }
 
@@ -48,19 +48,19 @@ export function createAuthMiddleware(redis: Redis): AuthMiddlewareFn {
         const sessionKey = `session:${decoded.userId}`;
         const exists = await redis.exists(sessionKey);
         if (!exists) {
-          sendError(res, 401, "Session expired");
+          SendError(res, 401, "Session expired");
           return;
         }
 
         if (allowedRoles.length > 0 && !allowedRoles.includes(decoded.role)) {
-          sendError(res, 403, "Insufficient permissions");
+          SendError(res, 403, "Insufficient permissions");
           return;
         }
 
         req.user = decoded;
         next();
       } catch {
-        sendError(res, 401, "Invalid token");
+        SendError(res, 401, "Invalid token");
       }
     };
   };

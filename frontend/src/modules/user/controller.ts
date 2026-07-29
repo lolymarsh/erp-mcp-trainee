@@ -43,7 +43,7 @@ export function useUserList() {
         filters.push({ field: 'username', operator: 'contains', value: debouncedSearch });
       }
       const params: FilterParams = { page, pageSize: 20, sortBy: 'asc', sortName: 'displayName', filters };
-      const result = await userApi.filter(params);
+      const result = await userApi.Filter(params);
       setUsers(result.data);
       setPagination(result.pagination);
     } catch (err: unknown) {
@@ -82,7 +82,7 @@ export function useUserCreate(onSuccess: () => void) {
     setError(null);
     setFieldErrors({});
     try {
-      await userApi.create(parsed.data);
+      await userApi.Create(parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -132,7 +132,7 @@ export function useUserUpdate(onSuccess: () => void) {
     setError(null);
     setFieldErrors({});
     try {
-      await userApi.update(editingId, parsed.data);
+      await userApi.Update(editingId, parsed.data);
       onSuccess();
       handleClose();
     } catch (err: unknown) {
@@ -176,7 +176,7 @@ export function useUserDelete(onSuccess: () => void) {
     setLoading(true);
     setError(null);
     try {
-      await userApi.softDelete(deletingId, { version });
+      await userApi.SoftDelete(deletingId, { version });
       handleClose();
       onSuccess();
     } catch (err: unknown) {
@@ -202,7 +202,7 @@ export function useUserToggleActive(onSuccess: () => void) {
     setLoading(true);
     setError(null);
     try {
-      await userApi.deactivate(id);
+      await userApi.Deactivate(id);
       onSuccess();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to toggle user status');

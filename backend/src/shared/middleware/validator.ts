@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import type { ZodSchema } from "zod";
 import { ZodError } from "zod";
-import { sendError } from "../response/handler";
+import { SendError } from "../response/handler";
 
-export function validate(
+export function Validate(
   schema: ZodSchema,
   source: "body" | "query" | "params" = "body",
 ) {
@@ -17,10 +17,10 @@ export function validate(
         const message = err.issues
           .map((e) => `${e.path.join(".")}: ${e.message}`)
           .join(", ");
-        sendError(res, 400, message);
+        SendError(res, 400, message);
         return;
       }
-      sendError(res, 400, "Validation failed");
+      SendError(res, 400, "Validation failed");
     }
   };
 }

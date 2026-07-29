@@ -26,18 +26,18 @@ describe("DashboardHandler", () => {
 
   beforeEach(() => {
     svc = {
-      getSummary: jest.fn(),
-      invalidateCache: jest.fn(),
+      GetSummary: jest.fn(),
+      InvalidateCache: jest.fn(),
     };
     handler = new DashboardHandler(svc);
   });
 
-  describe("getSummary", () => {
+  describe("GetSummary", () => {
     it("should return 200 with summary on success", async () => {
-      svc.getSummary.mockResolvedValue(mockSummary);
+      svc.GetSummary.mockResolvedValue(mockSummary);
       const { req, res } = mockReqRes();
 
-      await handler.getSummary(req, res);
+      await handler.GetSummary(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -48,10 +48,10 @@ describe("DashboardHandler", () => {
     });
 
     it("should handle AppError", async () => {
-      svc.getSummary.mockRejectedValue(new AppError(500, "Dashboard error", { reason: "db" }));
+      svc.GetSummary.mockRejectedValue(new AppError(500, "Dashboard error", { reason: "db" }));
       const { req, res } = mockReqRes();
 
-      await handler.getSummary(req, res);
+      await handler.GetSummary(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
@@ -62,10 +62,10 @@ describe("DashboardHandler", () => {
     });
 
     it("should handle unexpected error as 500", async () => {
-      svc.getSummary.mockRejectedValue(new Error("unexpected"));
+      svc.GetSummary.mockRejectedValue(new Error("unexpected"));
       const { req, res } = mockReqRes();
 
-      await handler.getSummary(req, res);
+      await handler.GetSummary(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({

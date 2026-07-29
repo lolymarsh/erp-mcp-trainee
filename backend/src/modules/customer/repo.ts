@@ -20,15 +20,15 @@ import type { CustomerEntity, VehicleEntity } from "./entity";
 import type { FilterRequestInput } from "../../shared/pagination/schema";
 
 export interface ICustomerRepository {
-  findFiltered(
+  FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: CustomerEntity[]; total: number }>;
-  findById(id: string): Promise<CustomerEntity | null>;
-  findByIdWithVehicles(
+  FindById(id: string): Promise<CustomerEntity | null>;
+  FindByIdWithVehicles(
     id: string,
   ): Promise<{ customer: CustomerEntity; vehicles: VehicleEntity[] } | null>;
-  findByPhone(phone: string): Promise<CustomerEntity | null>;
-  create(data: {
+  FindByPhone(phone: string): Promise<CustomerEntity | null>;
+  Create(data: {
     id: string;
     firstName: string;
     lastName: string;
@@ -37,7 +37,7 @@ export interface ICustomerRepository {
     address: string | null;
     version: number;
   }): Promise<CustomerEntity>;
-  update(
+  Update(
     id: string,
     data: Partial<
       Pick<
@@ -47,9 +47,9 @@ export interface ICustomerRepository {
     >,
     version: number,
   ): Promise<CustomerEntity | null>;
-  softDelete(id: string, version: number): Promise<boolean>;
-  findVehicleById(id: string): Promise<VehicleEntity | null>;
-  createVehicle(data: {
+  SoftDelete(id: string, version: number): Promise<boolean>;
+  FindVehicleById(id: string): Promise<VehicleEntity | null>;
+  CreateVehicle(data: {
     id: string;
     customerId: string;
     licensePlate: string;
@@ -59,7 +59,7 @@ export interface ICustomerRepository {
     engineType: string | null;
     fuelType: string | null;
   }): Promise<VehicleEntity>;
-  updateVehicle(
+  UpdateVehicle(
     id: string,
     data: {
       licensePlate?: string;
@@ -70,13 +70,13 @@ export interface ICustomerRepository {
       fuelType?: string | null;
     },
   ): Promise<VehicleEntity | null>;
-  deleteVehicle(id: string): Promise<boolean>;
+  DeleteVehicle(id: string): Promise<boolean>;
 }
 
 export class CustomerRepository implements ICustomerRepository {
   constructor(private db: MySql2Database) {}
 
-  async findFiltered(
+  async FindFiltered(
     input: FilterRequestInput,
   ): Promise<{ data: CustomerEntity[]; total: number }> {
     const conditions = this.buildFilterConditions(input);
@@ -146,7 +146,7 @@ export class CustomerRepository implements ICustomerRepository {
     return conditions;
   }
 
-  async findById(id: string): Promise<CustomerEntity | null> {
+  async FindById(id: string): Promise<CustomerEntity | null> {
     const result = await this.db
       .select()
       .from(customers)
@@ -157,10 +157,10 @@ export class CustomerRepository implements ICustomerRepository {
     return result[0];
   }
 
-  async findByIdWithVehicles(
+  async FindByIdWithVehicles(
     id: string,
   ): Promise<{ customer: CustomerEntity; vehicles: VehicleEntity[] } | null> {
-    const customerRow = await this.findById(id);
+    const customerRow = await this.FindById(id);
     if (!customerRow) return null;
 
     const vehicleRows = await this.db
@@ -174,7 +174,7 @@ export class CustomerRepository implements ICustomerRepository {
     };
   }
 
-  async findByPhone(phone: string): Promise<CustomerEntity | null> {
+  async FindByPhone(phone: string): Promise<CustomerEntity | null> {
     const result = await this.db
       .select()
       .from(customers)
@@ -185,7 +185,7 @@ export class CustomerRepository implements ICustomerRepository {
     return result[0];
   }
 
-  async create(data: {
+  async Create(data: {
     id: string;
     firstName: string;
     lastName: string;
@@ -204,7 +204,7 @@ export class CustomerRepository implements ICustomerRepository {
     return created[0];
   }
 
-  async update(
+  async Update(
     id: string,
     data: Partial<
       Pick<
@@ -230,7 +230,7 @@ export class CustomerRepository implements ICustomerRepository {
     return updated[0];
   }
 
-  async softDelete(id: string, version: number): Promise<boolean> {
+  async SoftDelete(id: string, version: number): Promise<boolean> {
     const result = await this.db
       .update(customers)
       .set({
@@ -258,7 +258,7 @@ export class CustomerRepository implements ICustomerRepository {
     }
   }
 
-  async findVehicleById(id: string): Promise<VehicleEntity | null> {
+  async FindVehicleById(id: string): Promise<VehicleEntity | null> {
     const result = await this.db
       .select()
       .from(vehicles)
@@ -267,7 +267,7 @@ export class CustomerRepository implements ICustomerRepository {
     return (result[0] as VehicleEntity) ?? null;
   }
 
-  async createVehicle(data: {
+  async CreateVehicle(data: {
     id: string;
     customerId: string;
     licensePlate: string;
@@ -287,10 +287,10 @@ export class CustomerRepository implements ICustomerRepository {
       engineType: data.engineType,
       fuelType: data.fuelType,
     });
-    return this.findVehicleById(data.id) as Promise<VehicleEntity>;
+    return this.FindVehicleById(data.id) as Promise<VehicleEntity>;
   }
 
-  async updateVehicle(
+  async UpdateVehicle(
     id: string,
     data: {
       licensePlate?: string;
@@ -314,10 +314,10 @@ export class CustomerRepository implements ICustomerRepository {
       .set(updateData)
       .where(eq(vehicles.id, id));
 
-    return this.findVehicleById(id);
+    return this.FindVehicleById(id);
   }
 
-  async deleteVehicle(id: string): Promise<boolean> {
+  async DeleteVehicle(id: string): Promise<boolean> {
     const result = await this.db
       .delete(vehicles)
       .where(eq(vehicles.id, id));

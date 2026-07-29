@@ -26,7 +26,7 @@ export function useAuth() {
     setLoading(true);
     setError(null);
     try {
-      const result = await authApi.login(input);
+      const result = await authApi.Login(input);
       storeLogin(result.token, result.user);
       navigate('/');
     } catch (err: unknown) {

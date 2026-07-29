@@ -48,7 +48,7 @@ export interface AuditLogFilterParams {
 }
 
 export const auditApi = {
-  getDetail: async (
+  GetDetail: async (
     tableName: string,
     recordId: string,
   ): Promise<{
@@ -62,7 +62,7 @@ export const auditApi = {
     return data;
   },
 
-  filter: async (
+  Filter: async (
     params: AuditLogFilterParams,
   ): Promise<{
     code: number;

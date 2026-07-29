@@ -79,14 +79,14 @@ import { authMiddleware } from '../../shared/middleware/auth';
 import { validate } from '../../shared/middleware/validator';
 import { create{Module}Schema, update{Module}Schema } from './schema';
 
-export function register{Module}Routes(handler: {Module}Handler): Router {
+export function Register{Module}Routes(handler: {Module}Handler): Router {
   const router = Router();
 
-  router.post('/filter', authMiddleware, handler.filter);
-  router.get('/:id', authMiddleware, handler.getById);
-  router.post('/', authMiddleware, validate(create{Module}Schema), handler.create);
-  router.patch('/:id', authMiddleware, validate(update{Module}Schema), handler.update);
-  router.delete('/:id', authMiddleware, handler.softDelete);
+  router.post('/filter', authMiddleware, handler.Filter);
+  router.get('/:id', authMiddleware, handler.GetById);
+  router.post('/', authMiddleware, validate(create{Module}Schema), handler.Create);
+  router.patch('/:id', authMiddleware, validate(update{Module}Schema), handler.Update);
+  router.delete('/:id', authMiddleware, handler.SoftDelete);
 
   return router;
 }
@@ -101,11 +101,11 @@ import { {Module}Service } from './modules/{module}/service';
 import { {Module}Repository } from './modules/{module}/repo';
 import { register{Module}Routes } from './modules/{module}/route';
 
-// In setupRoutes():
+// In SetupRoutes():
 const {module}Repo = new {Module}Repository();
 const {module}Svc = new {Module}Service({module}Repo);
 const {module}Handler = new {Module}Handler({module}Svc);
-app.use('/api/{module_plural}', register{Module}Routes({module}Handler));
+app.use('/api/{module_plural}', Register{Module}Routes({module}Handler));
 ```
 
 ### Step 9: Write Tests
@@ -126,10 +126,10 @@ import { api } from '../../config/api';
 export interface {Module}Entity { ... }
 
 export const {module}Api = {
-  getAll: async (params) => { const { data } = await api.post('/{module}/filter', params); return data; },
-  getById: async (id) => { const { data } = await api.get(`/{module}/${id}`); return data.data; },
-  create: async (input) => { const { data } = await api.post('/{module}', input); return data.data; },
-  update: async (id, input) => { const { data } = await api.patch(`/{module}/${id}`, input); return data.data; },
+  GetAll: async (params) => { const { data } = await api.post('/{module}/filter', params); return data; },
+  GetById: async (id) => { const { data } = await api.get(`/{module}/${id}`); return data.data; },
+  Create: async (input) => { const { data } = await api.post('/{module}', input); return data.data; },
+  Update: async (id, input) => { const { data } = await api.patch(`/{module}/${id}`, input); return data.data; },
 };
 ```
 
@@ -137,6 +137,7 @@ export const {module}Api = {
 
 ```ts
 // modules/{module}/controller.ts
+// React hooks exception: must start with "use" (React rule)
 export function use{Module}List() {
   const [items, setItems] = useState<{Module}Entity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,13 +166,32 @@ export function {Module}ListView({ items, loading, onSelect }: {Module}ListViewP
 
 ```tsx
 // router.tsx
+// Page components (public = PascalCase)
 function {Module}ListPage() {
-  const { items, loading } = use{Module}List();  // controller
+  const { items, loading } = use{Module}List();  // controller (React hook = useXxx)
   return <{Module}ListView items={items} loading={loading} />; // view
 }
 ```
 
-## 3. Checklist Before Commit
+## 3. Go-style Naming Rules (Summary)
+
+```
+Backend:
+  ✅ Public methods        → PascalCase    (GetById, CreateInvoice)
+  ✅ Private methods       → camelCase     (toResponse, buildFilter)
+  ✅ Module-scoped fns     → camelCase     (formatError, extractId)
+
+Frontend:
+  ✅ React hooks          → useXxx        (React requirement)
+  ✅ Public model fns     → PascalCase    (GetAll, Create)
+  ✅ Helper functions     → camelCase     (formatDate, parseInput)
+```
+
+Exception: React hooks (`useXxx`) are enforced by React's rules-of-hooks.
+
+## 4. Checklist Before Commit (Go-style naming)
+
+ยืนยันว่าใช้ naming convention ใหม่ (Go-style) ก่อน commit:
 
 ```
 [ ] entity.ts has `version`, `deletedAt`

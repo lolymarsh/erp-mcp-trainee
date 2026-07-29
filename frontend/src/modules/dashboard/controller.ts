@@ -23,7 +23,7 @@ export function useDashboard(): UseDashboardReturn {
     setLoading(true);
     setError(null);
     try {
-      const result = await dashboardApi.getSummary();
+      const result = await dashboardApi.GetSummary();
       setSummary(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load dashboard';

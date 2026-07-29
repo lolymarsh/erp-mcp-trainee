@@ -18,7 +18,7 @@ vi.mock('axios', () => ({
   },
 }));
 
-import { chatApi, getSessionId } from './model';
+import { chatApi, GetSessionId } from './model';
 
 describe('chatApi', () => {
   beforeEach(() => {
@@ -41,13 +41,13 @@ describe('chatApi', () => {
       },
     });
 
-    const result = await chatApi.send({ question: 'test', format: 'text' });
+    const result = await chatApi.Send({ question: 'test', format: 'text' });
 
     expect(mockApi.post).toHaveBeenCalledWith('/chat/send', {
       question: 'test',
       format: 'text',
     }, {
-      headers: { 'X-Session-Id': getSessionId() },
+      headers: { 'X-Session-Id': GetSessionId() },
     });
     expect(result.sql).toBe('SELECT 1');
     expect(result.resultCount).toBe(1);
@@ -73,11 +73,11 @@ describe('chatApi', () => {
       },
     });
 
-    const result = await chatApi.getHistory(10);
+    const result = await chatApi.GetHistory(10);
 
     expect(mockApi.get).toHaveBeenCalledWith('/chat/history', {
       params: { limit: 10 },
-      headers: { 'X-Session-Id': getSessionId() },
+      headers: { 'X-Session-Id': GetSessionId() },
     });
     expect(result).toHaveLength(1);
     expect(result[0].question).toBe('test');
@@ -86,11 +86,11 @@ describe('chatApi', () => {
   it('getHistory uses default limit of 50', async () => {
     mockApi.get.mockResolvedValue({ data: { data: [] } });
 
-    await chatApi.getHistory();
+    await chatApi.GetHistory();
 
     expect(mockApi.get).toHaveBeenCalledWith('/chat/history', {
       params: { limit: 50 },
-      headers: { 'X-Session-Id': getSessionId() },
+      headers: { 'X-Session-Id': GetSessionId() },
     });
   });
 
@@ -98,20 +98,20 @@ describe('chatApi', () => {
     const mockBlob = new Blob(['test'], { type: 'text/plain' });
     mockApi.post.mockResolvedValue({ data: mockBlob });
 
-    const result = await chatApi.exportResult({ question: 'test', format: 'csv' });
+    const result = await chatApi.ExportResult({ question: 'test', format: 'csv' });
 
     expect(mockApi.post).toHaveBeenCalledWith('/chat/export', {
       question: 'test',
       format: 'csv',
     }, {
       responseType: 'blob',
-      headers: { 'X-Session-Id': getSessionId() },
+      headers: { 'X-Session-Id': GetSessionId() },
     });
     expect(result).toBe(mockBlob);
   });
 
-  it('getSessionId returns a string', () => {
-    expect(typeof getSessionId()).toBe('string');
-    expect(getSessionId().length).toBeGreaterThan(0);
+  it('GetSessionId returns a string', () => {
+    expect(typeof GetSessionId()).toBe('string');
+    expect(GetSessionId().length).toBeGreaterThan(0);
   });
 });

@@ -407,7 +407,7 @@ export function ProductCreateDialog({
       setSellPrice('');
       setMinStock('0');
       setCurrentStock('0');
-      inventoryApi.listCategories().then((res) => {
+      inventoryApi.ListCategories().then((res) => {
         setCategories(res.data);
       }).catch(() => {
         setCategories([]);
@@ -574,7 +574,7 @@ export function ProductEditDialog({
       setSellPrice(initialValues.sellPrice != null ? String(initialValues.sellPrice) : '');
       setMinStock(initialValues.minStock != null ? String(initialValues.minStock) : '0');
       setCurrentStock(initialValues.currentStock != null ? String(initialValues.currentStock) : '0');
-      inventoryApi.listCategories().then((res) => {
+      inventoryApi.ListCategories().then((res) => {
         setCategories(res.data);
       }).catch(() => {
         setCategories([]);

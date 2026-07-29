@@ -51,7 +51,7 @@ describe("InvoiceRepository", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 1 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([mockInvoiceEntity]) });
 
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "eq", value: "PENDING" }] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [{ field: "paymentStatus", operator: "eq", value: "PENDING" }] });
       expect(result.total).toBe(1);
       expect(result.data).toHaveLength(1);
     });
@@ -60,7 +60,7 @@ describe("InvoiceRepository", () => {
       const countDb = { select: jest.fn().mockReturnThis(), from: jest.fn().mockReturnThis(), where: jest.fn().mockResolvedValue([{ count: 0 }]) };
       db.select = jest.fn((fields?: any) => fields?.count ? countDb : { from: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), offset: jest.fn().mockResolvedValue([]) });
 
-      const result = await repo.findFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [] });
+      const result = await repo.FindFiltered({ page: 1, pageSize: 20, sortBy: "desc", filters: [] });
       expect(result.total).toBe(0);
       expect(result.data).toHaveLength(0);
     });
@@ -69,13 +69,13 @@ describe("InvoiceRepository", () => {
   describe("findById", () => {
     it("should return invoice when found", async () => {
       db.limit = jest.fn().mockResolvedValue([mockInvoiceEntity]);
-      const result = await repo.findById("inv-1");
+      const result = await repo.FindById("inv-1");
       expect(result).toEqual(mockInvoiceEntity);
     });
 
     it("should return null when not found", async () => {
       db.limit = jest.fn().mockResolvedValue([]);
-      const result = await repo.findById("nonexistent");
+      const result = await repo.FindById("nonexistent");
       expect(result).toBeNull();
     });
   });
@@ -111,7 +111,7 @@ describe("InvoiceRepository", () => {
         items: [{ productId: "prod-1", quantity: 1, unitPrice: "5000.00", total: "5000.00" }],
       };
 
-      const result = await repo.createInvoice(input, mockTx as unknown as Tx);
+      const result = await repo.CreateInvoice(input, mockTx as unknown as Tx);
       expect(result.invoice.invoiceNumber).toBe("INV-20260101-001");
       expect(result.items).toHaveLength(1);
       expect(mockTx.insert).toHaveBeenCalled();
@@ -134,7 +134,7 @@ describe("InvoiceRepository", () => {
         items: [{ productId: "unknown-prod", quantity: 1, unitPrice: "100.00", total: "100.00" }],
       };
 
-      await expect(repo.createInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("PRODUCT_NOT_FOUND");
+      await expect(repo.CreateInvoice(input, mockTx as unknown as Tx)).rejects.toThrow("PRODUCT_NOT_FOUND");
     });
   });
 });

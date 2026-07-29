@@ -8,11 +8,11 @@ trigger: always_on
 
 ```ts
 export interface ICustomerService {
-  filterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }>;
-  getById(id: string): Promise<CustomerEntity>;
-  create(input: CreateCustomerInput): Promise<CustomerEntity>;
-  update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity>;
-  softDelete(id: string, version: number): Promise<void>;
+  FilterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }>;
+  GetById(id: string): Promise<CustomerEntity>;
+  Create(input: CreateCustomerInput): Promise<CustomerEntity>;
+  Update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity>;
+  SoftDelete(id: string, version: number): Promise<void>;
 }
 
 export class CustomerService implements ICustomerService {
@@ -25,23 +25,23 @@ export class CustomerService implements ICustomerService {
 ## 2. CRUD Pattern
 
 ```ts
-async getById(id: string): Promise<CustomerEntity> {
-  const customer = await this.repo.findById(id);
+async GetById(id: string): Promise<CustomerEntity> {
+  const customer = await this.repo.FindById(id);
   if (!customer) throw new NotFoundError('Customer not found');
   return customer;
 }
 
-async create(input: CreateCustomerInput): Promise<CustomerEntity> {
-  const existing = await this.repo.findByPhone(input.phone);
+async Create(input: CreateCustomerInput): Promise<CustomerEntity> {
+  const existing = await this.repo.FindByPhone(input.phone);
   if (existing) throw new ConflictError('Customer with this phone already exists');
-  return this.repo.create(input);
+  return this.repo.Create(input);
 }
 
-async update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity> {
-  const existing = await this.repo.findById(id);
+async Update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity> {
+  const existing = await this.repo.FindById(id);
   if (!existing) throw new NotFoundError('Customer not found');
 
-  const updated = await this.repo.update(id, input, input.version);
+  const updated = await this.repo.Update(id, input, input.version);
   if (!updated) throw new ConflictError('Version mismatch');
 
   return updated;
@@ -51,41 +51,49 @@ async update(id: string, input: UpdateCustomerInput): Promise<CustomerEntity> {
 ## 3. Filter with Pagination
 
 ```ts
-async filterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }> {
+async FilterCustomers(filters: FilterRequest): Promise<{ data: CustomerEntity[]; total: number }> {
   // Count and fetch in parallel — same as Go's pattern
   const [data, total] = await Promise.all([
-    this.repo.findByFilters(filters),
-    this.repo.countByFilters(filters),
+    this.repo.FindByFilters(filters),
+    this.repo.CountByFilters(filters),
   ]);
   return { data, total };
 }
 ```
 
-## 4. Transaction Pattern (in service)
+## 4. Transaction Pattern (service starts, repo executes)
 
 ```ts
-// Service calls repo method that uses db.transaction() internally
-async createInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
-  // Validate customer exists
-  const customer = await this.customerSvc.getById(input.customerId);
+// Service: validate → start transaction → pass tx to repo
+async CreateInvoice(input: CreateInvoiceInput): Promise<InvoiceEntity> {
+  const customer = await this.customerSvc.GetById(input.customerId);
 
-  // Validate stock for all items
   for (const item of input.items) {
-    const stock = await this.inventoryRepo.getStock(item.productId);
+    const stock = await this.inventoryRepo.GetStock(item.productId);
     if (stock < item.quantity) {
       throw new BadRequestError(`Insufficient stock for product ${item.productId}`);
     }
   }
 
-  // Create invoice — repo handles transaction internally
-  return this.repo.createInvoice(input);
+  // Service declares transaction → passes tx to repo
+  return this.db.transaction(async (tx) => {
+    return this.repo.CreateInvoice(input, tx);
+  });
+}
+```
+
+```ts
+// Repo: receives optional tx, uses db if not passed
+async CreateInvoice(data: CreateInvoiceData, tx?: Tx): Promise<InvoiceEntity> {
+  const db = tx ?? this.db;
+  // ... use db (transaction-aware or standalone)
 }
 ```
 
 ## 5. Private Helpers
 
 ```ts
-// Decompose long methods into private helpers (max 50 lines/public method)
+// Private helpers → camelCase (like Go unexported functions)
 private applyCustomerChanges(existing: CustomerEntity, input: UpdateCustomerInput): Partial<CustomerEntity> {
   const changes: Partial<CustomerEntity> = {};
 
@@ -93,6 +101,7 @@ private applyCustomerChanges(existing: CustomerEntity, input: UpdateCustomerInpu
   if (input.lastName !== undefined) changes.lastName = input.lastName;
   if (input.phone !== undefined) changes.phone = input.phone;
   if (input.address !== undefined) changes.address = input.address;
+  if (input.email !== undefined) changes.email = input.email;
 
   return changes;
 }
@@ -100,11 +109,13 @@ private applyCustomerChanges(existing: CustomerEntity, input: UpdateCustomerInpu
 
 ## 6. Service Rules
 
-- ✅ Public functions: map errors to AppError classes
+- ✅ Public functions (PascalCase): map errors to AppError classes
+- ✅ Private helpers (camelCase): utility functions, transformations
 - ✅ Guard clauses first — check existence, permissions early
 - ✅ Deep copy before mutation (prevent side effects on input objects)
 - ✅ Max 50 lines per public function
-- ❌ No direct DB access in service — go through repo
+- ❌ No direct DB queries in service — go through repo
+- ✅ Service may inject db for `db.transaction()` only (no query builders: select/insert/update/delete)
 - ❌ No `console.log` — use `logger`
 
 ## 7. Service MUST NOT access DB directly
@@ -139,6 +150,15 @@ export class InvoiceService implements IInvoiceService {
   ) {}
 }
 ```
+
+### Naming Summary — Service Layer
+
+| Visibility | Convention | Example |
+|------------|-----------|---------|
+| Interface methods | PascalCase (exported) | `GetById`, `CreateInvoice` |
+| Class public methods | PascalCase (exported) | `GetById`, `CreateInvoice` |
+| Private helpers | camelCase (unexported) | `toResponse`, `applyChanges` |
+| Module-scoped functions | camelCase (local only) | `formatError`, `parseInput` |
 
 ### Exception: Chat Module
 

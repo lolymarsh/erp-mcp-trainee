@@ -1,4 +1,4 @@
-export function formatResult(
+export function FormatResult(
   data: Record<string, unknown>[],
   format: string,
 ): string {

@@ -66,7 +66,7 @@ describe('customerApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.filter({
+    const result = await customerApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -102,7 +102,7 @@ describe('customerApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.filter({
+    const result = await customerApi.Filter({
       page: 1,
       pageSize: 20,
       sortBy: 'desc',
@@ -130,7 +130,7 @@ describe('customerApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.getById('c1');
+    const result = await customerApi.GetById('c1');
 
     expect(mockApi.get).toHaveBeenCalledWith('/customers/c1');
     expect(result.data.vehicles).toHaveLength(1);
@@ -143,7 +143,7 @@ describe('customerApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.create({
+    const result = await customerApi.Create({
       firstName: 'สมชาย',
       lastName: 'ใจดี',
       phone: '0812345678',
@@ -163,7 +163,7 @@ describe('customerApi', () => {
     };
     mockApi.post.mockResolvedValue(apiResponse);
 
-    await customerApi.create({
+    await customerApi.Create({
       firstName: 'สมชาย',
       lastName: 'ใจดี',
       phone: '0812345678',
@@ -186,7 +186,7 @@ describe('customerApi', () => {
     };
     mockApi.patch.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.update('c1', {
+    const result = await customerApi.Update('c1', {
       firstName: 'สมชาย updated',
       version: 1,
     });
@@ -204,7 +204,7 @@ describe('customerApi', () => {
     };
     mockApi.delete.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.softDelete('c1', { version: 1 });
+    const result = await customerApi.SoftDelete('c1', { version: 1 });
 
     expect(mockApi.delete).toHaveBeenCalledWith('/customers/c1', {
       data: { version: 1 },
@@ -222,7 +222,7 @@ describe('customerApi', () => {
     };
     mockApi.get.mockResolvedValue(apiResponse);
 
-    const result = await customerApi.getById('c1');
+    const result = await customerApi.GetById('c1');
 
     expect(result.data.vehicles).toHaveLength(0);
   });

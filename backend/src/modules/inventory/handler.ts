@@ -11,7 +11,7 @@ import {
   deleteCategorySchema,
 } from "./schema";
 import { filterRequestSchema } from "../../shared/pagination/schema";
-import { sendSuccess, sendError } from "../../shared/response/handler";
+import { SendSuccess, SendError } from "../../shared/response/handler";
 import { AppError } from "../../shared/errors/AppError";
 import { logger } from "../../config/logger";
 
@@ -29,228 +29,228 @@ function extractId(id: unknown): string {
 export class InventoryHandler {
   constructor(private svc: IInventoryService) {}
 
-  filter = async (req: Request, res: Response): Promise<void> => {
+  Filter = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = filterRequestSchema.parse(req.body);
-      const result = await this.svc.filter(input);
-      sendSuccess(res, 200, "success", {
+      const result = await this.svc.Filter(input);
+      SendSuccess(res, 200, "success", {
         data: result.data,
         pagination: result.pagination,
       });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory filter failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  getById = async (req: Request, res: Response): Promise<void> => {
+  GetById = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
-      const product = await this.svc.getById(id);
-      sendSuccess(res, 200, "success", { data: product });
+      const product = await this.svc.GetById(id);
+      SendSuccess(res, 200, "success", { data: product });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       logger.error({ err }, "Inventory getById failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  create = async (req: Request, res: Response): Promise<void> => {
+  Create = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createProductSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const product = await this.svc.create(input, userId, meta);
-      sendSuccess(res, 201, "created", { data: product });
+      const product = await this.svc.Create(input, userId, meta);
+      SendSuccess(res, 201, "created", { data: product });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory create failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  update = async (req: Request, res: Response): Promise<void> => {
+  Update = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = updateProductSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const product = await this.svc.update(id, input, userId, meta);
-      sendSuccess(res, 200, "success", { data: product });
+      const product = await this.svc.Update(id, input, userId, meta);
+      SendSuccess(res, 200, "success", { data: product });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory update failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  softDelete = async (req: Request, res: Response): Promise<void> => {
+  SoftDelete = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = deleteProductSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      await this.svc.softDelete(id, input, userId, meta);
-      sendSuccess(res, 200, "deleted");
+      await this.svc.SoftDelete(id, input, userId, meta);
+      SendSuccess(res, 200, "deleted");
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory softDelete failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  adjustStock = async (req: Request, res: Response): Promise<void> => {
+  AdjustStock = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = stockAdjustSchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const result = await this.svc.adjustStock(id, input, userId, meta);
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.AdjustStock(id, input, userId, meta);
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory adjustStock failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  filterCategories = async (req: Request, res: Response): Promise<void> => {
+  FilterCategories = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = filterRequestSchema.parse(req.body);
-      const result = await this.svc.filterCategories(input);
-      sendSuccess(res, 200, "success", {
+      const result = await this.svc.FilterCategories(input);
+      SendSuccess(res, 200, "success", {
         data: result.data,
         pagination: result.pagination,
       });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory filterCategories failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  listCategories = async (_req: Request, res: Response): Promise<void> => {
+  ListCategories = async (_req: Request, res: Response): Promise<void> => {
     try {
-      const result = await this.svc.listCategories();
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.ListCategories();
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       logger.error({ err }, "Inventory listCategories failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  createCategory = async (req: Request, res: Response): Promise<void> => {
+  CreateCategory = async (req: Request, res: Response): Promise<void> => {
     try {
       const input = createCategorySchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const result = await this.svc.createCategory(input, userId, meta);
-      sendSuccess(res, 201, "created", { data: result });
+      const result = await this.svc.CreateCategory(input, userId, meta);
+      SendSuccess(res, 201, "created", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory createCategory failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  updateCategory = async (req: Request, res: Response): Promise<void> => {
+  UpdateCategory = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = updateCategorySchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      const result = await this.svc.updateCategory(id, input, userId, meta);
-      sendSuccess(res, 200, "success", { data: result });
+      const result = await this.svc.UpdateCategory(id, input, userId, meta);
+      SendSuccess(res, 200, "success", { data: result });
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory updateCategory failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 
-  deleteCategory = async (req: Request, res: Response): Promise<void> => {
+  DeleteCategory = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractId(req.params.id);
       const input = deleteCategorySchema.parse(req.body);
       const userId = req.user?.userId ?? "system";
       const meta = req.auditMeta;
-      await this.svc.deleteCategory(id, input, userId, meta);
-      sendSuccess(res, 200, "deleted");
+      await this.svc.DeleteCategory(id, input, userId, meta);
+      SendSuccess(res, 200, "deleted");
     } catch (err: unknown) {
       if (err instanceof AppError) {
-        sendError(res, err.statusCode, err.message, err.details);
+        SendError(res, err.statusCode, err.message, err.details);
         return;
       }
       if (err instanceof ZodError) {
-        sendError(res, 400, formatZodError(err));
+        SendError(res, 400, formatZodError(err));
         return;
       }
       logger.error({ err }, "Inventory deleteCategory failed");
-      sendError(res, 500, "Internal server error");
+      SendError(res, 500, "Internal server error");
     }
   };
 }

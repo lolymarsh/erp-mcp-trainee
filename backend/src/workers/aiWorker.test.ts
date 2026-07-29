@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ConsumeMessage } from "amqplib";
 import { consumeFromQueue } from "../config/rabbitmq";
-import { startAiWorker } from "./aiWorker";
+import { StartAiWorker } from "./aiWorker";
 
 jest.mock("../config/rabbitmq", () => ({
   consumeFromQueue: jest.fn(),
@@ -13,7 +13,7 @@ function createMockMessage(content: string): ConsumeMessage {
 
 const mockedConsumeFromQueue = consumeFromQueue as jest.MockedFunction<typeof consumeFromQueue>;
 
-describe("startAiWorker", () => {
+describe("StartAiWorker", () => {
   let rmq: any;
   let pool: any;
   let redis: any;
@@ -32,7 +32,7 @@ describe("startAiWorker", () => {
       handler = h;
     });
 
-    await startAiWorker(rmq, pool, redis);
+    await StartAiWorker(rmq, pool, redis);
     await handler(createMockMessage(JSON.stringify({ jobId: "j1", sql: "SELECT 1", format: "json" })));
 
     expect(redis.setex).toHaveBeenCalledWith(
@@ -56,7 +56,7 @@ describe("startAiWorker", () => {
     };
     pool.getConnection.mockResolvedValue(mockConnection);
 
-    await startAiWorker(rmq, pool, redis);
+    await StartAiWorker(rmq, pool, redis);
     await handler(createMockMessage(JSON.stringify({ jobId: "j1", sql: "SELECT * FROM users", format: "json" })));
 
     expect(mockConnection.execute).toHaveBeenCalledWith("SET SESSION max_execution_time = 60000");
@@ -72,7 +72,7 @@ describe("startAiWorker", () => {
       handler = h;
     });
 
-    await startAiWorker(rmq, pool, redis);
+    await StartAiWorker(rmq, pool, redis);
     await expect(handler(createMockMessage(JSON.stringify({ jobId: "j1", sql: "SELECT 1", format: "json" })))).resolves.toBeUndefined();
   });
 });

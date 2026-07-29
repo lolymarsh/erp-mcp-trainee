@@ -43,6 +43,8 @@ frontend/src/modules/{module}/
 - ❌ any → ใช้ unknown + Zod
 - ❌ as → ใช้ Zod parse
 - ✅ ทุกฟังก์ชันมี return type
+- ✅ Public methods → PascalCase (GetCustomer, CreateInvoice)
+- ✅ Private methods → camelCase (toResponse, buildFilter)
 
 ### 6. Frontend MVC
 - model.ts → ไม่มี React import

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ConsumeMessage } from "amqplib";
 import { consumeFromQueue } from "../config/rabbitmq";
-import { startAuditWorker } from "./auditWorker";
+import { StartAuditWorker } from "./auditWorker";
 
 jest.mock("../config/rabbitmq", () => ({
   consumeFromQueue: jest.fn(),
@@ -13,7 +13,7 @@ function createMockMessage(content: string): ConsumeMessage {
 
 const mockedConsumeFromQueue = consumeFromQueue as jest.MockedFunction<typeof consumeFromQueue>;
 
-describe("startAuditWorker", () => {
+describe("StartAuditWorker", () => {
   let rmq: any;
   let mongoDb: any;
 
@@ -32,7 +32,7 @@ describe("startAuditWorker", () => {
     const insertOne = jest.fn().mockResolvedValue({ insertedId: "abc" });
     mongoDb.collection.mockReturnValue({ insertOne });
 
-    await startAuditWorker(rmq, mongoDb);
+    await StartAuditWorker(rmq, mongoDb);
     await handler(createMockMessage(JSON.stringify({
       entityType: "invoice",
       entityId: "inv-1",
@@ -62,7 +62,7 @@ describe("startAuditWorker", () => {
     const insertOne = jest.fn().mockRejectedValue(new Error("mongo error"));
     mongoDb.collection.mockReturnValue({ insertOne });
 
-    await startAuditWorker(rmq, mongoDb);
+    await StartAuditWorker(rmq, mongoDb);
     await expect(handler(createMockMessage(JSON.stringify({
       entityType: "invoice",
       entityId: "inv-1",
