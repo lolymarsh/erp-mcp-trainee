@@ -14,7 +14,7 @@
 - [x] **T2.4**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T2.5**: Frontend UX Improvements (Sonner toast on save/delete + Skeleton loader + inline error helper)
 - [x] **T2.6**: Unit and component tests for Customer module (22/22 tests passing)
-- [x] **T2.7**: Migrate Customer Table & Dialogs from MUI to shadcn/ui components (`Table`, `Dialog`, `Input`, `Button`)
+- [ ] **T2.7**: Migrate Customer Table & Dialogs from MUI to shadcn/ui components (`Table`, `Dialog`, `Input`, `Button`)
 - [x] **T2.8**: Add CSV / Excel Export for customer contact list
 
 ---
@@ -22,6 +22,6 @@
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
 1. **Full shadcn/ui Component Migration**:
-   - `CustomerListView` และ `CustomerDetailView` ยังมี MUI `Paper`, `Dialog`, `Typography` ปนอยู่ สามารถแทนที่ด้วย shadcn `Card`, `Dialog`, `Table`
+   - `CustomerListView` และ `CustomerDetailView` ยังมี MUI `Paper`, `Dialog`, `Typography` ปนอยู่ ต้องถอนออกทั้งหมดและแทนที่ด้วย shadcn `Card`, `Dialog`, `Table`
 2. **Vehicle History Tracking**:
    - เชื่อมโยงประวัติงานซ่อมและใบเสร็จของแต่ละรถ (Vehicle) ในหน้า Customer Detail

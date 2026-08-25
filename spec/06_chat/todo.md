@@ -14,16 +14,12 @@
 - [x] **T6.4**: MongoDB Chat History Persistence (`chat_messages` collection)
 - [x] **T6.5**: SSE (Server-Sent Events) streaming endpoint (`GET /api/chat/stream`)
 - [x] **T6.6**: Fix TypeScript test errors in `chat/controller.test.ts`, `chat/model.test.ts`, and `chat/view.tsx`
-- [x] **T6.7**: Migrate Chat UI with suggestions and responsive message list
+- [ ] **T6.7**: Migrate Chat UI to shadcn/ui and remove all MUI components
 - [x] **T6.8**: Add Chart and Table rendering when LLM returns aggregated series data
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Frontend Type & Test Fixes**:
-   - `chat/controller.test.ts`: มี reference ถึง property `cached` และ `clearMessages` ที่ type ไม่ตรง
-   - `chat/model.test.ts`: ขาด parameter `provider` ใน `SendMessageInput`
-   - `chat/view.tsx`: `primaryTypographyProps` บน `ListItemText` type mismatch
-2. **UI Modernization**:
-   - ปรับปรุง Chat Bubble และ Quick Prompt Suggestions ให้ใช้ shadcn semantic tokens
+1. **Chat UI Modernization**:
+   - ปรับปรุง Chat Bubble, Suggestions, Message List, Input Box ให้ใช้ shadcn `Card`, `Button`, `Input`, `ScrollArea` และ Lucide Icons แทน MUI ทั้งหมด

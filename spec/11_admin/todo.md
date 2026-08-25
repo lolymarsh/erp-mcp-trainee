@@ -14,13 +14,11 @@
 - [x] **T11.4**: Soft delete user endpoint with version check (`DELETE /api/users/:id`)
 - [x] **T11.5**: Frontend MVC User management (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T11.6**: Fix `UserEntity` and `CategoryEntity` import references in `frontend/src/router.tsx`
-- [x] **T11.7**: User table and edit dialog with role/status badges and tests
+- [ ] **T11.7**: Migrate User table and edit dialog to pure shadcn/ui (`Table`, `Dialog`, `Select`, `Badge`)
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Router Type Fixes**:
-   - `frontend/src/router.tsx`: มี reference หายไป `Cannot find name 'CategoryEntity'`, `Cannot find name 'UserEntity'`
-2. **UI Polishing**:
-   - ใช้ shadcn `Badge` สำหรับแสดง Role (`ADMIN`, `MANAGER`, `STAFF`, `TECHNICIAN`) และสถานะ (`ACTIVE`, `INACTIVE`)
+1. **User Management UI Migration**:
+   - ลบ `@mui/material` ออกจาก `UserListView`, `UserCreateDialog`, `UserEditDialog`, `UserDeleteConfirmDialog` เปลี่ยนเป็น shadcn `Table`, `Badge`, `Dialog`, `Input`, `Select`

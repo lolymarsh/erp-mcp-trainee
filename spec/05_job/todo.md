@@ -14,14 +14,11 @@
 - [x] **T5.4**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T5.5**: Fix `JobView.test.tsx` props mismatch (`jobTypeFilter`, `onJobTypeFilterChange`, `onSearch`, `search`)
 - [x] **T5.6**: Remove unused `_debouncedSearch` in `frontend/src/modules/job/controller.ts`
-- [x] **T5.7**: Build Kanban Board view with drag/click status transition for technician queue management
+- [ ] **T5.7**: Migrate Job Table & Kanban board to pure shadcn `Card`, `Badge`, `Button` and remove all MUI
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Fix Frontend Test & Type Warnings**:
-   - `src/modules/job/JobView.test.tsx` ส่ง props ไม่ครบตาม `JobQueueViewProps`
-   - `src/modules/job/controller.ts` มี unused variable `_debouncedSearch`
-2. **Kanban UI Experience**:
-   - ปัจจุบันแสดงผลเป็น List ตารางธรรมดา ต้องการปรับเป็น Kanban Board ลากเปลี่ยนสถานะงาน (QUEUED -> IN_PROGRESS -> COMPLETED)
+1. **Kanban & Table UI Migration**:
+   - ลบ MUI `@mui/material` components ออกจาก `JobQueueView`, `JobCreateDialog`, `JobDetailView` เปลี่ยนเป็น shadcn `Card`, `Table`, `Dialog`

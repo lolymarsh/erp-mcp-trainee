@@ -14,15 +14,13 @@
 - [x] **T3.4**: Low stock alert endpoint & filter query
 - [x] **T3.5**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T3.6**: Fix `InventoryView.test.tsx` mock data missing `categoryName` property
-- [x] **T3.7**: Migrate Inventory list and stock badges to shadcn/ui (`Badge`, `Table`, `Card`)
+- [ ] **T3.7**: Migrate Inventory list and stock badges to shadcn/ui (`Badge`, `Table`, `Card`)
 - [x] **T3.8**: Quick stock adjust & CSV export support
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Fix Frontend Test Error**:
-   - `src/modules/inventory/InventoryView.test.tsx` มี TypeScript error เพราะ mock product entity ขาดฟิลด์ `categoryName`
-2. **UI Migration to shadcn/ui**:
+1. **UI Migration to shadcn/ui**:
    - ปรับแต่ง `StockBadge` ให้ใช้ shadcn `Badge` variant `destructive` สำหรับสต็อกต่ำ
-   - ทำ `StockAdjustDialog` ด้วย shadcn `Dialog` + `Input`
+   - ทำ `StockAdjustDialog`, `ProductCreateDialog`, `ProductEditDialog` ด้วย shadcn `Dialog` + `Input` แทนที่ MUI ทั้งหมด

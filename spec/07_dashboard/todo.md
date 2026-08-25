@@ -12,15 +12,13 @@
 - [x] **T7.2**: Redis caching for dashboard metrics with auto-invalidation
 - [x] **T7.3**: Monthly revenue trend & Top technicians chart endpoints
 - [x] **T7.4**: Frontend MVC structure with Recharts (`model.ts`, `controller.ts`, `view.tsx`)
-- [x] **T7.5**: KPI Cards with icons and real-time metric cards
-- [x] **T7.6**: Low-stock alert table in dashboard with badges
+- [ ] **T7.5**: Migrate KPI Cards to shadcn `Card` + `CardHeader` + `CardTitle` + Lucide icons
+- [ ] **T7.6**: Replace `@mui/x-data-grid` & low-stock table with shadcn `Table` + `Badge`
 - [x] **T7.7**: Summary and quick filtering support for dashboard analysis
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Custom Date Filter**:
-   - ปัจจุบันสรุปยอดเฉพาะ Today และ Current Month ยังไม่รองรับ Custom Date Range (เช่น ดูย้อนหลัง 3 เดือน หรือเลือกช่วงวันที่เอง)
-2. **UI Polishing**:
-   - ปรับแต่งหน้าตา KPI Cards ให้ใช้ shadcn Cards พร้อมไอคอนจาก `lucide-react`
+1. **Dashboard UI Migration**:
+   - ลบ `@mui/material` และ `@mui/x-data-grid` ออกจาก `DashboardView` แทนที่ด้วย shadcn `Card`, `Table`, `Badge` และ Recharts ResponsiveContainer

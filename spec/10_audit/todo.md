@@ -14,13 +14,11 @@
 - [x] **T10.4**: Audit Log API endpoint (`POST /api/audit-logs/filter`)
 - [x] **T10.5**: Frontend `AuditLogDialog` component for entity change history inspection
 - [x] **T10.6**: Filterable Audit Log query support with Table/Record filters
-- [x] **T10.7**: Audit dialog with action type badges (CREATE, UPDATE, DELETE) and formatted JSON diffs
+- [ ] **T10.7**: Migrate `AuditLogDialog` to pure shadcn/ui `Dialog`, `Badge`, `Skeleton` and remove MUI
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Full Audit Log Page**:
-   - ปัจจุบันดูประวัติได้เฉพาะราย Entity ผ่าน Dialog ยังไม่มีหน้าจอรวมสำหรับ Admin ค้นหาประวัติการทำงานทั้งระบบ
-2. **UI Polish**:
-   - ปรับแต่ง Badge แสดง Action Type (CREATE = green, UPDATE = blue, DELETE = red) ด้วย shadcn `Badge`
+1. **AuditLogDialog Migration**:
+   - ลบ `@mui/material` ออกจาก `AuditLogDialog.tsx` และแทนที่ด้วย shadcn `Dialog`, `Badge`, `Skeleton`

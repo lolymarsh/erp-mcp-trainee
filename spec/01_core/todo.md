@@ -17,12 +17,11 @@
 - [x] **T1.7**: Setup **shadcn/ui** primitives (`button`, `input`, `card`, `dialog`, `badge`, `skeleton`, `table`, `sonner`)
 - [x] **T1.8**: Frontend Auth module (Login form, Zustand auth store, JWT handling)
 - [x] **T1.9**: Add Refresh Token / Auto-logout interceptor on 401 response
+- [ ] **T1.10**: Remove MUI ThemeProvider and migrate Layout Shell & Sidebar to shadcn/ui + Lucide icons
 
 ---
 
 ## 🔍 ขาดอะไรบ้าง (Missing Items / Next Steps)
 
-1. **Auto Refresh Token / Expiry Handler**:
-   - ปัจจุบัน Axios interceptor เก็บ JWT ใน Zustand แต่ยังไม่มี auto-refresh เมื่อ token หมดอายุ
-2. **Layout Shell Migration**:
-   - ปัจจุบัน [`frontend/src/shared/components/Layout.tsx`](file:///Users/lolymarsh/Desktop/versus_thailand_work/erp-mcp-trainee/frontend/src/shared/components/Layout.tsx) ยังใช้ MUI Drawer/AppBar อยู่ สามารถ migrate เป็น Sidebar + Header ของ shadcn/ui ได้
+1. **MUI Removal from Layout**:
+   - ถอน `@mui/material` และ `@mui/icons-material` ออกจาก `App.tsx` และ `Layout.tsx` เปลี่ยนเป็น Tailwind CSS + shadcn/ui Sidebar + Lucide Icons
