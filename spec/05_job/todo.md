@@ -1,7 +1,7 @@
 # 05 Job Module — Todo & Status
 
 > **Module**: 05_job (Installation & Workshop Job Queue)  
-> **Status**: 🟡 80% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -14,7 +14,7 @@
 - [x] **T5.4**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T5.5**: Fix `JobView.test.tsx` props mismatch (`jobTypeFilter`, `onJobTypeFilterChange`, `onSearch`, `search`)
 - [x] **T5.6**: Remove unused `_debouncedSearch` in `frontend/src/modules/job/controller.ts`
-- [ ] **T5.7**: Build Kanban Board view using shadcn `Card` & drag-and-drop for technician queue management
+- [x] **T5.7**: Build Kanban Board view with drag/click status transition for technician queue management
 
 ---
 

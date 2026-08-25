@@ -493,6 +493,9 @@ export function InvoiceDetailView({
           />
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" onClick={() => window.print()}>
+            พิมพ์ใบแจ้งหนี้
+          </Button>
           <Button variant="contained" onClick={onUpdatePayment}>
             อัพเดทสถานะชำระเงิน
           </Button>

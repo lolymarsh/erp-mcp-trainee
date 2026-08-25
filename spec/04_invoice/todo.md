@@ -1,7 +1,7 @@
 # 04 Invoice Module — Todo & Status
 
 > **Module**: 04_invoice (Sales, Invoices, Payments & Stock Deduction)  
-> **Status**: 🟡 85% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -13,9 +13,9 @@
 - [x] **T4.3**: Payment status update with optimistic version check (`PATCH /api/sales/invoices/:id/payment-status`)
 - [x] **T4.4**: Today sales summary endpoint (`GET /api/sales/invoices/today-summary`)
 - [x] **T4.5**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
-- [ ] **T4.6**: Add Print / Export to PDF for official Invoice & Receipt
-- [ ] **T4.7**: Migrate Invoice items dynamic table to shadcn/ui Data Table
-- [ ] **T4.8**: Add VAT / Tax calculation configuration options (Include VAT vs Exclude VAT)
+- [x] **T4.6**: Add Print / Export to PDF for official Invoice & Receipt
+- [x] **T4.7**: Migrate Invoice items dynamic table to shadcn/ui Data Table
+- [x] **T4.8**: Add VAT / Tax calculation configuration options (Include VAT vs Exclude VAT)
 
 ---
 

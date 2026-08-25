@@ -108,6 +108,14 @@ export function JobQueueView({
   onRowClick,
   onCreateClick,
 }: JobQueueViewProps) {
+  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+
+  const kanbanColumns = [
+    { key: 'QUEUED', title: 'รอดำเนินการ', color: '#f3f4f6' },
+    { key: 'IN_PROGRESS', title: 'กำลังดำเนินการ', color: '#eff6ff' },
+    { key: 'COMPLETED', title: 'เสร็จสิ้น', color: '#f0fdf4' },
+  ];
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
@@ -115,6 +123,22 @@ export function JobQueueView({
           <Typography variant="h5">คิวงาน</Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
             สร้างงาน
+          </Button>
+        </Box>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant={viewMode === 'table' ? 'contained' : 'outlined'}
+            size="small"
+            onClick={() => setViewMode('table')}
+          >
+            ตาราง
+          </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'contained' : 'outlined'}
+            size="small"
+            onClick={() => setViewMode('kanban')}
+          >
+            Kanban
           </Button>
         </Box>
       </Box>
@@ -167,93 +191,158 @@ export function JobQueueView({
         </Alert>
       )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ลูกค้า</TableCell>
-              <TableCell>ประเภทงาน</TableCell>
-              <TableCell>สถานะ</TableCell>
-              <TableCell>วันที่นัดหมาย</TableCell>
-              <TableCell>ช่าง</TableCell>
-              <TableCell>สร้างเมื่อ</TableCell>
-              <TableCell>เปลี่ยนสถานะ</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                </TableRow>
-              ))
-            ) : jobs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  ไม่พบงาน
-                </TableCell>
-              </TableRow>
-            ) : (
-              jobs.map((job) => {
-                const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
-                return (
-                  <TableRow key={job.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(job)}>
-                    <TableCell>{job.customerId}</TableCell>
-                    <TableCell>
-                      {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={STATUS_LABELS[job.status] ?? job.status}
-                        color={STATUS_COLORS[job.status] ?? "default"}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{formatDate(job.scheduledDate)}</TableCell>
-                    <TableCell>{job.technicianId ?? "-"}</TableCell>
-                    <TableCell>{formatDate(job.createdAt)}</TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      {transitions.length > 0 ? (
-                        <FormControl size="small" sx={{ minWidth: 140 }}>
-                          <Select
-                            value=""
-                            displayEmpty
-                            onChange={(e) => {
-                              const newStatus = e.target.value as string;
-                              if (newStatus) {
-                                onStatusChange(job.id, newStatus, job.version);
-                              }
-                            }}
-                          >
-                            <MenuItem value="" disabled>
-                              เปลี่ยน...
-                            </MenuItem>
-                            {transitions.map((s) => (
-                              <MenuItem key={s} value={s}>
-                                {STATUS_LABELS[s] ?? s}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          สถานะสิ้นสุด
+      {viewMode === 'kanban' ? (
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 2 }}>
+          {kanbanColumns.map((col) => {
+            const colJobs = jobs.filter((j) => j.status === col.key);
+            return (
+              <Paper key={col.key} sx={{ p: 2, bgcolor: col.color, minHeight: 400 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {col.title}
+                  </Typography>
+                  <Chip label={colJobs.length} size="small" />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {colJobs.map((job) => {
+                    const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
+                    return (
+                      <Paper
+                        key={job.id}
+                        sx={{ p: 2, cursor: 'pointer', '&:hover': { boxShadow: 3 } }}
+                        onClick={() => onRowClick(job)}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
+                          </Typography>
+                          <Chip label={STATUS_LABELS[job.status] ?? job.status} size="small" color={STATUS_COLORS[job.status] ?? 'default'} />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          ลูกค้า: {job.customerId}
                         </Typography>
-                      )}
-                    </TableCell>
+                        <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                          นัดหมาย: {formatDate(job.scheduledDate)}
+                        </Typography>
+                        {transitions.length > 0 && (
+                          <Box sx={{ mt: 1.5, display: 'flex', gap: 0.5, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                            {transitions.map((t) => (
+                              <Button
+                                key={t}
+                                size="small"
+                                variant="outlined"
+                                onClick={() => onStatusChange(job.id, t, job.version)}
+                              >
+                                ไปยัง {STATUS_LABELS[t] ?? t}
+                              </Button>
+                            ))}
+                          </Box>
+                        )}
+                      </Paper>
+                    );
+                  })}
+                  {colJobs.length === 0 && (
+                    <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
+                      ไม่มีงานในสถานะนี้
+                    </Typography>
+                  )}
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>ลูกค้า</TableCell>
+                <TableCell>ประเภทงาน</TableCell>
+                <TableCell>สถานะ</TableCell>
+                <TableCell>วันที่นัดหมาย</TableCell>
+                <TableCell>ช่าง</TableCell>
+                <TableCell>สร้างเมื่อ</TableCell>
+                <TableCell>เปลี่ยนสถานะ</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
+                    <TableCell><Skeleton /></TableCell>
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-        {pagination && (
+                ))
+              ) : jobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    ไม่พบงาน
+                  </TableCell>
+                </TableRow>
+              ) : (
+                jobs.map((job) => {
+                  const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
+                  return (
+                    <TableRow key={job.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(job)}>
+                      <TableCell>{job.customerId}</TableCell>
+                      <TableCell>
+                        {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={STATUS_LABELS[job.status] ?? job.status}
+                          color={STATUS_COLORS[job.status] ?? "default"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{formatDate(job.scheduledDate)}</TableCell>
+                      <TableCell>{job.technicianId ?? "-"}</TableCell>
+                      <TableCell>{formatDate(job.createdAt)}</TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {transitions.length > 0 ? (
+                          <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                              value=""
+                              displayEmpty
+                              onChange={(e) => {
+                                const newStatus = e.target.value as string;
+                                if (newStatus) {
+                                  onStatusChange(job.id, newStatus, job.version);
+                                }
+                              }}
+                            >
+                              <MenuItem value="" disabled>
+                                เปลี่ยน...
+                              </MenuItem>
+                              {transitions.map((s) => (
+                                <MenuItem key={s} value={s}>
+                                  {STATUS_LABELS[s] ?? s}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">
+                            สถานะสิ้นสุด
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {pagination && viewMode === 'table' && (
+        <Paper sx={{ mt: 1 }}>
           <TablePagination
             component="div"
             count={pagination.totalData}
@@ -263,8 +352,8 @@ export function JobQueueView({
             rowsPerPageOptions={[pagination.pageSize]}
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
           />
-        )}
-      </TableContainer>
+        </Paper>
+      )}
 
       <Snackbar
         open={statusChangeError !== null}
