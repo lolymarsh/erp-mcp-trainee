@@ -70,7 +70,8 @@ import {
 import { AuditLogDialog } from './shared/components/AuditLogDialog';
 import { useState, useCallback } from 'react';
 import type { CustomerWithVehicles } from './modules/customer/model';
-import type { ProductWithMovements } from './modules/inventory/model';
+import type { ProductWithMovements, CategoryEntity } from './modules/inventory/model';
+import type { UserEntity } from './modules/user/model';
 
 function DashboardRoute() {
   const { summary, loading, error } = useDashboard();

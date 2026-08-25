@@ -58,6 +58,7 @@ export function SetupRoutes(app: Express, deps: AppDependencies): void {
   const userSvc = new UserService(userRepo, deps.redis, auditSvc);
   const userHandler = new UserHandler(userSvc);
   app.use("/api/auth", RegisterUserRoutes(userHandler, auth));
+  app.use("/api/users", RegisterUserRoutes(userHandler, auth));
 
   const customerRepo = new CustomerRepository(deps.db);
   const customerSvc = new CustomerService(customerRepo, auditSvc);

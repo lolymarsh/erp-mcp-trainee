@@ -1,7 +1,7 @@
 # 01 Core Module — Todo & Status
 
 > **Module**: 01_core (Foundation, Infra, Shared & Auth)  
-> **Status**: 🟢 95% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -16,7 +16,7 @@
 - [x] **T1.6**: Frontend project init with Vite, Tailwind CSS v4, and React Router v7
 - [x] **T1.7**: Setup **shadcn/ui** primitives (`button`, `input`, `card`, `dialog`, `badge`, `skeleton`, `table`, `sonner`)
 - [x] **T1.8**: Frontend Auth module (Login form, Zustand auth store, JWT handling)
-- [ ] **T1.9**: Add Refresh Token / Auto-logout interceptor on 401 response
+- [x] **T1.9**: Add Refresh Token / Auto-logout interceptor on 401 response
 
 ---
 
