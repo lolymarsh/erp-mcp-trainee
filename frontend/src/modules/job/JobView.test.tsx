@@ -86,12 +86,12 @@ describe('JobQueueView', () => {
     expect(screen.getByText('คิวงาน')).toBeInTheDocument();
     expect(screen.getByText('c1')).toBeInTheDocument();
     expect(screen.getByText('c2')).toBeInTheDocument();
-    expect(screen.getByText('ติดตั้ง')).toBeInTheDocument();
-    expect(screen.getByText('ซ่อม')).toBeInTheDocument();
+    expect(screen.getAllByText('ติดตั้ง').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('ซ่อม').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders loading spinner/skeleton when loading', () => {
-    const { container } = render(
+    render(
       <JobQueueView
         {...defaultProps}
         jobs={[]}
@@ -100,7 +100,7 @@ describe('JobQueueView', () => {
       />,
     );
 
-    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+    expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0);
   });
 
   it('renders error alert', () => {

@@ -1,73 +1,83 @@
+import React, { useState } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
+  Kanban,
+  List,
+  Plus,
+  Loader2,
+  ArrowLeft,
+  History,
+  X,
+  AlertCircle,
+} from 'lucide-react';
+import type { JobResponse, JobWithLogsResponse, PaginationInfo } from './model';
+import type { CustomerEntity, VehicleEntity } from '../customer/model';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select } from '../../components/ui/select';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import { Textarea } from '../../components/ui/textarea';
+import {
   Table,
+  TableHeader,
   TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
-  Chip,
-  CircularProgress,
-  Alert,
-  TablePagination,
-  Skeleton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Snackbar,
-  Button,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  Autocomplete,
-} from "@mui/material";
-import { useState } from "react";
-import AddIcon from "@mui/icons-material/Add";
-import type { JobResponse, JobWithLogsResponse, PaginationInfo } from "./model";
-import type { CustomerEntity, VehicleEntity } from "../customer/model";
-
-const STATUS_COLORS: Record<string, "default" | "primary" | "success" | "error"> = {
-  QUEUED: "default",
-  IN_PROGRESS: "primary",
-  COMPLETED: "success",
-  CANCELLED: "error",
-};
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 const STATUS_LABELS: Record<string, string> = {
-  QUEUED: "รอดำเนินการ",
-  IN_PROGRESS: "กำลังดำเนินการ",
-  COMPLETED: "เสร็จแล้ว",
-  CANCELLED: "ยกเลิก",
+  QUEUED: 'รอดำเนินการ',
+  IN_PROGRESS: 'กำลังดำเนินการ',
+  COMPLETED: 'เสร็จแล้ว',
+  CANCELLED: 'ยกเลิก',
 };
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  QUEUED: ["IN_PROGRESS", "CANCELLED"],
-  IN_PROGRESS: ["COMPLETED", "CANCELLED"],
+  QUEUED: ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
 
 const JOB_TYPE_LABELS: Record<string, string> = {
-  INSTALL: "ติดตั้ง",
-  REPAIR: "ซ่อม",
-  INSPECT: "ตรวจสอบ",
+  INSTALL: 'ติดตั้ง',
+  REPAIR: 'ซ่อม',
+  INSPECT: 'ตรวจสอบ',
 };
+
+function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (status) {
+    case 'IN_PROGRESS':
+      return 'default';
+    case 'COMPLETED':
+      return 'secondary';
+    case 'CANCELLED':
+      return 'destructive';
+    default:
+      return 'outline';
+  }
+}
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) {
-    return "-";
+    return '-';
   }
-  return new Date(dateStr).toLocaleDateString("th-TH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(dateStr).toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -111,176 +121,195 @@ export function JobQueueView({
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
   const kanbanColumns = [
-    { key: 'QUEUED', title: 'รอดำเนินการ', color: '#f3f4f6' },
-    { key: 'IN_PROGRESS', title: 'กำลังดำเนินการ', color: '#eff6ff' },
-    { key: 'COMPLETED', title: 'เสร็จสิ้น', color: '#f0fdf4' },
+    { key: 'QUEUED', title: 'รอดำเนินการ', bg: 'bg-neutral-50 dark:bg-neutral-900 border-neutral-200' },
+    { key: 'IN_PROGRESS', title: 'กำลังดำเนินการ', bg: 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200' },
+    { key: 'COMPLETED', title: 'เสร็จสิ้น', bg: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200' },
   ];
 
-  return (
-    <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <Typography variant="h5">คิวงาน</Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
-            สร้างงาน
-          </Button>
-        </Box>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant={viewMode === 'table' ? 'contained' : 'outlined'}
-            size="small"
-            onClick={() => setViewMode('table')}
-          >
-            ตาราง
-          </Button>
-          <Button
-            variant={viewMode === 'kanban' ? 'contained' : 'outlined'}
-            size="small"
-            onClick={() => setViewMode('kanban')}
-          >
-            Kanban
-          </Button>
-        </Box>
-      </Box>
+  const from = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const to = pagination
+    ? Math.min(pagination.page * pagination.pageSize, pagination.totalData)
+    : jobs.length;
 
-      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-        <TextField
-          label="ค้นหาลูกค้า"
-          variant="outlined"
-          size="small"
-          sx={{ flex: 1 }}
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-        />
-        <FormControl sx={{ minWidth: 160 }} size="small">
-          <InputLabel>กรองสถานะ</InputLabel>
-          <Select
-            value={statusFilter ?? ""}
-            label="กรองสถานะ"
-            onChange={(e) =>
-              onStatusFilterChange(e.target.value || null)
-            }
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">คิวงาน</h1>
+          <Button onClick={onCreateClick} size="sm" className="flex items-center gap-1.5">
+            <Plus className="size-4" />
+            <span>สร้างงาน</span>
+          </Button>
+        </div>
+        <div className="flex items-center gap-1 border rounded-lg p-1 bg-neutral-100 dark:bg-neutral-800">
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            className="flex items-center gap-1.5 h-8 px-3"
           >
-            <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="QUEUED">รอดำเนินการ</MenuItem>
-            <MenuItem value="IN_PROGRESS">กำลังดำเนินการ</MenuItem>
-            <MenuItem value="COMPLETED">เสร็จแล้ว</MenuItem>
-            <MenuItem value="CANCELLED">ยกเลิก</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl sx={{ minWidth: 160 }} size="small">
-          <InputLabel>ประเภทงาน</InputLabel>
-          <Select
-            value={jobTypeFilter ?? ""}
-            label="ประเภทงาน"
-            onChange={(e) =>
-              onJobTypeFilterChange(e.target.value || null)
-            }
+            <List className="size-4" />
+            <span>ตาราง</span>
+          </Button>
+          <Button
+            variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('kanban')}
+            className="flex items-center gap-1.5 h-8 px-3"
           >
-            <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="INSTALL">ติดตั้ง</MenuItem>
-            <MenuItem value="REPAIR">ซ่อม</MenuItem>
-            <MenuItem value="INSPECT">ตรวจสอบ</MenuItem>
+            <Kanban className="size-4" />
+            <span>Kanban</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="space-y-1">
+          <Label htmlFor="job-search">ค้นหาลูกค้า</Label>
+          <Input
+            id="job-search"
+            placeholder="ค้นหาลูกค้า..."
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="job-status-filter">กรองสถานะ</Label>
+          <Select
+            id="job-status-filter"
+            value={statusFilter ?? ''}
+            onChange={(e) => onStatusFilterChange(e.target.value || null)}
+          >
+            <option value="">ทั้งหมด</option>
+            <option value="QUEUED">รอดำเนินการ</option>
+            <option value="IN_PROGRESS">กำลังดำเนินการ</option>
+            <option value="COMPLETED">เสร็จแล้ว</option>
+            <option value="CANCELLED">ยกเลิก</option>
           </Select>
-        </FormControl>
-      </Box>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="job-type-filter">ประเภทงาน</Label>
+          <Select
+            id="job-type-filter"
+            value={jobTypeFilter ?? ''}
+            onChange={(e) => onJobTypeFilterChange(e.target.value || null)}
+          >
+            <option value="">ทั้งหมด</option>
+            <option value="INSTALL">ติดตั้ง</option>
+            <option value="REPAIR">ซ่อม</option>
+            <option value="INSPECT">ตรวจสอบ</option>
+          </Select>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
           {error}
-        </Alert>
+        </div>
       )}
 
       {viewMode === 'kanban' ? (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 2 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {kanbanColumns.map((col) => {
             const colJobs = jobs.filter((j) => j.status === col.key);
             return (
-              <Paper key={col.key} sx={{ p: 2, bgcolor: col.color, minHeight: 400 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {col.title}
-                  </Typography>
-                  <Chip label={colJobs.length} size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <div
+                key={col.key}
+                className={`p-4 rounded-xl border min-h-[420px] ${col.bg}`}
+              >
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-sm">{col.title}</h3>
+                  <Badge variant="secondary">{colJobs.length}</Badge>
+                </div>
+                <div className="space-y-2.5">
                   {colJobs.map((job) => {
                     const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
                     return (
-                      <Paper
+                      <Card
                         key={job.id}
-                        sx={{ p: 2, cursor: 'pointer', '&:hover': { boxShadow: 3 } }}
                         onClick={() => onRowClick(job)}
+                        className="p-3 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-neutral-950"
                       >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="subtitle2" fontWeight="bold">
+                        <div className="flex justify-between items-start mb-1.5">
+                          <span className="font-semibold text-sm">
                             {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-                          </Typography>
-                          <Chip label={STATUS_LABELS[job.status] ?? job.status} size="small" color={STATUS_COLORS[job.status] ?? 'default'} />
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
+                          </span>
+                          <Badge variant={getStatusBadgeVariant(job.status)}>
+                            {STATUS_LABELS[job.status] ?? job.status}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-neutral-500">
                           ลูกค้า: {job.customerId}
-                        </Typography>
-                        <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                        </p>
+                        <p className="text-xs text-neutral-400 mt-1">
                           นัดหมาย: {formatDate(job.scheduledDate)}
-                        </Typography>
+                        </p>
                         {transitions.length > 0 && (
-                          <Box sx={{ mt: 1.5, display: 'flex', gap: 0.5, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className="mt-2.5 flex flex-wrap gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {transitions.map((t) => (
                               <Button
                                 key={t}
-                                size="small"
-                                variant="outlined"
-                                onClick={() => onStatusChange(job.id, t, job.version)}
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs px-2"
+                                onClick={() =>
+                                  onStatusChange(job.id, t, job.version)
+                                }
                               >
                                 ไปยัง {STATUS_LABELS[t] ?? t}
                               </Button>
                             ))}
-                          </Box>
+                          </div>
                         )}
-                      </Paper>
+                      </Card>
                     );
                   })}
                   {colJobs.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
+                    <p className="text-xs text-neutral-400 text-center py-8">
                       ไม่มีงานในสถานะนี้
-                    </Typography>
+                    </p>
                   )}
-                </Box>
-              </Paper>
+                </div>
+              </div>
             );
           })}
-        </Box>
+        </div>
       ) : (
-        <TableContainer component={Paper}>
+        <div>
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>ลูกค้า</TableCell>
-                <TableCell>ประเภทงาน</TableCell>
-                <TableCell>สถานะ</TableCell>
-                <TableCell>วันที่นัดหมาย</TableCell>
-                <TableCell>ช่าง</TableCell>
-                <TableCell>สร้างเมื่อ</TableCell>
-                <TableCell>เปลี่ยนสถานะ</TableCell>
+                <TableHead>ลูกค้า</TableHead>
+                <TableHead>ประเภทงาน</TableHead>
+                <TableHead>สถานะ</TableHead>
+                <TableHead>วันที่นัดหมาย</TableHead>
+                <TableHead>ช่าง</TableHead>
+                <TableHead>สร้างเมื่อ</TableHead>
+                <TableHead className="w-36">เปลี่ยนสถานะ</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
+                  <TableRow key={i} role="progressbar">
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
                   </TableRow>
                 ))
               ) : jobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={7} className="text-center py-6 text-neutral-500">
                     ไม่พบงาน
                   </TableCell>
                 </TableRow>
@@ -288,48 +317,53 @@ export function JobQueueView({
                 jobs.map((job) => {
                   const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
                   return (
-                    <TableRow key={job.id} hover sx={{ cursor: "pointer" }} onClick={() => onRowClick(job)}>
-                      <TableCell>{job.customerId}</TableCell>
+                    <TableRow
+                      key={job.id}
+                      onClick={() => onRowClick(job)}
+                      className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      <TableCell className="font-medium">{job.customerId}</TableCell>
+                      <TableCell>{JOB_TYPE_LABELS[job.jobType] ?? job.jobType}</TableCell>
                       <TableCell>
-                        {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={STATUS_LABELS[job.status] ?? job.status}
-                          color={STATUS_COLORS[job.status] ?? "default"}
-                          size="small"
-                        />
+                        <Badge
+                          variant={getStatusBadgeVariant(job.status)}
+                          className={
+                            job.status === 'COMPLETED'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : ''
+                          }
+                        >
+                          {STATUS_LABELS[job.status] ?? job.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>{formatDate(job.scheduledDate)}</TableCell>
-                      <TableCell>{job.technicianId ?? "-"}</TableCell>
+                      <TableCell>{job.technicianId ?? '-'}</TableCell>
                       <TableCell>{formatDate(job.createdAt)}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {transitions.length > 0 ? (
-                          <FormControl size="small" sx={{ minWidth: 120 }}>
-                            <Select
-                              value=""
-                              displayEmpty
-                              onChange={(e) => {
-                                const newStatus = e.target.value as string;
-                                if (newStatus) {
-                                  onStatusChange(job.id, newStatus, job.version);
-                                }
-                              }}
-                            >
-                              <MenuItem value="" disabled>
-                                เปลี่ยน...
-                              </MenuItem>
-                              {transitions.map((s) => (
-                                <MenuItem key={s} value={s}>
-                                  {STATUS_LABELS[s] ?? s}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
+                          <Select
+                            value=""
+                            className="h-8 text-xs"
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              if (newStatus) {
+                                onStatusChange(job.id, newStatus, job.version);
+                              }
+                            }}
+                          >
+                            <option value="" disabled>
+                              เปลี่ยน...
+                            </option>
+                            {transitions.map((s) => (
+                              <option key={s} value={s}>
+                                {STATUS_LABELS[s] ?? s}
+                              </option>
+                            ))}
+                          </Select>
                         ) : (
-                          <Typography variant="caption" color="text.secondary">
+                          <span className="text-xs text-neutral-400">
                             สถานะสิ้นสุด
-                          </Typography>
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -338,41 +372,56 @@ export function JobQueueView({
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+
+          {pagination && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {`${from}-${to} จาก ${pagination.totalData}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {pagination && viewMode === 'table' && (
-        <Paper sx={{ mt: 1 }}>
-          <TablePagination
-            component="div"
-            count={pagination.totalData}
-            page={pagination.page - 1}
-            onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-            rowsPerPage={pagination.pageSize}
-            rowsPerPageOptions={[pagination.pageSize]}
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-          />
-        </Paper>
-      )}
-
-      <Snackbar
-        open={statusChangeError !== null}
-        autoHideDuration={6000}
-        onClose={onClearStatusError}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={onClearStatusError}
-          severity="error"
-          variant="filled"
-          sx={{ width: "100%" }}
+      {statusChangeError && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg shadow-lg text-sm"
         >
-          {statusChangeError}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <AlertCircle className="size-4 shrink-0" />
+          <span>{statusChangeError}</span>
+          <button
+            type="button"
+            onClick={onClearStatusError}
+            className="ml-2 hover:opacity-80"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+    </Card>
   );
 }
+
+// ============== Job Create Dialog ==============
 
 interface JobCreateDialogProps {
   open: boolean;
@@ -384,13 +433,13 @@ interface JobCreateDialogProps {
   vehicles: VehicleEntity[];
   customerId: string;
   vehicleId: string;
-  jobType: "INSTALL" | "REPAIR" | "INSPECT";
+  jobType: 'INSTALL' | 'REPAIR' | 'INSPECT';
   scheduledDate: string;
   technicianId: string;
   notes: string;
   onCustomerChange: (id: string) => void;
   onVehicleChange: (id: string) => void;
-  onJobTypeChange: (t: "INSTALL" | "REPAIR" | "INSPECT") => void;
+  onJobTypeChange: (t: 'INSTALL' | 'REPAIR' | 'INSPECT') => void;
   onScheduledDateChange: (d: string) => void;
   onTechnicianChange: (t: string) => void;
   onNotesChange: (n: string) => void;
@@ -420,113 +469,155 @@ export function JobCreateDialog({
   onScheduledDateChange,
   onTechnicianChange,
   onNotesChange,
-  onCustomerSearch,
-  customerLoading,
-  onLoadMoreCustomers,
   onSubmit,
 }: JobCreateDialogProps) {
-  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null;
-  const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    onSubmit();
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>สร้างงานใหม่</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-          <Autocomplete
-            options={customers}
-            getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
-            value={selectedCustomer}
-            onChange={(_, val) => onCustomerChange(val?.id ?? "")}
-            onInputChange={(_, val, reason) => {
-              if (reason === 'input') onCustomerSearch(val);
-            }}
-            filterOptions={(x) => x}
-            loading={customerLoading}
-            slotProps={{
-              listbox: {
-                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
-                  const listbox = e.currentTarget;
-                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
-                    onLoadMoreCustomers();
-                  }
-                },
-              },
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="ลูกค้า *"
-                required
-                error={!!fieldErrors.customerId}
-                helperText={fieldErrors.customerId}
-              />
-            )}
-          />
-          <Autocomplete
-            options={vehicles}
-            getOptionLabel={(v) => `${v.licensePlate}${v.brand ? ` - ${v.brand}` : ""}${v.model ? ` ${v.model}` : ""}`}
-            value={selectedVehicle}
-            onChange={(_, val) => onVehicleChange(val?.id ?? "")}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="รถ"
-                error={!!fieldErrors.vehicleId}
-                helperText={fieldErrors.vehicleId}
-              />
-            )}
-            disabled={!customerId}
-          />
-          <FormControl fullWidth error={!!fieldErrors.jobType}>
-            <InputLabel>ประเภทงาน *</InputLabel>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>สร้างงานใหม่</DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-cust">ลูกค้า *</Label>
             <Select
-              value={jobType}
-              label="ประเภทงาน *"
-              onChange={(e) => onJobTypeChange(e.target.value as "INSTALL" | "REPAIR" | "INSPECT")}
+              id="create-job-cust"
+              value={customerId}
+              onChange={(e) => onCustomerChange(e.target.value)}
+              error={!!fieldErrors.customerId}
             >
-              <MenuItem value="INSTALL">ติดตั้ง</MenuItem>
-              <MenuItem value="REPAIR">ซ่อม</MenuItem>
-              <MenuItem value="INSPECT">ตรวจสอบ</MenuItem>
+              <option value="">-- เลือกลูกค้า --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.phone})
+                </option>
+              ))}
             </Select>
-          </FormControl>
-          <TextField
-            label="วันที่นัดหมาย"
-            type="date"
-            value={scheduledDate}
-            onChange={(e) => onScheduledDateChange(e.target.value)}
-            slotProps={{ inputLabel: { shrink: true } }}
-            error={!!fieldErrors.scheduledDate}
-            helperText={fieldErrors.scheduledDate}
-          />
-          <TextField
-            label="ช่างผู้รับผิดชอบ"
-            value={technicianId}
-            onChange={(e) => onTechnicianChange(e.target.value)}
-            error={!!fieldErrors.technicianId}
-            helperText={fieldErrors.technicianId}
-          />
-          <TextField
-            label="หมายเหตุ"
-            multiline
-            rows={3}
-            value={notes}
-            onChange={(e) => onNotesChange(e.target.value)}
-            error={!!fieldErrors.notes}
-            helperText={fieldErrors.notes}
-          />
-        </Box>
+            {fieldErrors.customerId && (
+              <p className="text-xs text-red-500">{fieldErrors.customerId}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-veh">รถ</Label>
+            <Select
+              id="create-job-veh"
+              value={vehicleId}
+              onChange={(e) => onVehicleChange(e.target.value)}
+              disabled={!customerId}
+              error={!!fieldErrors.vehicleId}
+            >
+              <option value="">-- เลือกรถ --</option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.licensePlate}
+                  {v.brand ? ` - ${v.brand}` : ''}
+                  {v.model ? ` ${v.model}` : ''}
+                </option>
+              ))}
+            </Select>
+            {fieldErrors.vehicleId && (
+              <p className="text-xs text-red-500">{fieldErrors.vehicleId}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-type">ประเภทงาน *</Label>
+            <Select
+              id="create-job-type"
+              value={jobType}
+              onChange={(e) =>
+                onJobTypeChange(
+                  e.target.value as 'INSTALL' | 'REPAIR' | 'INSPECT'
+                )
+              }
+              error={!!fieldErrors.jobType}
+            >
+              <option value="INSTALL">ติดตั้ง</option>
+              <option value="REPAIR">ซ่อม</option>
+              <option value="INSPECT">ตรวจสอบ</option>
+            </Select>
+            {fieldErrors.jobType && (
+              <p className="text-xs text-red-500">{fieldErrors.jobType}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-date">วันที่นัดหมาย</Label>
+            <Input
+              id="create-job-date"
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => onScheduledDateChange(e.target.value)}
+              error={!!fieldErrors.scheduledDate}
+            />
+            {fieldErrors.scheduledDate && (
+              <p className="text-xs text-red-500">{fieldErrors.scheduledDate}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-tech">ช่างผู้รับผิดชอบ</Label>
+            <Input
+              id="create-job-tech"
+              value={technicianId}
+              onChange={(e) => onTechnicianChange(e.target.value)}
+              error={!!fieldErrors.technicianId}
+            />
+            {fieldErrors.technicianId && (
+              <p className="text-xs text-red-500">{fieldErrors.technicianId}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-job-notes">หมายเหตุ</Label>
+            <Textarea
+              id="create-job-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              error={!!fieldErrors.notes}
+            />
+            {fieldErrors.notes && (
+              <p className="text-xs text-red-500">{fieldErrors.notes}</p>
+            )}
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'สร้างงาน'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={onSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : "สร้างงาน"}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
+
+// ============== Job Detail View ==============
 
 interface JobDetailViewProps {
   job: JobWithLogsResponse | null;
@@ -545,22 +636,33 @@ export function JobDetailView({
   onStatusChange,
   onHistory,
 }: JobDetailViewProps) {
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState('');
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center py-12" role="progressbar">
+        <Loader2 className="size-8 animate-spin text-neutral-500" />
+      </div>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <div
+        role="alert"
+        className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!job) {
-    return <Alert severity="info">ไม่พบข้อมูลงาน</Alert>;
+    return (
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+        ไม่พบข้อมูลงาน
+      </div>
+    );
   }
 
   const transitions = ALLOWED_TRANSITIONS[job.status] ?? [];
@@ -568,126 +670,129 @@ export function JobDetailView({
   const handleStatusSubmit = () => {
     if (selectedStatus) {
       onStatusChange(selectedStatus, job.version);
-      setSelectedStatus("");
+      setSelectedStatus('');
     }
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button variant="outlined" onClick={onBack}>
-            กลับ
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1">
+            <ArrowLeft className="size-4" />
+            <span>กลับ</span>
           </Button>
-          <Typography variant="h5">
+          <h1 className="text-2xl font-bold tracking-tight">
             {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-          </Typography>
-          <Chip
-            label={STATUS_LABELS[job.status] ?? job.status}
-            color={STATUS_COLORS[job.status] ?? "default"}
-            size="small"
-          />
-        </Box>
-        <Button variant="outlined" onClick={onHistory}>
-          ประวัติการแก้ไข
+          </h1>
+          <Badge variant={getStatusBadgeVariant(job.status)}>
+            {STATUS_LABELS[job.status] ?? job.status}
+          </Badge>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onHistory}
+          className="flex items-center gap-1.5"
+        >
+          <History className="size-4" />
+          <span>ประวัติการแก้ไข</span>
         </Button>
-      </Box>
+      </div>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">รหัสลูกค้า</Typography>
-          <Typography>{job.customerId}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">รหัสรถ</Typography>
-          <Typography>{job.vehicleId || "-"}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">วันที่นัดหมาย</Typography>
-          <Typography>{formatDate(job.scheduledDate)}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">เวลาเริ่ม</Typography>
-          <Typography>{formatDate(job.startTime)}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">เวลาสิ้นสุด</Typography>
-          <Typography>{formatDate(job.endTime)}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ช่าง</Typography>
-          <Typography>{job.technicianId || "-"}</Typography>
-        </Box>
-        <Box sx={{ gridColumn: "1 / -1" }}>
-          <Typography variant="subtitle2" color="text.secondary">หมายเหตุ</Typography>
-          <Typography>{job.notes || "-"}</Typography>
-        </Box>
-      </Box>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">รหัสลูกค้า</span>
+          <p className="font-medium text-sm">{job.customerId}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">รหัสรถ</span>
+          <p className="text-sm">{job.vehicleId || '-'}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">วันที่นัดหมาย</span>
+          <p className="text-sm">{formatDate(job.scheduledDate)}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">เวลาเริ่ม</span>
+          <p className="text-sm">{formatDate(job.startTime)}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">เวลาสิ้นสุด</span>
+          <p className="text-sm">{formatDate(job.endTime)}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ช่าง</span>
+          <p className="text-sm">{job.technicianId || '-'}</p>
+        </div>
+        <div className="md:col-span-2">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">หมายเหตุ</span>
+          <p className="text-sm">{job.notes || '-'}</p>
+        </div>
+      </div>
 
       {transitions.length > 0 && (
-        <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 3 }}>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+        <div className="flex items-center gap-3 mb-6 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-900 border">
+          <div className="w-48">
             <Select
               value={selectedStatus}
-              displayEmpty
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
-              <MenuItem value="" disabled>เปลี่ยนสถานะ...</MenuItem>
+              <option value="" disabled>
+                เปลี่ยนสถานะ...
+              </option>
               {transitions.map((s) => (
-                <MenuItem key={s} value={s}>{STATUS_LABELS[s] ?? s}</MenuItem>
+                <option key={s} value={s}>
+                  {STATUS_LABELS[s] ?? s}
+                </option>
               ))}
             </Select>
-          </FormControl>
+          </div>
           <Button
-            variant="contained"
+            size="sm"
             onClick={handleStatusSubmit}
             disabled={!selectedStatus}
           >
             ยืนยัน
           </Button>
-        </Box>
+        </div>
       )}
 
-      <Typography variant="h6" gutterBottom>ประวัติสถานะ</Typography>
+      <h2 className="text-lg font-semibold mb-4">ประวัติสถานะ</h2>
       {job.statusLogs.length === 0 ? (
-        <Typography color="text.secondary">ไม่มีประวัติ</Typography>
+        <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400 border border-dashed rounded-md">
+          ไม่มีประวัติ
+        </p>
       ) : (
-        <Box>
+        <div className="space-y-2">
           {job.statusLogs.map((log) => (
-            <Box
+            <div
               key={log.id}
-              sx={{
-                display: "flex",
-                gap: 2,
-                py: 1,
-                borderBottom: "1px solid",
-                borderColor: "divider",
-                alignItems: "center",
-              }}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-lg border text-sm"
             >
-              <Chip
-                label={STATUS_LABELS[log.toStatus] ?? log.toStatus}
-                color={STATUS_COLORS[log.toStatus] ?? "default"}
-                size="small"
-              />
-              <Typography variant="body2" color="text.secondary">
-                {log.fromStatus
-                  ? `${STATUS_LABELS[log.fromStatus] ?? log.fromStatus} → ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`
-                  : `เริ่มต้น: ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                โดย {log.changedBy}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {log.note ? `- ${log.note}` : ""}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ ml: "auto" }}>
+              <div className="flex items-center gap-2">
+                <Badge variant={getStatusBadgeVariant(log.toStatus)}>
+                  {STATUS_LABELS[log.toStatus] ?? log.toStatus}
+                </Badge>
+                <span className="text-neutral-600 dark:text-neutral-400">
+                  {log.fromStatus
+                    ? `${STATUS_LABELS[log.fromStatus] ?? log.fromStatus} → ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`
+                    : `เริ่มต้น: ${STATUS_LABELS[log.toStatus] ?? log.toStatus}`}
+                </span>
+                <span className="text-xs text-neutral-400">
+                  โดย {log.changedBy}
+                </span>
+                {log.note && (
+                  <span className="text-xs text-neutral-500">- {log.note}</span>
+                )}
+              </div>
+              <span className="text-xs text-neutral-400">
                 {formatDate(log.createdAt)}
-              </Typography>
-            </Box>
+              </span>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </Card>
   );
 }
