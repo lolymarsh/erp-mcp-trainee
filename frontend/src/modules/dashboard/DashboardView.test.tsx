@@ -29,9 +29,9 @@ describe('DashboardView', () => {
   });
 
   it('renders loading spinner/skeleton when loading with no summary', () => {
-    const { container } = render(<DashboardView summary={null} loading={true} error={null} />);
+    render(<DashboardView summary={null} loading={true} error={null} />);
 
-    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders error alert when error with no summary', () => {

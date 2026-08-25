@@ -1,16 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  Alert,
-  Skeleton,
-} from '@mui/material';
-import { DataGrid, type GridColDef } from '@mui/x-data-grid';
-import {
   BarChart,
   Bar,
   XAxis,
@@ -19,7 +9,24 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import type { DashboardSummary, LowStockProduct } from './model';
+import {
+  TrendingUp,
+  Wrench,
+  AlertTriangle,
+  DollarSign,
+} from 'lucide-react';
+import type { DashboardSummary } from './model';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
+import { Badge } from '../../components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
 
 interface DashboardViewProps {
   summary: DashboardSummary | null;
@@ -27,8 +34,8 @@ interface DashboardViewProps {
   error: string | null;
 }
 
-function formatCurrency(value: string): string {
-  const num = parseFloat(value);
+function formatCurrency(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) || 0 : value;
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
     currency: 'THB',
@@ -40,12 +47,6 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('th-TH').format(value);
 }
 
-const lowStockColumns: GridColDef<LowStockProduct>[] = [
-  { field: 'name', headerName: 'สินค้า', flex: 1, minWidth: 200 },
-  { field: 'current', headerName: 'คงเหลือ', width: 120, type: 'number' },
-  { field: 'min', headerName: 'ขั้นต่ำ', width: 120, type: 'number' },
-];
-
 export function DashboardView({
   summary,
   loading,
@@ -55,59 +56,56 @@ export function DashboardView({
 
   if (loading && !summary) {
     return (
-      <Box>
-        <Typography variant="h4" gutterBottom>Dashboard</Typography>
-        <Grid container spacing={3}>
+      <div className="space-y-6" role="progressbar">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card>
-                <CardContent>
-                  <Skeleton variant="text" width="60%" height={20} />
-                  <Skeleton variant="text" width="40%" height={36} sx={{ mt: 1 }} />
-                  <Skeleton variant="text" width="30%" height={16} sx={{ mt: 0.5 }} />
-                </CardContent>
-              </Card>
-            </Grid>
+            <Card key={i} className="p-6 space-y-2">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-4 w-1/3" />
+            </Card>
           ))}
-        </Grid>
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardContent>
-                <Skeleton variant="text" width="40%" height={24} />
-                <Skeleton variant="rectangular" height={300} sx={{ mt: 2, borderRadius: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardContent>
-                <Skeleton variant="text" width="40%" height={24} />
-                <Skeleton variant="rectangular" height={300} sx={{ mt: 2, borderRadius: 1 }} />
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        <Box sx={{ mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Skeleton variant="text" width="40%" height={24} />
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} variant="text" height={40} sx={{ mt: 0.5 }} />
-              ))}
-            </CardContent>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="p-6">
+            <Skeleton className="h-6 w-1/3 mb-4" />
+            <Skeleton className="h-[300px] w-full" />
           </Card>
-        </Box>
-      </Box>
+          <Card className="p-6">
+            <Skeleton className="h-6 w-1/3 mb-4" />
+            <Skeleton className="h-[300px] w-full" />
+          </Card>
+        </div>
+        <Card className="p-6">
+          <Skeleton className="h-6 w-1/4 mb-4" />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
     );
   }
 
   if (error && !summary) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <div
+        role="alert"
+        className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!summary) {
-    return <Typography color="text.secondary">ไม่มีข้อมูล</Typography>;
+    return (
+      <p className="text-neutral-500 dark:text-neutral-400">
+        ไม่มีข้อมูล
+      </p>
+    );
   }
 
   const monthlyChartData = summary.monthlySales.map((item) => ({
@@ -121,177 +119,201 @@ export function DashboardView({
   }));
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      </div>
 
       {error && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"
+        >
           {error}
-        </Alert>
+        </div>
       )}
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card
-            sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/sales/invoices')}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="subtitle2">
-                ยอดขายวันนี้
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                {formatCurrency(summary.todaySales.amount)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {formatNumber(summary.todaySales.count)} รายการ
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Today Sales */}
+        <Card
+          className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/sales/invoices')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              ยอดขายวันนี้
+            </span>
+            <DollarSign className="size-4 text-neutral-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-2xl font-bold">
+              {formatCurrency(summary.todaySales.amount)}
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              {formatNumber(summary.todaySales.count)} รายการ
+            </p>
+          </div>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card
-            sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/jobs')}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="subtitle2">
-                คิวงานวันนี้
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                {formatNumber(summary.todayJobs.total)}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                <Typography variant="caption" color="success.main">
-                  เสร็จ {summary.todayJobs.completed}
-                </Typography>
-                <Typography variant="caption" color="info.main">
-                  กำลังทำ {summary.todayJobs.inProgress}
-                </Typography>
-                <Typography variant="caption" color="warning.main">
-                  รอ {summary.todayJobs.queued}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Today Jobs */}
+        <Card
+          className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/jobs')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              คิวงานวันนี้
+            </span>
+            <Wrench className="size-4 text-neutral-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-2xl font-bold">
+              {formatNumber(summary.todayJobs.total)}
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs">
+              <span className="text-emerald-600 font-medium">เสร็จ {summary.todayJobs.completed}</span>
+              <span className="text-blue-600 font-medium">กำลังทำ {summary.todayJobs.inProgress}</span>
+              <span className="text-amber-600 font-medium">รอ {summary.todayJobs.queued}</span>
+            </div>
+          </div>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card
-            sx={{
-              cursor: 'pointer',
-              bgcolor: summary.lowStockProducts.length > 0 ? '#fff3e0' : undefined,
-            }}
-            onClick={() => navigate('/inventory')}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="subtitle2">
-                สต็อกใกล้หมด
-              </Typography>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 'bold' }}
-                color={summary.lowStockProducts.length > 0 ? 'error.main' : 'text.primary'}
-              >
-                {summary.lowStockProducts.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                รายการ
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Low Stock Warning */}
+        <Card
+          className={`p-5 cursor-pointer hover:shadow-md transition-shadow ${
+            summary.lowStockProducts.length > 0
+              ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20'
+              : ''
+          }`}
+          onClick={() => navigate('/inventory')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              สต็อกใกล้หมด
+            </span>
+            <AlertTriangle className={`size-4 ${summary.lowStockProducts.length > 0 ? 'text-amber-600' : 'text-neutral-400'}`} />
+          </div>
+          <div className="mt-2">
+            <div className={`text-2xl font-bold ${summary.lowStockProducts.length > 0 ? 'text-amber-600' : ''}`}>
+              {summary.lowStockProducts.length}
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">รายการ</p>
+          </div>
+        </Card>
 
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card
-            sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/sales/invoices')}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="subtitle2">
-                รายได้เดือนนี้
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                {formatCurrency(summary.monthlySales.length > 0
+        {/* Monthly Revenue */}
+        <Card
+          className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/sales/invoices')}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              รายได้เดือนนี้
+            </span>
+            <TrendingUp className="size-4 text-neutral-400" />
+          </div>
+          <div className="mt-2">
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                summary.monthlySales.length > 0
                   ? summary.monthlySales[summary.monthlySales.length - 1].amount
-                  : '0.00')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                  : '0.00'
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">สรุปยอดประจำเดือน</p>
+          </div>
+        </Card>
+      </div>
 
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                ยอดขายรายเดือน
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base font-semibold">ยอดขายรายเดือน</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`} />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="month" fontSize={12} />
+                  <YAxis
+                    tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
+                    fontSize={12}
+                  />
                   <Tooltip formatter={(value) => formatCurrency(String(value))} />
-                  <Bar dataKey="amount" fill="#1976d2" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="amount" fill="#0284c7" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Top 5 ช่าง
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+        <Card className="p-6">
+          <CardHeader className="p-0 pb-4">
+            <CardTitle className="text-base font-semibold">Top 5 ช่าง</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topTechChartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="name" width={100} />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis type="number" fontSize={12} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={90}
+                    fontSize={12}
+                  />
                   <Tooltip formatter={(value) => formatNumber(Number(value))} />
-                  <Bar dataKey="jobCount" fill="#2e7d32" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="jobCount" fill="#16a34a" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* Low Stock Table (Pure shadcn Table - No @mui/x-data-grid) */}
       {summary.lowStockProducts.length > 0 && (
-        <Box sx={{ mt: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                สินค้าที่สต็อกต่ำกว่าเกณฑ์
-              </Typography>
-              <DataGrid
-                rows={summary.lowStockProducts}
-                columns={lowStockColumns}
-                getRowId={(row) => row.id}
-                disableRowSelectionOnClick
-                autoHeight
-                pageSizeOptions={[5, 10]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 5 } },
-                }}
-                sx={{
-                  '& .MuiDataGrid-row': {
-                    bgcolor: '#fff3e0',
-                    '&:hover': { bgcolor: '#ffe0b2' },
-                  },
-                }}
-              />
-            </CardContent>
-          </Card>
-        </Box>
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">
+              สินค้าที่สต็อกต่ำกว่าเกณฑ์
+            </h2>
+            <Badge variant="destructive">
+              {summary.lowStockProducts.length} รายการ
+            </Badge>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>สินค้า</TableHead>
+                <TableHead className="text-right w-32">คงเหลือ</TableHead>
+                <TableHead className="text-right w-32">ขั้นต่ำ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {summary.lowStockProducts.map((p) => (
+                <TableRow
+                  key={p.id}
+                  className="bg-amber-50/50 hover:bg-amber-100/50 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 cursor-pointer"
+                  onClick={() => navigate('/inventory')}
+                >
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="text-right font-semibold text-red-600 dark:text-red-400">
+                    {p.current}
+                  </TableCell>
+                  <TableCell className="text-right text-neutral-500">
+                    {p.min}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
-    </Box>
+    </div>
   );
 }
