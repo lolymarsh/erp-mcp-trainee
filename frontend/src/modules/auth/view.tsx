@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, TextField, Button, Typography, Alert, Paper,
-  InputAdornment, IconButton, CircularProgress,
-} from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from './controller';
 import { loginFormSchema } from './model';
 import type { LoginFieldErrors } from './model';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '../../components/ui/card';
+import { Label } from '../../components/ui/label';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
 
 export function LoginPage(): React.ReactElement {
   const [username, setUsername] = useState('');
@@ -56,70 +62,92 @@ export function LoginPage(): React.ReactElement {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        bgcolor: 'grey.100',
-      }}
-    >
-      <Paper sx={{ p: 4, maxWidth: 400, width: '100%' }}>
-        <Typography variant="h5" gutterBottom align="center">
-          Versus ERP
-        </Typography>
-        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          เข้าสู่ระบบ
-        </Typography>
-        {fieldErrors.form && <Alert severity="error" sx={{ mb: 2 }}>{fieldErrors.form}</Alert>}
-        <Box component="form" onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="ชื่อผู้ใช้"
-            value={username}
-            onChange={(e) => { setUsername(e.target.value); setFieldErrors((prev) => ({ ...prev, username: undefined })); }}
-            onBlur={() => validateField('username')}
-            margin="normal"
-            error={!!fieldErrors.username}
-            helperText={fieldErrors.username}
-            autoComplete="username"
-            autoFocus
-          />
-          <TextField
-            fullWidth
-            label="รหัสผ่าน"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
-            onBlur={() => validateField('password')}
-            margin="normal"
-            error={!!fieldErrors.password}
-            helperText={fieldErrors.password}
-            autoComplete="current-password"
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 2 }}
-            disabled={loading || !username.trim() || !password.trim()}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'เข้าสู่ระบบ'}
-          </Button>
-        </Box>
-      </Paper>
-    </Box>
+    <div className="flex min-h-screen items-center justify-center bg-neutral-100 p-4 dark:bg-neutral-900">
+      <Card className="w-full max-w-sm shadow-md">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">Versus ERP</CardTitle>
+          <CardDescription>เข้าสู่ระบบ</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {fieldErrors.form && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            >
+              {fieldErrors.form}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="username">ชื่อผู้ใช้</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, username: undefined }));
+                }}
+                onBlur={() => validateField('username')}
+                error={!!fieldErrors.username}
+                autoComplete="username"
+                autoFocus
+              />
+              {fieldErrors.username && (
+                <p className="text-xs text-red-500">{fieldErrors.username}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password">รหัสผ่าน</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }}
+                  onBlur={() => validateField('password')}
+                  error={!!fieldErrors.password}
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </button>
+              </div>
+              {fieldErrors.password && (
+                <p className="text-xs text-red-500">{fieldErrors.password}</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-2"
+              disabled={loading || !username.trim() || !password.trim()}
+            >
+              {loading ? (
+                <Loader2 className="size-4 animate-spin" role="progressbar" />
+              ) : (
+                'เข้าสู่ระบบ'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
