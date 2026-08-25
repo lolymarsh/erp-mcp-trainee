@@ -41,11 +41,12 @@ describe('chatApi', () => {
       },
     });
 
-    const result = await chatApi.Send({ question: 'test', format: 'text' });
+    const result = await chatApi.Send({ question: 'test', format: 'text', provider: 'openai' });
 
     expect(mockApi.post).toHaveBeenCalledWith('/chat/send', {
       question: 'test',
       format: 'text',
+      provider: 'openai',
     }, {
       headers: { 'X-Session-Id': GetSessionId() },
     });
@@ -98,11 +99,12 @@ describe('chatApi', () => {
     const mockBlob = new Blob(['test'], { type: 'text/plain' });
     mockApi.post.mockResolvedValue({ data: mockBlob });
 
-    const result = await chatApi.ExportResult({ question: 'test', format: 'csv' });
+    const result = await chatApi.ExportResult({ question: 'test', format: 'csv', provider: 'openai' });
 
     expect(mockApi.post).toHaveBeenCalledWith('/chat/export', {
       question: 'test',
       format: 'csv',
+      provider: 'openai',
     }, {
       responseType: 'blob',
       headers: { 'X-Session-Id': GetSessionId() },

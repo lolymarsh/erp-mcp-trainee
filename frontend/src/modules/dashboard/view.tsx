@@ -275,7 +275,7 @@ export function DashboardView({
         </Card>
       </div>
 
-      {/* Low Stock Table (Pure shadcn Table - No @mui/x-data-grid) */}
+      {/* Low Stock Table */}
       {summary.lowStockProducts.length > 0 && (
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">

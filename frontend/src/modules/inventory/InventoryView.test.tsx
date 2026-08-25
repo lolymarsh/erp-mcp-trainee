@@ -7,6 +7,7 @@ const mockProducts: ProductEntity[] = [
   {
     id: 'p1',
     categoryId: 'cat1',
+    categoryName: 'น้ำมันเครื่อง',
     sku: 'OIL-001',
     name: 'น้ำมันเครื่อง 5W30',
     description: null,
@@ -22,6 +23,7 @@ const mockProducts: ProductEntity[] = [
   {
     id: 'p2',
     categoryId: 'cat2',
+    categoryName: 'ไส้กรอง',
     sku: 'FILTER-001',
     name: 'กรองน้ำมันเครื่อง',
     description: null,

@@ -25,6 +25,7 @@ interface UseCustomerListReturn {
   refetch: () => void;
   setPage: (page: number) => void;
   setSearch: (search: string) => void;
+  exportCsv: () => void;
 }
 
 export function useCustomerList(): UseCustomerListReturn {

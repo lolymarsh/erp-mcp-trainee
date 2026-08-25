@@ -281,7 +281,7 @@ export function useChat() {
               break;
             }
             case 'done': {
-              const currentStreaming = { sql: '', resultCount: 0, data: [] };
+              const currentStreaming: { sql: string; resultCount: number; data: Record<string, unknown>[] } = { sql: '', resultCount: 0, data: [] };
               setStreaming((prev) => {
                 currentStreaming.sql = prev.sql;
                 currentStreaming.resultCount = prev.resultCount;

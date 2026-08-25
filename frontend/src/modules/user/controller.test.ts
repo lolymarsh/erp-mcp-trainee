@@ -129,6 +129,39 @@ describe('useUserCreate', () => {
   });
 });
 
+describe('useUserUpdate', () => {
+  const onSuccess = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('updates user on submit', async () => {
+    mockApi.patch.mockResolvedValueOnce({ data: { code: 200, data: mockUser } });
+    const { result } = renderHook(() => useUserUpdate(onSuccess));
+
+    act(() => {
+      result.current.openWithData(mockUser);
+    });
+
+    await act(async () => {
+      await result.current.submit({
+        displayName: 'Updated Admin',
+        role: 'ADMIN',
+        version: 1,
+      });
+    });
+
+    expect(mockApi.patch).toHaveBeenCalledWith('/auth/u1', {
+      displayName: 'Updated Admin',
+      role: 'ADMIN',
+      version: 1,
+    });
+    expect(onSuccess).toHaveBeenCalled();
+    expect(result.current.open).toBe(false);
+  });
+});
+
 describe('useUserDelete', () => {
   const onSuccess = vi.fn();
 

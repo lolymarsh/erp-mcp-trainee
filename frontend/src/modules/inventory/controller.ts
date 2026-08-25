@@ -35,6 +35,7 @@ interface UseInventoryListReturn {
   refetch: () => void;
   setPage: (page: number) => void;
   setSearch: (search: string) => void;
+  exportCsv: () => void;
 }
 
 export function useInventoryList(): UseInventoryListReturn {
