@@ -80,11 +80,11 @@ describe('UserListView', () => {
   });
 
   it('renders loading skeleton when loading', () => {
-    const { container } = render(
+    render(
       <UserListView {...defaultProps} users={[]} loading={true} pagination={null} />,
     );
 
-    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders error alert when error occurs', () => {

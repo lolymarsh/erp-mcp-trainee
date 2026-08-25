@@ -1,36 +1,34 @@
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  CircularProgress,
-  Alert,
-  Paper,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  TextField,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  Skeleton,
-  InputLabel,
-  FormControl,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useState, useEffect } from 'react';
+  UserPlus,
+  Loader2,
+  CheckCircle2,
+  Ban,
+} from 'lucide-react';
 import type { UserEntity, PaginationResponse } from './model';
 import { GetRoleLabel } from './model';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select } from '../../components/ui/select';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 // ============== User List ==============
 
@@ -67,122 +65,174 @@ export function UserListView({
   onSearch,
   search,
 }: UserListViewProps) {
-  return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">จัดการผู้ใช้งาน</Typography>
-        <Button variant="contained" onClick={onCreateClick}>
-          เพิ่มผู้ใช้งาน
-        </Button>
-      </Box>
+  const from = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const to = pagination
+    ? Math.min(pagination.page * pagination.pageSize, pagination.totalData)
+    : users.length;
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-        <TextField
-          label="ค้นหาชื่อผู้ใช้หรือชื่อที่แสดง"
-          variant="outlined"
-          size="small"
-          sx={{ flex: 1 }}
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-        />
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>บทบาท</InputLabel>
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">จัดการผู้ใช้งาน</h1>
+        <Button onClick={onCreateClick} className="flex items-center gap-1.5">
+          <UserPlus className="size-4" />
+          <span>เพิ่มผู้ใช้งาน</span>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <div className="space-y-1">
+          <Label htmlFor="user-search">ค้นหาชื่อผู้ใช้หรือชื่อที่แสดง</Label>
+          <Input
+            id="user-search"
+            placeholder="ค้นหาชื่อผู้ใช้หรือชื่อที่แสดง..."
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="user-role-filter">บทบาท</Label>
           <Select
-            label="บทบาท"
+            id="user-role-filter"
             value={roleFilter ?? ''}
             onChange={(e) => onRoleFilterChange(e.target.value || null)}
           >
-            <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
-            <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
-            <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
-            <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
+            <option value="">ทั้งหมด</option>
+            <option value="ADMIN">{GetRoleLabel('ADMIN')}</option>
+            <option value="MANAGER">{GetRoleLabel('MANAGER')}</option>
+            <option value="STAFF">{GetRoleLabel('STAFF')}</option>
+            <option value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</option>
           </Select>
-        </FormControl>
-      </Box>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
           {error}
-        </Alert>
+        </div>
       )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <div role="progressbar" className="flex flex-col gap-2 py-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} variant="rectangular" height={40} />
+            <Skeleton key={i} className="h-10 w-full" />
           ))}
-        </Box>
+        </div>
       ) : users.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 2 }}>
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
           ไม่พบข้อมูลผู้ใช้งาน
-        </Typography>
+        </p>
       ) : (
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
+        <div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell>ชื่อผู้ใช้</TableCell>
-                <TableCell>ชื่อที่แสดง</TableCell>
-                <TableCell>บทบาท</TableCell>
-                <TableCell>สถานะ</TableCell>
-                <TableCell align="right">จัดการ</TableCell>
+                <TableHead>ชื่อผู้ใช้</TableHead>
+                <TableHead>ชื่อที่แสดง</TableHead>
+                <TableHead>บทบาท</TableHead>
+                <TableHead>สถานะ</TableHead>
+                <TableHead className="text-right">จัดการ</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.displayName}</TableCell>
+                  <TableCell className="font-mono text-sm">{user.username}</TableCell>
+                  <TableCell className="font-medium">{user.displayName}</TableCell>
                   <TableCell>{GetRoleLabel(user.role)}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={user.isActive ? 'Active' : 'Inactive'}
-                      color={user.isActive ? 'success' : 'default'}
-                      size="small"
-                      icon={user.isActive ? <CheckCircleIcon /> : <BlockIcon />}
-                    />
+                    <Badge
+                      variant={user.isActive ? 'secondary' : 'outline'}
+                      className={
+                        user.isActive
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1 w-fit'
+                          : 'text-neutral-500 flex items-center gap-1 w-fit'
+                      }
+                    >
+                      {user.isActive ? (
+                        <CheckCircle2 className="size-3" />
+                      ) : (
+                        <Ban className="size-3" />
+                      )}
+                      <span>{user.isActive ? 'Active' : 'Inactive'}</span>
+                    </Badge>
                   </TableCell>
-                  <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                      <Button size="small" variant="outlined" onClick={() => onHistory(user)}>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onHistory(user)}
+                        className="h-8 text-xs px-2.5"
+                      >
                         ประวัติ
                       </Button>
-                      <Button size="small" variant="contained" onClick={() => onEdit(user)}>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => onEdit(user)}
+                        className="h-8 text-xs px-2.5"
+                      >
                         แก้ไข
                       </Button>
                       <Button
-                        size="small"
-                        variant="outlined"
-                        color={user.isActive ? 'warning' : 'success'}
+                        size="sm"
+                        variant="outline"
                         onClick={() => onToggleActive(user.id)}
+                        className={`h-8 text-xs px-2.5 ${
+                          user.isActive
+                            ? 'text-amber-600 border-amber-300 hover:bg-amber-50'
+                            : 'text-emerald-600 border-emerald-300 hover:bg-emerald-50'
+                        }`}
                       >
                         {user.isActive ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
                       </Button>
-                      <Button size="small" variant="outlined" color="error" onClick={() => onDelete(user)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onDelete(user)}
+                        className="h-8 text-xs px-2.5 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      >
                         ลบ
                       </Button>
-                    </Box>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
-      )}
 
-      {pagination && (
-        <TablePagination
-          component="div"
-          count={pagination.totalData}
-          page={pagination.page - 1}
-          onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-          rowsPerPage={pagination.pageSize}
-          rowsPerPageOptions={[pagination.pageSize]}
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-        />
+          {pagination && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {`${from}-${to} จาก ${pagination.totalData}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -194,7 +244,12 @@ interface UserCreateDialogProps {
   loading: boolean;
   error: string | null;
   fieldErrors: Record<string, string>;
-  onSubmit: (data: { username: string; password: string; displayName: string; role: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN' }) => void;
+  onSubmit: (data: {
+    username: string;
+    password: string;
+    displayName: string;
+    role: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN';
+  }) => void;
 }
 
 export function UserCreateDialog({
@@ -219,67 +274,106 @@ export function UserCreateDialog({
     }
   }, [open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({ username, password, displayName, role });
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">เพิ่มผู้ใช้งาน</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อผู้ใช้ *"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            error={!!fieldErrors.username}
-            helperText={fieldErrors.username}
-          />
-          <TextField
-            label="รหัสผ่าน *"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={!!fieldErrors.password}
-            helperText={fieldErrors.password || 'อย่างน้อย 6 ตัวอักษร'}
-          />
-          <TextField
-            label="ชื่อที่แสดง *"
-            required
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            error={!!fieldErrors.displayName}
-            helperText={fieldErrors.displayName}
-          />
-          <FormControl fullWidth>
-            <InputLabel>บทบาท *</InputLabel>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>เพิ่มผู้ใช้งาน</DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-user-username">ชื่อผู้ใช้ *</Label>
+            <Input
+              id="create-user-username"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              error={!!fieldErrors.username}
+            />
+            {fieldErrors.username && (
+              <p className="text-xs text-red-500">{fieldErrors.username}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-user-password">รหัสผ่าน *</Label>
+            <Input
+              id="create-user-password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={!!fieldErrors.password}
+            />
+            {fieldErrors.password ? (
+              <p className="text-xs text-red-500">{fieldErrors.password}</p>
+            ) : (
+              <p className="text-[11px] text-neutral-400">อย่างน้อย 6 ตัวอักษร</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-user-displayname">ชื่อที่แสดง *</Label>
+            <Input
+              id="create-user-displayname"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              error={!!fieldErrors.displayName}
+            />
+            {fieldErrors.displayName && (
+              <p className="text-xs text-red-500">{fieldErrors.displayName}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-user-role">บทบาท *</Label>
             <Select
-              label="บทบาท *"
+              id="create-user-role"
               value={role}
-              onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN')}
+              onChange={(e) =>
+                setRole(
+                  e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN'
+                )
+              }
             >
-              <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
-              <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
-              <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
-              <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
+              <option value="ADMIN">{GetRoleLabel('ADMIN')}</option>
+              <option value="MANAGER">{GetRoleLabel('MANAGER')}</option>
+              <option value="STAFF">{GetRoleLabel('STAFF')}</option>
+              <option value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</option>
             </Select>
-          </FormControl>
-        </Box>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -292,8 +386,18 @@ interface UserEditDialogProps {
   loading: boolean;
   error: string | null;
   fieldErrors: Record<string, string>;
-  initialValues: { displayName?: string; role?: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN'; isActive?: boolean; version: number } | null;
-  onSubmit: (data: { displayName?: string; role?: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN'; isActive?: boolean; version: number }) => void;
+  initialValues: {
+    displayName?: string;
+    role?: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN';
+    isActive?: boolean;
+    version: number;
+  } | null;
+  onSubmit: (data: {
+    displayName?: string;
+    role?: 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN';
+    isActive?: boolean;
+    version: number;
+  }) => void;
 }
 
 export function UserEditDialog({
@@ -317,50 +421,75 @@ export function UserEditDialog({
     }
   }, [open, initialValues]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({ displayName, role, version });
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">แก้ไขผู้ใช้งาน</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อที่แสดง *"
-            required
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            error={!!fieldErrors.displayName}
-            helperText={fieldErrors.displayName}
-          />
-          <FormControl fullWidth>
-            <InputLabel>บทบาท *</InputLabel>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>แก้ไขผู้ใช้งาน</DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-user-displayname">ชื่อที่แสดง *</Label>
+            <Input
+              id="edit-user-displayname"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              error={!!fieldErrors.displayName}
+            />
+            {fieldErrors.displayName && (
+              <p className="text-xs text-red-500">{fieldErrors.displayName}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-user-role">บทบาท *</Label>
             <Select
-              label="บทบาท *"
+              id="edit-user-role"
               value={role}
-              onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN')}
+              onChange={(e) =>
+                setRole(
+                  e.target.value as 'ADMIN' | 'MANAGER' | 'STAFF' | 'TECHNICIAN'
+                )
+              }
             >
-              <MenuItem value="ADMIN">{GetRoleLabel('ADMIN')}</MenuItem>
-              <MenuItem value="MANAGER">{GetRoleLabel('MANAGER')}</MenuItem>
-              <MenuItem value="STAFF">{GetRoleLabel('STAFF')}</MenuItem>
-              <MenuItem value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</MenuItem>
+              <option value="ADMIN">{GetRoleLabel('ADMIN')}</option>
+              <option value="MANAGER">{GetRoleLabel('MANAGER')}</option>
+              <option value="STAFF">{GetRoleLabel('STAFF')}</option>
+              <option value="TECHNICIAN">{GetRoleLabel('TECHNICIAN')}</option>
             </Select>
-          </FormControl>
-        </Box>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -385,20 +514,44 @@ export function UserDeleteConfirmDialog({
   onConfirm,
 }: UserDeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>ยืนยันการลบ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Typography>
-          คุณต้องการลบผู้ใช้งาน "{userName}" ใช่หรือไม่?
-        </Typography>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>ยืนยันการลบ</DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          คุณต้องการลบผู้ใช้งาน &ldquo;{userName}&rdquo; ใช่หรือไม่?
+        </p>
+
+        <DialogFooter className="pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : 'ลบ'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
-        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'ลบ'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
