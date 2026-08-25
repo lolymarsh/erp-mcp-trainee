@@ -75,7 +75,7 @@ describe('InventoryListView', () => {
   });
 
   it('renders loading spinner/skeleton when loading', () => {
-    const { container } = render(
+    render(
       <InventoryListView
         products={[]}
         loading={true}
@@ -88,7 +88,7 @@ describe('InventoryListView', () => {
       />,
     );
 
-    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders empty state when no products', () => {

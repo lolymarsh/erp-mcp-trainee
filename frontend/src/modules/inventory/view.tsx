@@ -1,31 +1,50 @@
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  TextField,
-  Button,
-  CircularProgress,
-  Alert,
-  Paper,
-  Typography,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Autocomplete,
-  FormHelperText,
-  TablePagination,
-  Skeleton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { useState, useEffect } from 'react';
-import type { ProductEntity, ProductWithMovements, CategoryEntity, PaginationResponse } from './model';
+  Tags,
+  Sliders,
+  Plus,
+  Loader2,
+  Edit,
+  Trash2,
+  History,
+  Download,
+  ArrowLeft,
+} from 'lucide-react';
+import type {
+  ProductEntity,
+  ProductWithMovements,
+  CategoryEntity,
+  PaginationResponse,
+} from './model';
 import { inventoryApi } from './model';
-import type { CreateProductFormData, StockAdjustFormData, CreateCategoryFormData } from './controller';
+import type {
+  CreateProductFormData,
+  StockAdjustFormData,
+  CreateCategoryFormData,
+} from './controller';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select } from '../../components/ui/select';
+import { Textarea } from '../../components/ui/textarea';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 // ============== Stock Badge ==============
 
@@ -38,13 +57,14 @@ function StockBadge({ currentStock, minStock }: StockBadgeProps) {
   const isLow = currentStock <= minStock;
 
   return (
-    <Chip
-      label={`${currentStock}`}
-      size="small"
-      color={isLow ? 'error' : 'success'}
-      variant={isLow ? 'filled' : 'outlined'}
-      sx={{ minWidth: 60 }}
-    />
+    <Badge
+      variant={isLow ? 'destructive' : 'secondary'}
+      className={`font-semibold min-w-[3.5rem] justify-center ${
+        !isLow ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ''
+      }`}
+    >
+      {currentStock}
+    </Badge>
   );
 }
 
@@ -77,136 +97,148 @@ export function InventoryListView({
   onManageCategoriesClick,
   onExportCsv,
 }: InventoryListViewProps) {
+  const from = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const to = pagination
+    ? Math.min(pagination.page * pagination.pageSize, pagination.totalData)
+    : products.length;
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">คลังสินค้า</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">คลังสินค้า</h1>
+        <div className="flex flex-wrap items-center gap-2">
           {onExportCsv && (
-            <Button variant="outlined" onClick={onExportCsv} disabled={products.length === 0}>
-              ส่งออก CSV
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportCsv}
+              disabled={products.length === 0}
+              className="flex items-center gap-1.5"
+            >
+              <Download className="size-4" />
+              <span>ส่งออก CSV</span>
             </Button>
           )}
           {onManageCategoriesClick && (
-            <Button variant="outlined" onClick={onManageCategoriesClick}>
-              จัดการหมวดหมู่
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onManageCategoriesClick}
+              className="flex items-center gap-1.5"
+            >
+              <Tags className="size-4" />
+              <span>จัดการหมวดหมู่</span>
             </Button>
           )}
-          <Button variant="contained" onClick={onCreateClick}>
-            เพิ่มสินค้า
+          <Button
+            size="sm"
+            onClick={onCreateClick}
+            className="flex items-center gap-1.5"
+          >
+            <Plus className="size-4" />
+            <span>เพิ่มสินค้า</span>
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <TextField
-        label="ค้นหาชื่อสินค้าหรือ SKU"
-        variant="outlined"
-        fullWidth
-        sx={{ mb: 2 }}
-        onChange={(e) => onSearch(e.target.value)}
-      />
+      <div className="mb-4 space-y-1.5">
+        <Label htmlFor="inventory-search">ค้นหาชื่อสินค้าหรือ SKU</Label>
+        <Input
+          id="inventory-search"
+          placeholder="ค้นหาชื่อสินค้าหรือ SKU..."
+          onChange={(e) => onSearch(e.target.value)}
+        />
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
           {error}
-        </Alert>
+        </div>
       )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <div role="progressbar" className="flex flex-col gap-2 py-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '180px 1fr 1fr 100px 120px', gap: 1 }}>
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-            </Box>
+            <div key={i} className="grid grid-cols-5 gap-2">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
           ))}
-        </Box>
+        </div>
       ) : products.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 2 }}>
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
           ไม่พบข้อมูลสินค้า
-        </Typography>
+        </p>
       ) : (
-        <Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '180px 1fr 1fr 100px 120px',
-              gap: 1,
-              mb: 1,
-              px: 1,
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              SKU
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              ชื่อสินค้า
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              ราคาขาย
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              สต็อก
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              ขั้นต่ำ
-            </Typography>
-          </Box>
-
-          {products.map((product) => (
-            <Box
-              key={product.id}
-              onClick={() => onSelectProduct(product)}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '180px 1fr 1fr 100px 120px',
-                gap: 1,
-                px: 1,
-                py: 1.5,
-                cursor: 'pointer',
-                borderRadius: 1,
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                alignItems: 'center',
-              }}
-            >
-              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                {product.sku}
-              </Typography>
-              <Typography>{product.name}</Typography>
-              <Typography>
-                {Number(product.sellPrice).toLocaleString()} ฿
-              </Typography>
-              <StockBadge
-                currentStock={product.currentStock}
-                minStock={product.minStock}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {product.minStock}
-              </Typography>
-            </Box>
-          ))}
+        <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px]">SKU</TableHead>
+                <TableHead>ชื่อสินค้า</TableHead>
+                <TableHead>ราคาขาย</TableHead>
+                <TableHead className="w-[100px]">สต็อก</TableHead>
+                <TableHead className="w-[100px]">ขั้นต่ำ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map((product) => (
+                <TableRow
+                  key={product.id}
+                  onClick={() => onSelectProduct(product)}
+                  className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  <TableCell className="font-mono text-xs">{product.sku}</TableCell>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>
+                    {Number(product.sellPrice).toLocaleString()} ฿
+                  </TableCell>
+                  <TableCell>
+                    <StockBadge
+                      currentStock={product.currentStock}
+                      minStock={product.minStock}
+                    />
+                  </TableCell>
+                  <TableCell className="text-neutral-500">{product.minStock}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           {pagination && (
-            <TablePagination
-              component="div"
-              count={pagination.totalData}
-              page={pagination.page - 1}
-              onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-              rowsPerPage={pagination.pageSize}
-              rowsPerPageOptions={[pagination.pageSize]}
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-            />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {`${from}-${to} จาก ${pagination.totalData}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </div>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -235,141 +267,152 @@ export function InventoryDetailView({
 }: InventoryDetailViewProps) {
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center py-12" role="progressbar">
+        <Loader2 className="size-8 animate-spin text-neutral-500" />
+      </div>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <div
+        role="alert"
+        className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!product) {
-    return <Alert severity="info">ไม่พบข้อมูลสินค้า</Alert>;
+    return (
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+        ไม่พบข้อมูลสินค้า
+      </div>
+    );
   }
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant="outlined" onClick={onBack}>
-            กลับ
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1">
+            <ArrowLeft className="size-4" />
+            <span>กลับ</span>
           </Button>
-          <Typography variant="h5">{product.name}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="contained" onClick={() => onEdit(product)}>
-            แก้ไข
+          <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => onEdit(product)} className="flex items-center gap-1">
+            <Edit className="size-4" />
+            <span>แก้ไข</span>
           </Button>
-          <Button variant="contained" color="warning" onClick={onStockAdjust}>
-            ปรับสต็อก
-          </Button>
-          <Button variant="outlined" color="error" onClick={onDelete}>
-            ลบ
-          </Button>
-          <Button variant="outlined" onClick={onHistory}>
-            ประวัติการแก้ไข
-          </Button>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">SKU</Typography>
-          <Typography sx={{ fontFamily: 'monospace' }}>{product.sku}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">หมวดหมู่</Typography>
-          <Typography>{product.categoryName || product.categoryId}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">คำอธิบาย</Typography>
-          <Typography>{product.description || '-'}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">หน่วย</Typography>
-          <Typography>{product.unit}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ราคาทุน</Typography>
-          <Typography>{Number(product.costPrice).toLocaleString()} ฿</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ราคาขาย</Typography>
-          <Typography>{Number(product.sellPrice).toLocaleString()} ฿</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">สต็อกคงเหลือ</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <StockBadge currentStock={product.currentStock} minStock={product.minStock} />
-          </Box>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">สต็อกขั้นต่ำ</Typography>
-          <Typography>{product.minStock}</Typography>
-        </Box>
-      </Box>
-
-      <Typography variant="h6" gutterBottom>
-        ประวัติการเคลื่อนไหว
-      </Typography>
-      {product.movements.length === 0 ? (
-        <Typography color="text.secondary">ไม่พบรายการเคลื่อนไหว</Typography>
-      ) : (
-        <Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '100px 80px 80px 1fr 150px',
-              gap: 1,
-              px: 1,
-              py: 0.5,
-              bgcolor: 'grey.100',
-              borderRadius: 1,
-              mb: 1,
-            }}
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onStockAdjust}
+            className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white"
           >
-            <Typography variant="subtitle2" color="text.secondary">ประเภท</Typography>
-            <Typography variant="subtitle2" color="text.secondary">จำนวน</Typography>
-            <Typography variant="subtitle2" color="text.secondary">คงเหลือ</Typography>
-            <Typography variant="subtitle2" color="text.secondary">หมายเหตุ</Typography>
-            <Typography variant="subtitle2" color="text.secondary">วันที่</Typography>
-          </Box>
-          {product.movements.map((m) => (
-            <Box
-              key={m.id}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '100px 80px 80px 1fr 150px',
-                gap: 1,
-                px: 1,
-                py: 1,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                alignItems: 'center',
-              }}
-            >
-              <Chip
-                label={m.type}
-                size="small"
-                color={m.type === 'IN' ? 'success' : m.type === 'OUT' ? 'error' : 'warning'}
-                variant="outlined"
-                sx={{ width: 70 }}
-              />
-              <Typography>{m.quantity}</Typography>
-              <Typography>-</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {m.note || '-'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {new Date(m.createdAt).toLocaleString('th-TH')}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+            <Sliders className="size-4" />
+            <span>ปรับสต็อก</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={onDelete}
+            className="flex items-center gap-1"
+          >
+            <Trash2 className="size-4" />
+            <span>ลบ</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onHistory}
+            className="flex items-center gap-1"
+          >
+            <History className="size-4" />
+            <span>ประวัติการแก้ไข</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">SKU</span>
+          <p className="font-mono text-sm">{product.sku}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">หมวดหมู่</span>
+          <p className="text-sm">{product.categoryName || product.categoryId}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">คำอธิบาย</span>
+          <p className="text-sm">{product.description || '-'}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">หน่วย</span>
+          <p className="text-sm">{product.unit}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ราคาทุน</span>
+          <p className="text-sm">{Number(product.costPrice).toLocaleString()} ฿</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ราคาขาย</span>
+          <p className="text-sm">{Number(product.sellPrice).toLocaleString()} ฿</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">สต็อกคงเหลือ</span>
+          <div className="mt-1">
+            <StockBadge currentStock={product.currentStock} minStock={product.minStock} />
+          </div>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">สต็อกขั้นต่ำ</span>
+          <p className="text-sm">{product.minStock}</p>
+        </div>
+      </div>
+
+      <h2 className="text-lg font-semibold mb-4">ประวัติการเคลื่อนไหว</h2>
+      {product.movements.length === 0 ? (
+        <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400 border border-dashed rounded-md">
+          ไม่พบรายการเคลื่อนไหว
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px]">ประเภท</TableHead>
+              <TableHead className="w-[80px]">จำนวน</TableHead>
+              <TableHead className="w-[80px]">คงเหลือ</TableHead>
+              <TableHead>หมายเหตุ</TableHead>
+              <TableHead className="w-[160px]">วันที่</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {product.movements.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>
+                  <Badge
+                    variant={m.type === 'IN' ? 'secondary' : m.type === 'OUT' ? 'destructive' : 'outline'}
+                    className={m.type === 'IN' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : ''}
+                  >
+                    {m.type}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">{m.quantity}</TableCell>
+                <TableCell>-</TableCell>
+                <TableCell className="text-neutral-600 dark:text-neutral-400">{m.note || '-'}</TableCell>
+                <TableCell className="text-xs text-neutral-500">
+                  {new Date(m.createdAt).toLocaleString('th-TH')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -414,17 +457,19 @@ export function ProductCreateDialog({
       setSellPrice('');
       setMinStock('0');
       setCurrentStock('0');
-      inventoryApi.ListCategories().then((res) => {
-        setCategories(res.data);
-      }).catch(() => {
-        setCategories([]);
-      });
+      inventoryApi
+        .ListCategories()
+        .then((res) => {
+          setCategories(res.data);
+        })
+        .catch(() => {
+          setCategories([]);
+        });
     }
   }, [open]);
 
-  const selectedCategory = categories.find((c) => c.id === categoryId) || null;
-
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       sku,
       name,
@@ -439,101 +484,156 @@ export function ProductCreateDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">เพิ่มสินค้าใหม่</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="SKU *"
-            required
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            error={!!fieldErrors.sku}
-            helperText={fieldErrors.sku}
-          />
-          <TextField
-            label="ชื่อสินค้า *"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-          />
-          <Autocomplete
-            options={categories}
-            getOptionLabel={(option) => option.name}
-            value={selectedCategory}
-            onChange={(_event, newValue) => {
-              setCategoryId(newValue?.id ?? '');
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="หมวดหมู่ *"
-                required
-                error={!!fieldErrors.categoryId}
-                helperText={fieldErrors.categoryId}
-              />
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>เพิ่มสินค้าใหม่</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-prod-sku">SKU *</Label>
+            <Input
+              id="create-prod-sku"
+              required
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              error={!!fieldErrors.sku}
+            />
+            {fieldErrors.sku && <p className="text-xs text-red-500">{fieldErrors.sku}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-prod-name">ชื่อสินค้า *</Label>
+            <Input
+              id="create-prod-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={!!fieldErrors.name}
+            />
+            {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-prod-cat">หมวดหมู่ *</Label>
+            <Select
+              id="create-prod-cat"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              error={!!fieldErrors.categoryId}
+            >
+              <option value="">-- เลือกหมวดหมู่ --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {fieldErrors.categoryId && (
+              <p className="text-xs text-red-500">{fieldErrors.categoryId}</p>
             )}
-          />
-          <TextField
-            label="คำอธิบาย"
-            multiline
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <TextField
-            label="หน่วย"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          />
-          <TextField
-            label="ราคาทุน"
-            type="number"
-            value={costPrice}
-            onChange={(e) => setCostPrice(e.target.value)}
-            error={!!fieldErrors.costPrice}
-            helperText={fieldErrors.costPrice}
-          />
-          <TextField
-            label="ราคาขาย"
-            type="number"
-            value={sellPrice}
-            onChange={(e) => setSellPrice(e.target.value)}
-            error={!!fieldErrors.sellPrice}
-            helperText={fieldErrors.sellPrice}
-          />
-          <TextField
-            label="สต็อกขั้นต่ำ"
-            type="number"
-            value={minStock}
-            onChange={(e) => setMinStock(e.target.value)}
-            error={!!fieldErrors.minStock}
-            helperText={fieldErrors.minStock}
-          />
-          <TextField
-            label="สต็อกคงเหลือ"
-            type="number"
-            value={currentStock}
-            onChange={(e) => setCurrentStock(e.target.value)}
-            error={!!fieldErrors.currentStock}
-            helperText={fieldErrors.currentStock}
-          />
-        </Box>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-prod-desc">คำอธิบาย</Label>
+            <Textarea
+              id="create-prod-desc"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-prod-unit">หน่วย</Label>
+            <Input
+              id="create-prod-unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="create-prod-cost">ราคาทุน</Label>
+              <Input
+                id="create-prod-cost"
+                type="number"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                error={!!fieldErrors.costPrice}
+              />
+              {fieldErrors.costPrice && (
+                <p className="text-xs text-red-500">{fieldErrors.costPrice}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="create-prod-sell">ราคาขาย</Label>
+              <Input
+                id="create-prod-sell"
+                type="number"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                error={!!fieldErrors.sellPrice}
+              />
+              {fieldErrors.sellPrice && (
+                <p className="text-xs text-red-500">{fieldErrors.sellPrice}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="create-prod-min">สต็อกขั้นต่ำ</Label>
+              <Input
+                id="create-prod-min"
+                type="number"
+                value={minStock}
+                onChange={(e) => setMinStock(e.target.value)}
+                error={!!fieldErrors.minStock}
+              />
+              {fieldErrors.minStock && (
+                <p className="text-xs text-red-500">{fieldErrors.minStock}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="create-prod-curr">สต็อกคงเหลือ</Label>
+              <Input
+                id="create-prod-curr"
+                type="number"
+                value={currentStock}
+                onChange={(e) => setCurrentStock(e.target.value)}
+                error={!!fieldErrors.currentStock}
+              />
+              {fieldErrors.currentStock && (
+                <p className="text-xs text-red-500">{fieldErrors.currentStock}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -581,17 +681,19 @@ export function ProductEditDialog({
       setSellPrice(initialValues.sellPrice != null ? String(initialValues.sellPrice) : '');
       setMinStock(initialValues.minStock != null ? String(initialValues.minStock) : '0');
       setCurrentStock(initialValues.currentStock != null ? String(initialValues.currentStock) : '0');
-      inventoryApi.ListCategories().then((res) => {
-        setCategories(res.data);
-      }).catch(() => {
-        setCategories([]);
-      });
+      inventoryApi
+        .ListCategories()
+        .then((res) => {
+          setCategories(res.data);
+        })
+        .catch(() => {
+          setCategories([]);
+        });
     }
   }, [open, initialValues]);
 
-  const selectedCategory = categories.find((c) => c.id === categoryId) || null;
-
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       sku,
       name,
@@ -606,101 +708,154 @@ export function ProductEditDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">แก้ไขสินค้า</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="SKU *"
-            required
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            error={!!fieldErrors.sku}
-            helperText={fieldErrors.sku}
-          />
-          <TextField
-            label="ชื่อสินค้า *"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-          />
-          <Autocomplete
-            options={categories}
-            getOptionLabel={(option) => option.name}
-            value={selectedCategory}
-            onChange={(_event, newValue) => {
-              setCategoryId(newValue?.id ?? '');
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="หมวดหมู่ *"
-                required
-                error={!!fieldErrors.categoryId}
-                helperText={fieldErrors.categoryId}
-              />
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>แก้ไขสินค้า</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-prod-sku">SKU *</Label>
+            <Input
+              id="edit-prod-sku"
+              required
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              error={!!fieldErrors.sku}
+            />
+            {fieldErrors.sku && <p className="text-xs text-red-500">{fieldErrors.sku}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-prod-name">ชื่อสินค้า *</Label>
+            <Input
+              id="edit-prod-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={!!fieldErrors.name}
+            />
+            {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-prod-cat">หมวดหมู่ *</Label>
+            <Select
+              id="edit-prod-cat"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              error={!!fieldErrors.categoryId}
+            >
+              <option value="">-- เลือกหมวดหมู่ --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            {fieldErrors.categoryId && (
+              <p className="text-xs text-red-500">{fieldErrors.categoryId}</p>
             )}
-          />
-          <TextField
-            label="คำอธิบาย"
-            multiline
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <TextField
-            label="หน่วย"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          />
-          <TextField
-            label="ราคาทุน"
-            type="number"
-            value={costPrice}
-            onChange={(e) => setCostPrice(e.target.value)}
-            error={!!fieldErrors.costPrice}
-            helperText={fieldErrors.costPrice}
-          />
-          <TextField
-            label="ราคาขาย"
-            type="number"
-            value={sellPrice}
-            onChange={(e) => setSellPrice(e.target.value)}
-            error={!!fieldErrors.sellPrice}
-            helperText={fieldErrors.sellPrice}
-          />
-          <TextField
-            label="สต็อกขั้นต่ำ"
-            type="number"
-            value={minStock}
-            onChange={(e) => setMinStock(e.target.value)}
-            error={!!fieldErrors.minStock}
-            helperText={fieldErrors.minStock}
-          />
-          <TextField
-            label="สต็อกคงเหลือ"
-            type="number"
-            value={currentStock}
-            onChange={(e) => setCurrentStock(e.target.value)}
-            disabled
-            helperText="ปรับสต็อกผ่านเมนูปรับสต็อก"
-          />
-        </Box>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-prod-desc">คำอธิบาย</Label>
+            <Textarea
+              id="edit-prod-desc"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-prod-unit">หน่วย</Label>
+            <Input
+              id="edit-prod-unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-prod-cost">ราคาทุน</Label>
+              <Input
+                id="edit-prod-cost"
+                type="number"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                error={!!fieldErrors.costPrice}
+              />
+              {fieldErrors.costPrice && (
+                <p className="text-xs text-red-500">{fieldErrors.costPrice}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-prod-sell">ราคาขาย</Label>
+              <Input
+                id="edit-prod-sell"
+                type="number"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                error={!!fieldErrors.sellPrice}
+              />
+              {fieldErrors.sellPrice && (
+                <p className="text-xs text-red-500">{fieldErrors.sellPrice}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-prod-min">สต็อกขั้นต่ำ</Label>
+              <Input
+                id="edit-prod-min"
+                type="number"
+                value={minStock}
+                onChange={(e) => setMinStock(e.target.value)}
+                error={!!fieldErrors.minStock}
+              />
+              {fieldErrors.minStock && (
+                <p className="text-xs text-red-500">{fieldErrors.minStock}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-prod-curr">สต็อกคงเหลือ</Label>
+              <Input
+                id="edit-prod-curr"
+                type="number"
+                value={currentStock}
+                disabled
+                className="bg-neutral-100 dark:bg-neutral-800"
+              />
+              <p className="text-xs text-neutral-500">ปรับสต็อกผ่านเมนูปรับสต็อก</p>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -736,7 +891,8 @@ export function StockAdjustDialog({
     }
   }, [open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       type,
       quantity: Number(quantity),
@@ -745,53 +901,75 @@ export function StockAdjustDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">ปรับสต็อก</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <FormControl fullWidth error={!!fieldErrors.type}>
-            <InputLabel>ประเภท *</InputLabel>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ปรับสต็อก</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="adjust-type">ประเภท *</Label>
             <Select
+              id="adjust-type"
               value={type}
-              label="ประเภท *"
               onChange={(e) => setType(e.target.value as 'IN' | 'OUT' | 'ADJUST')}
+              error={!!fieldErrors.type}
             >
-              <MenuItem value="IN">เพิ่มสต็อก (IN)</MenuItem>
-              <MenuItem value="OUT">ตัดสต็อก (OUT)</MenuItem>
-              <MenuItem value="ADJUST">ปรับยอด (ADJUST)</MenuItem>
+              <option value="IN">เพิ่มสต็อก (IN)</option>
+              <option value="OUT">ตัดสต็อก (OUT)</option>
+              <option value="ADJUST">ปรับยอด (ADJUST)</option>
             </Select>
-            {fieldErrors.type && <FormHelperText>{fieldErrors.type}</FormHelperText>}
-          </FormControl>
-          <TextField
-            label="จำนวน *"
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            slotProps={{ htmlInput: { min: 1 } }}
-            error={!!fieldErrors.quantity}
-            helperText={fieldErrors.quantity}
-          />
-          <TextField
-            label="หมายเหตุ"
-            multiline
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </Box>
+            {fieldErrors.type && <p className="text-xs text-red-500">{fieldErrors.type}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="adjust-qty">จำนวน *</Label>
+            <Input
+              id="adjust-qty"
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              error={!!fieldErrors.quantity}
+            />
+            {fieldErrors.quantity && (
+              <p className="text-xs text-red-500">{fieldErrors.quantity}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="adjust-note">หมายเหตุ</Label>
+            <Textarea
+              id="adjust-note"
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -836,103 +1014,131 @@ export function CategoryManageView({
   onSearch,
   onPageChange,
 }: CategoryManageViewProps) {
+  const from = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const to = pagination
+    ? Math.min(pagination.page * pagination.pageSize, pagination.totalData)
+    : categories.length;
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant="outlined" onClick={onBack}>
-            กลับ
+    <Card className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1">
+            <ArrowLeft className="size-4" />
+            <span>กลับ</span>
           </Button>
-          <Typography variant="h5">จัดการหมวดหมู่</Typography>
-        </Box>
-      </Box>
+          <h1 className="text-2xl font-bold tracking-tight">จัดการหมวดหมู่</h1>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
+          {error}
+        </div>
       )}
 
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <TextField
-          label="ค้นหาหมวดหมู่"
-          variant="outlined"
-          size="small"
-          sx={{ flex: 1 }}
-          onChange={(e) => onSearch(e.target.value)}
-        />
-        <Button variant="contained" onClick={onAddClick} sx={{ flexShrink: 0 }}>
-          เพิ่มหมวดหมู่
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex-1">
+          <Input
+            placeholder="ค้นหาหมวดหมู่..."
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
+        <Button onClick={onAddClick} className="flex items-center gap-1.5 shrink-0">
+          <Plus className="size-4" />
+          <span>เพิ่มหมวดหมู่</span>
         </Button>
-      </Box>
+      </div>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div role="progressbar" className="flex justify-center py-12">
+          <Loader2 className="size-8 animate-spin text-neutral-500" />
+        </div>
       ) : categories.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 2 }}>ไม่พบหมวดหมู่</Typography>
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          ไม่พบหมวดหมู่
+        </p>
       ) : (
-        <Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 180px',
-              gap: 1,
-              px: 1,
-              py: 0.5,
-              bgcolor: 'grey.100',
-              borderRadius: 1,
-              mb: 1,
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">ชื่อหมวดหมู่</Typography>
-            <Typography variant="subtitle2" color="text.secondary">คำอธิบาย</Typography>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ textAlign: 'center' }}>จัดการ</Typography>
-          </Box>
-          {categories.map((cat) => (
-            <Box
-              key={cat.id}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 180px',
-                gap: 1,
-                px: 1,
-                py: 1,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{cat.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {cat.description || '-'}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                <Button size="small" variant="outlined" onClick={() => onEditClick(cat)}>
-                  แก้ไข
-                </Button>
-                <Button size="small" variant="outlined" color="error" onClick={() => onDeleteClick(cat)}>
-                  ลบ
-                </Button>
-                <Button size="small" variant="text" onClick={() => onHistoryClick(cat)}>
-                  ประวัติ
-                </Button>
-              </Box>
-            </Box>
-          ))}
+        <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ชื่อหมวดหมู่</TableHead>
+                <TableHead>คำอธิบาย</TableHead>
+                <TableHead className="text-right w-[200px]">จัดการ</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((cat) => (
+                <TableRow key={cat.id}>
+                  <TableCell className="font-medium">{cat.name}</TableCell>
+                  <TableCell className="text-neutral-600 dark:text-neutral-400">
+                    {cat.description || '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEditClick(cat)}
+                        className="h-8 px-2"
+                      >
+                        แก้ไข
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onDeleteClick(cat)}
+                        className="h-8 px-2"
+                      >
+                        ลบ
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onHistoryClick(cat)}
+                        className="h-8 px-2"
+                      >
+                        ประวัติ
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
           {pagination && (
-            <TablePagination
-              component="div"
-              count={pagination.totalData}
-              page={pagination.page - 1}
-              onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-              rowsPerPage={pagination.pageSize}
-              rowsPerPageOptions={[pagination.pageSize]}
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-            />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {`${from}-${to} จาก ${pagination.totalData}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </div>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -965,7 +1171,8 @@ export function CategoryCreateDialog({
     }
   }, [open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       name,
       description: description || undefined,
@@ -973,39 +1180,57 @@ export function CategoryCreateDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">เพิ่มหมวดหมู่</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อหมวดหมู่ *"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-          />
-          <TextField
-            label="คำอธิบาย"
-            multiline
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>เพิ่มหมวดหมู่</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-cat-name">ชื่อหมวดหมู่ *</Label>
+            <Input
+              id="create-cat-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={!!fieldErrors.name}
+            />
+            {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="create-cat-desc">คำอธิบาย</Label>
+            <Textarea
+              id="create-cat-desc"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -1041,7 +1266,8 @@ export function CategoryEditDialog({
     }
   }, [open, initialValues]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       name,
       description: description || undefined,
@@ -1049,39 +1275,57 @@ export function CategoryEditDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">แก้ไขหมวดหมู่</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อหมวดหมู่ *"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!fieldErrors.name}
-            helperText={fieldErrors.name}
-          />
-          <TextField
-            label="คำอธิบาย"
-            multiline
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>แก้ไขหมวดหมู่</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-cat-name">ชื่อหมวดหมู่ *</Label>
+            <Input
+              id="edit-cat-name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={!!fieldErrors.name}
+            />
+            {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-cat-desc">คำอธิบาย</Label>
+            <Textarea
+              id="edit-cat-desc"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -1106,23 +1350,46 @@ export function CategoryDeleteConfirmDialog({
   onConfirm,
 }: CategoryDeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>ยืนยันการลบ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Typography>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ยืนยันการลบ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
           คุณต้องการลบหมวดหมู่ "{categoryName}" ใช่หรือไม่?
-        </Typography>
+        </p>
+        <DialogFooter className="pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : 'ลบ'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
-        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'ลบ'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
+
+// ============== Product Delete Confirm Dialog ==============
 
 export function ProductDeleteConfirmDialog({
   open,
@@ -1133,20 +1400,41 @@ export function ProductDeleteConfirmDialog({
   onConfirm,
 }: DeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>ยืนยันการลบ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Typography>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ยืนยันการลบ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
           คุณต้องการลบสินค้า "{productName}" ใช่หรือไม่?
-        </Typography>
+        </p>
+        <DialogFooter className="pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : 'ลบ'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
-        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'ลบ'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
