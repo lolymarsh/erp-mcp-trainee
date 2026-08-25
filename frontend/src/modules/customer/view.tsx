@@ -1,30 +1,41 @@
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  TextField,
-  Button,
-  CircularProgress,
-  Alert,
-  Paper,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
+  Plus,
+  Edit,
+  Trash2,
+  Car,
+  Loader2,
+  History,
+  Download,
+  ArrowLeft,
+} from 'lucide-react';
+import type {
+  CustomerEntity,
+  CustomerWithVehicles,
+  PaginationResponse,
+  VehicleEntity,
+} from './model';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Skeleton } from '../../components/ui/skeleton';
+import {
   Table,
+  TableHeader,
   TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
-  Skeleton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { useState, useEffect } from 'react';
-import type { CustomerEntity, CustomerWithVehicles, PaginationResponse, VehicleEntity } from './model';
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 // ============== Customer List ==============
 
@@ -52,124 +63,118 @@ export function CustomerListView({
   onExportCsv,
 }: CustomerListViewProps) {
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">รายชื่อลูกค้า</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">รายชื่อลูกค้า</h1>
+        <div className="flex items-center gap-2">
           {onExportCsv && (
-            <Button variant="outlined" onClick={onExportCsv} disabled={customers.length === 0}>
-              ส่งออก CSV
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportCsv}
+              disabled={customers.length === 0}
+              className="flex items-center gap-1.5"
+            >
+              <Download className="size-4" />
+              <span>ส่งออก CSV</span>
             </Button>
           )}
-          <Button variant="contained" onClick={onCreateClick}>
-            เพิ่มลูกค้า
+          <Button
+            size="sm"
+            onClick={onCreateClick}
+            className="flex items-center gap-1.5"
+          >
+            <Plus className="size-4" />
+            <span>เพิ่มลูกค้า</span>
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <TextField
-        label="ค้นหาชื่อหรือเบอร์โทร"
-        variant="outlined"
-        fullWidth
-        sx={{ mb: 2 }}
-        onChange={(e) => onSearch(e.target.value)}
-      />
+      <div className="mb-4 space-y-1.5">
+        <Label htmlFor="customer-search">ค้นหาชื่อหรือเบอร์โทร</Label>
+        <Input
+          id="customer-search"
+          placeholder="ค้นหาชื่อหรือเบอร์โทร..."
+          onChange={(e) => onSearch(e.target.value)}
+        />
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
           {error}
-        </Alert>
+        </div>
       )}
 
       {loading ? (
-        <Box role="progressbar" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <div role="progressbar" className="flex flex-col gap-2 py-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-              <Skeleton variant="text" height={24} />
-            </Box>
+            <div key={i} className="grid grid-cols-3 gap-2">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
           ))}
-        </Box>
+        </div>
       ) : customers.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 2 }}>
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
           ไม่พบข้อมูลลูกค้า
-        </Typography>
+        </p>
       ) : (
-        <Box>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: 1,
-              mb: 1,
-              px: 1,
-            }}
-          >
-            <Typography variant="subtitle2" color="text.secondary">
-              ชื่อ
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              นามสกุล
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              เบอร์โทร
-            </Typography>
-          </Box>
-
-          {customers.map((customer) => (
-            <Box
-              key={customer.id}
-              onClick={() => onSelectCustomer(customer)}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
-                gap: 1,
-                px: 1,
-                py: 1.5,
-                cursor: 'pointer',
-                borderRadius: 1,
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography>{customer.firstName}</Typography>
-              <Typography>{customer.lastName}</Typography>
-              <Typography>{customer.phone}</Typography>
-            </Box>
-          ))}
+        <div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ชื่อ</TableHead>
+                <TableHead>นามสกุล</TableHead>
+                <TableHead>เบอร์โทร</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customers.map((customer) => (
+                <TableRow
+                  key={customer.id}
+                  onClick={() => onSelectCustomer(customer)}
+                  className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  <TableCell className="font-medium">{customer.firstName}</TableCell>
+                  <TableCell>{customer.lastName}</TableCell>
+                  <TableCell>{customer.phone}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           {pagination && (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="body2" color="text.secondary">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
                 {`หน้า ${pagination.page} / ${pagination.totalPage || 1} (${pagination.totalData} รายการ)`}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              </span>
+              <div className="flex items-center gap-2">
                 <Button
-                  size="small"
-                  variant="outlined"
+                  size="sm"
+                  variant="outline"
                   disabled={!pagination.hasPreviousPage}
                   onClick={() => onPageChange(pagination.page - 1)}
                 >
                   ก่อนหน้า
                 </Button>
                 <Button
-                  size="small"
-                  variant="outlined"
+                  size="sm"
+                  variant="outline"
                   disabled={!pagination.hasNextPage}
                   onClick={() => onPageChange(pagination.page + 1)}
                 >
                   ถัดไป
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -202,111 +207,155 @@ export function CustomerDetailView({
 }: CustomerDetailViewProps) {
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center py-12" role="progressbar">
+        <Loader2 className="size-8 animate-spin text-neutral-500" />
+      </div>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <div
+        role="alert"
+        className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!customer) {
-    return <Alert severity="info">ไม่พบข้อมูลลูกค้า</Alert>;
+    return (
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+        ไม่พบข้อมูลลูกค้า
+      </div>
+    );
   }
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant="outlined" onClick={onBack}>
-            กลับ
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1">
+            <ArrowLeft className="size-4" />
+            <span>กลับ</span>
           </Button>
-          <Typography variant="h5">
+          <h1 className="text-2xl font-bold tracking-tight">
             {customer.firstName} {customer.lastName}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="contained" onClick={() => onEdit(customer)}>
-            แก้ไข
+          </h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => onEdit(customer)} className="flex items-center gap-1">
+            <Edit className="size-4" />
+            <span>แก้ไข</span>
           </Button>
-          <Button variant="outlined" color="error" onClick={onDelete}>
-            ลบ
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={onDelete}
+            className="flex items-center gap-1"
+          >
+            <Trash2 className="size-4" />
+            <span>ลบ</span>
           </Button>
-          <Button variant="outlined" onClick={onHistory}>
-            ประวัติการแก้ไข
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onHistory}
+            className="flex items-center gap-1"
+          >
+            <History className="size-4" />
+            <span>ประวัติการแก้ไข</span>
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 4 }}>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ชื่อ</Typography>
-          <Typography>{customer.firstName}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">นามสกุล</Typography>
-          <Typography>{customer.lastName}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">เบอร์โทร</Typography>
-          <Typography>{customer.phone}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">อีเมล</Typography>
-          <Typography>{customer.email || '-'}</Typography>
-        </Box>
-        <Box sx={{ gridColumn: '1 / -1' }}>
-          <Typography variant="subtitle2" color="text.secondary">ที่อยู่</Typography>
-          <Typography>{customer.address || '-'}</Typography>
-        </Box>
-      </Box>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ชื่อ</span>
+          <p className="font-medium text-sm">{customer.firstName}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">นามสกุล</span>
+          <p className="font-medium text-sm">{customer.lastName}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">เบอร์โทร</span>
+          <p className="font-medium text-sm">{customer.phone}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">อีเมล</span>
+          <p className="font-medium text-sm">{customer.email || '-'}</p>
+        </div>
+        <div className="md:col-span-2">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ที่อยู่</span>
+          <p className="font-medium text-sm">{customer.address || '-'}</p>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Typography variant="h6">รถที่ลงทะเบียน</Typography>
-        <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={onAddVehicle}>
-          เพิ่มรถ
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Car className="size-5" />
+          <span>รถที่ลงทะเบียน</span>
+        </h2>
+        <Button size="sm" variant="outline" onClick={onAddVehicle} className="flex items-center gap-1.5">
+          <Plus className="size-4" />
+          <span>เพิ่มรถ</span>
         </Button>
-      </Box>
+      </div>
+
       {customer.vehicles.length === 0 ? (
-        <Typography color="text.secondary">ไม่พบข้อมูลรถ</Typography>
+        <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400 border border-dashed rounded-md">
+          ไม่พบข้อมูลรถ
+        </p>
       ) : (
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>ทะเบียนรถ</TableCell>
-                <TableCell>ยี่ห้อ</TableCell>
-                <TableCell>รุ่น</TableCell>
-                <TableCell>ปี</TableCell>
-                <TableCell>ประเภทเครื่องยนต์</TableCell>
-                <TableCell>จัดการ</TableCell>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ทะเบียนรถ</TableHead>
+              <TableHead>ยี่ห้อ</TableHead>
+              <TableHead>รุ่น</TableHead>
+              <TableHead>ปี</TableHead>
+              <TableHead>ประเภทเครื่องยนต์</TableHead>
+              <TableHead className="text-right">จัดการ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {customer.vehicles.map((v) => (
+              <TableRow key={v.id}>
+                <TableCell className="font-medium">{v.licensePlate}</TableCell>
+                <TableCell>{v.brand || '-'}</TableCell>
+                <TableCell>{v.model || '-'}</TableCell>
+                <TableCell>{v.year ?? '-'}</TableCell>
+                <TableCell>{v.engineType || '-'}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEditVehicle(v)}
+                      title="แก้ไข"
+                      className="size-8"
+                    >
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteVehicle(v)}
+                      title="ลบ"
+                      className="size-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {customer.vehicles.map((v) => (
-                <TableRow key={v.id}>
-                  <TableCell>{v.licensePlate}</TableCell>
-                  <TableCell>{v.brand || '-'}</TableCell>
-                  <TableCell>{v.model || '-'}</TableCell>
-                  <TableCell>{v.year ?? '-'}</TableCell>
-                  <TableCell>{v.engineType || '-'}</TableCell>
-                  <TableCell>
-                    <IconButton size="small" onClick={() => onEditVehicle(v)} title="แก้ไข">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => onDeleteVehicle(v)} title="ลบ" color="error">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            ))}
+          </TableBody>
+        </Table>
       )}
-    </Paper>
+    </Card>
   );
 }
 
@@ -351,67 +400,109 @@ export function CustomerCreateDialog({
     }
   }, [open]);
 
-  const handleSubmit = () => {
-    onSubmit({ firstName, lastName, phone, email: email || undefined, address: address || undefined });
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    onSubmit({
+      firstName,
+      lastName,
+      phone,
+      email: email || undefined,
+      address: address || undefined,
+    });
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">เพิ่มลูกค้าใหม่</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อ *"
-            required
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            error={!!fieldErrors.firstName}
-            helperText={fieldErrors.firstName}
-          />
-          <TextField
-            label="นามสกุล *"
-            required
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            error={!!fieldErrors.lastName}
-            helperText={fieldErrors.lastName}
-          />
-          <TextField
-            label="เบอร์โทร *"
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            error={!!fieldErrors.phone}
-            helperText={fieldErrors.phone || 'เช่น 0812345678'}
-          />
-          <TextField
-            label="อีเมล"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={!!fieldErrors.email}
-            helperText={fieldErrors.email}
-          />
-          <TextField
-            label="ที่อยู่"
-            multiline
-            rows={3}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>เพิ่มลูกค้าใหม่</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-firstName">ชื่อ *</Label>
+            <Input
+              id="create-firstName"
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={!!fieldErrors.firstName}
+            />
+            {fieldErrors.firstName && (
+              <p className="text-xs text-red-500">{fieldErrors.firstName}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-lastName">นามสกุล *</Label>
+            <Input
+              id="create-lastName"
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={!!fieldErrors.lastName}
+            />
+            {fieldErrors.lastName && (
+              <p className="text-xs text-red-500">{fieldErrors.lastName}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-phone">เบอร์โทร *</Label>
+            <Input
+              id="create-phone"
+              required
+              value={phone}
+              placeholder="เช่น 0812345678"
+              onChange={(e) => setPhone(e.target.value)}
+              error={!!fieldErrors.phone}
+            />
+            {fieldErrors.phone && (
+              <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-email">อีเมล</Label>
+            <Input
+              id="create-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={!!fieldErrors.email}
+            />
+            {fieldErrors.email && (
+              <p className="text-xs text-red-500">{fieldErrors.email}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-address">ที่อยู่</Label>
+            <Textarea
+              id="create-address"
+              rows={3}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -465,67 +556,109 @@ export function CustomerEditDialog({
     }
   }, [open, initialValues]);
 
-  const handleSubmit = () => {
-    onSubmit({ firstName, lastName, phone, email: email || undefined, address: address || undefined });
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    onSubmit({
+      firstName,
+      lastName,
+      phone,
+      email: email || undefined,
+      address: address || undefined,
+    });
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">แก้ไขลูกค้า</Typography>
-          <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ชื่อ *"
-            required
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            error={!!fieldErrors.firstName}
-            helperText={fieldErrors.firstName}
-          />
-          <TextField
-            label="นามสกุล *"
-            required
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            error={!!fieldErrors.lastName}
-            helperText={fieldErrors.lastName}
-          />
-          <TextField
-            label="เบอร์โทร *"
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            error={!!fieldErrors.phone}
-            helperText={fieldErrors.phone || 'เช่น 0812345678'}
-          />
-          <TextField
-            label="อีเมล"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={!!fieldErrors.email}
-            helperText={fieldErrors.email}
-          />
-          <TextField
-            label="ที่อยู่"
-            multiline
-            rows={3}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>แก้ไขลูกค้า</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-firstName">ชื่อ *</Label>
+            <Input
+              id="edit-firstName"
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={!!fieldErrors.firstName}
+            />
+            {fieldErrors.firstName && (
+              <p className="text-xs text-red-500">{fieldErrors.firstName}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-lastName">นามสกุล *</Label>
+            <Input
+              id="edit-lastName"
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={!!fieldErrors.lastName}
+            />
+            {fieldErrors.lastName && (
+              <p className="text-xs text-red-500">{fieldErrors.lastName}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-phone">เบอร์โทร *</Label>
+            <Input
+              id="edit-phone"
+              required
+              value={phone}
+              placeholder="เช่น 0812345678"
+              onChange={(e) => setPhone(e.target.value)}
+              error={!!fieldErrors.phone}
+            />
+            {fieldErrors.phone && (
+              <p className="text-xs text-red-500">{fieldErrors.phone}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-email">อีเมล</Label>
+            <Input
+              id="edit-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={!!fieldErrors.email}
+            />
+            {fieldErrors.email && (
+              <p className="text-xs text-red-500">{fieldErrors.email}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-address">ที่อยู่</Label>
+            <Textarea
+              id="edit-address"
+              rows={3}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -550,20 +683,41 @@ export function DeleteConfirmDialog({
   onConfirm,
 }: DeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>ยืนยันการลบ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Typography>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ยืนยันการลบ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
           คุณต้องการลบลูกค้า "{customerName}" ใช่หรือไม่?
-        </Typography>
+        </p>
+        <DialogFooter className="pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : 'ลบ'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
-        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'ลบ'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -588,7 +742,12 @@ interface VehicleCreateDialogProps {
 }
 
 export function VehicleCreateDialog({
-  open, onClose, loading, error, customerId, onSubmit,
+  open,
+  onClose,
+  loading,
+  error,
+  customerId,
+  onSubmit,
 }: VehicleCreateDialogProps) {
   const [licensePlate, setLicensePlate] = useState('');
   const [brand, setBrand] = useState('');
@@ -608,7 +767,8 @@ export function VehicleCreateDialog({
     }
   }, [open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       customerId,
       licensePlate,
@@ -621,51 +781,87 @@ export function VehicleCreateDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>เพิ่มรถ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ทะเบียนรถ *"
-            required
-            value={licensePlate}
-            onChange={(e) => setLicensePlate(e.target.value)}
-          />
-          <TextField
-            label="ยี่ห้อ"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-          />
-          <TextField
-            label="รุ่น"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          />
-          <TextField
-            label="ปี"
-            type="number"
-            value={year}
-            onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : '')}
-          />
-          <TextField
-            label="ประเภทเครื่องยนต์"
-            value={engineType}
-            onChange={(e) => setEngineType(e.target.value)}
-          />
-          <TextField
-            label="ประเภทเชื้อเพลิง"
-            value={fuelType}
-            onChange={(e) => setFuelType(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>เพิ่มรถ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-plate">ทะเบียนรถ *</Label>
+            <Input
+              id="veh-plate"
+              required
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-brand">ยี่ห้อ</Label>
+            <Input
+              id="veh-brand"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-model">รุ่น</Label>
+            <Input
+              id="veh-model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-year">ปี</Label>
+            <Input
+              id="veh-year"
+              type="number"
+              value={year}
+              onChange={(e) =>
+                setYear(e.target.value ? parseInt(e.target.value) : '')
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-engine">ประเภทเครื่องยนต์</Label>
+            <Input
+              id="veh-engine"
+              value={engineType}
+              onChange={(e) => setEngineType(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-fuel">ประเภทเชื้อเพลิง</Label>
+            <Input
+              id="veh-fuel"
+              value={fuelType}
+              onChange={(e) => setFuelType(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading || !licensePlate.trim()}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading || !licensePlate}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -696,7 +892,12 @@ interface VehicleEditDialogProps {
 }
 
 export function VehicleEditDialog({
-  open, onClose, loading, error, initialValues, onSubmit,
+  open,
+  onClose,
+  loading,
+  error,
+  initialValues,
+  onSubmit,
 }: VehicleEditDialogProps) {
   const [licensePlate, setLicensePlate] = useState('');
   const [brand, setBrand] = useState('');
@@ -716,7 +917,8 @@ export function VehicleEditDialog({
     }
   }, [open, initialValues]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     onSubmit({
       licensePlate,
       brand: brand || null,
@@ -728,51 +930,87 @@ export function VehicleEditDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>แก้ไขรถ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="ทะเบียนรถ *"
-            required
-            value={licensePlate}
-            onChange={(e) => setLicensePlate(e.target.value)}
-          />
-          <TextField
-            label="ยี่ห้อ"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-          />
-          <TextField
-            label="รุ่น"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          />
-          <TextField
-            label="ปี"
-            type="number"
-            value={year}
-            onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : '')}
-          />
-          <TextField
-            label="ประเภทเครื่องยนต์"
-            value={engineType}
-            onChange={(e) => setEngineType(e.target.value)}
-          />
-          <TextField
-            label="ประเภทเชื้อเพลิง"
-            value={fuelType}
-            onChange={(e) => setFuelType(e.target.value)}
-          />
-        </Box>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>แก้ไขรถ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-plate">ทะเบียนรถ *</Label>
+            <Input
+              id="veh-edit-plate"
+              required
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-brand">ยี่ห้อ</Label>
+            <Input
+              id="veh-edit-brand"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-model">รุ่น</Label>
+            <Input
+              id="veh-edit-model"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-year">ปี</Label>
+            <Input
+              id="veh-edit-year"
+              type="number"
+              value={year}
+              onChange={(e) =>
+                setYear(e.target.value ? parseInt(e.target.value) : '')
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-engine">ประเภทเครื่องยนต์</Label>
+            <Input
+              id="veh-edit-engine"
+              value={engineType}
+              onChange={(e) => setEngineType(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="veh-edit-fuel">ประเภทเชื้อเพลิง</Label>
+            <Input
+              id="veh-edit-fuel"
+              value={fuelType}
+              onChange={(e) => setFuelType(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading || !licensePlate.trim()}>
+              {loading ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading || !licensePlate}>
-          {loading ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
@@ -789,23 +1027,49 @@ interface VehicleDeleteConfirmDialogProps {
 }
 
 export function VehicleDeleteConfirmDialog({
-  open, licensePlate, loading, error, onCancel, onConfirm,
+  open,
+  licensePlate,
+  loading,
+  error,
+  onCancel,
+  onConfirm,
 }: VehicleDeleteConfirmDialogProps) {
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>ยืนยันการลบ</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Typography>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>ยืนยันการลบ</DialogTitle>
+        </DialogHeader>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
           คุณต้องการลบรถทะเบียน "{licensePlate}" ใช่หรือไม่?
-        </Typography>
+        </p>
+        <DialogFooter className="pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="size-4 animate-spin" /> : 'ลบ'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} disabled={loading}>ยกเลิก</Button>
-        <Button color="error" variant="contained" onClick={onConfirm} disabled={loading}>
-          {loading ? <CircularProgress size={20} /> : 'ลบ'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
