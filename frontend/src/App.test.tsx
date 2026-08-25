@@ -12,17 +12,12 @@ vi.mock('react-router-dom', () => ({
   createBrowserRouter: vi.fn(() => ({ routes: [] })),
 }));
 
-vi.mock('@mui/material/styles', () => ({
-  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  createTheme: vi.fn(() => ({})),
-}));
-
 vi.mock('./router', () => ({
   router: { routes: [] },
 }));
 
 describe('App', () => {
-  it('renders RouterProvider with theme', () => {
+  it('renders RouterProvider', () => {
     render(<App />);
 
     expect(screen.getByText('Router Provider')).toBeInTheDocument();

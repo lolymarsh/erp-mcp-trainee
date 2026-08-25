@@ -1,30 +1,18 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  AppBar,
-  Box,
-  CssBaseline,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Typography,
-  Button,
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import BuildIcon from '@mui/icons-material/Build';
-import ChatIcon from '@mui/icons-material/Chat';
-import LoginIcon from '@mui/icons-material/Login';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+  LayoutDashboard,
+  Users,
+  Boxes,
+  FileText,
+  Wrench,
+  BotMessageSquare,
+  Shield,
+  LogOut,
+  LogIn,
+} from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-
-const drawerWidth = 240;
+import { Button } from '../../components/ui/button';
 
 export function Layout(): React.ReactElement {
   const navigate = useNavigate();
@@ -36,67 +24,89 @@ export function Layout(): React.ReactElement {
     navigate('/login');
   };
 
+  const navItems = [
+    { text: 'Dashboard', icon: <LayoutDashboard className="size-4" />, path: '/' },
+    { text: 'ลูกค้า', icon: <Users className="size-4" />, path: '/customers' },
+    { text: 'สินค้า', icon: <Boxes className="size-4" />, path: '/inventory' },
+    { text: 'ใบแจ้งหนี้', icon: <FileText className="size-4" />, path: '/sales/invoices' },
+    { text: 'งานติดตั้ง', icon: <Wrench className="size-4" />, path: '/jobs' },
+    { text: 'AI Chat', icon: <BotMessageSquare className="size-4" />, path: '/chat' },
+    ...(user?.role === 'ADMIN'
+      ? [{ text: 'จัดการผู้ใช้งาน', icon: <Shield className="size-4" />, path: '/admin/users' }]
+      : []),
+  ];
+
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar>
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            Versus ERP
-          </Typography>
+    <div className="min-h-screen bg-neutral-50 text-neutral-950 dark:bg-neutral-950 dark:text-neutral-50 flex flex-col">
+      {/* Top App Bar */}
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          Versus ERP
+        </div>
+        <div>
           {isAuthenticated ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="body2">{user?.displayName}</Typography>
-              <Button color="inherit" onClick={handleLogout} size="small">
-                Logout
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+                {user?.displayName}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5"
+              >
+                <LogOut className="size-3.5" />
+                <span>Logout</span>
               </Button>
-            </Box>
+            </div>
           ) : (
-            <Button color="inherit" onClick={() => navigate('/login')} startIcon={<LoginIcon />}>
-              Login
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-1.5"
+            >
+              <LogIn className="size-3.5" />
+              <span>Login</span>
             </Button>
           )}
-        </Toolbar>
-      </AppBar>
-      {isAuthenticated && (
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
-          }}
-        >
-          <Toolbar />
-          <List>
-            {[
-              { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-              { text: 'ลูกค้า', icon: <PeopleIcon />, path: '/customers' },
-              { text: 'สินค้า', icon: <InventoryIcon />, path: '/inventory' },
-              { text: 'ใบแจ้งหนี้', icon: <ReceiptIcon />, path: '/sales/invoices' },
-              { text: 'งานติดตั้ง', icon: <BuildIcon />, path: '/jobs' },
-              { text: 'AI Chat', icon: <ChatIcon />, path: '/chat' },
-              ...(user?.role === 'ADMIN'
-                ? [{ text: 'จัดการผู้ใช้งาน', icon: <AdminPanelSettingsIcon />, path: '/admin/users' }]
-                : []),
-            ].map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
-      )}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
-        <Outlet />
-      </Box>
-    </Box>
+        </div>
+      </header>
+
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        {isAuthenticated && (
+          <aside className="w-60 shrink-0 border-r border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.text}
+                    type="button"
+                    data-selected={isActive ? 'true' : undefined}
+                    data-active={isActive ? 'true' : undefined}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors text-left ${
+                      isActive
+                        ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-50 font-semibold'
+                        : 'text-neutral-600 hover:bg-neutral-100/80 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-50'
+                    }`}
+                    onClick={() => navigate(item.path)}
+                  >
+                    <span className="shrink-0">{item.icon}</span>
+                    <span>{item.text}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 }

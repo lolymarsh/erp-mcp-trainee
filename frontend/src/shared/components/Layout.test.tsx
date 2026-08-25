@@ -74,7 +74,7 @@ describe('Layout', () => {
     render(<Layout />);
 
     expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('Logout')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
   it('shows login button when not authenticated', () => {
@@ -86,7 +86,7 @@ describe('Layout', () => {
 
     render(<Layout />);
 
-    expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
   it('calls logout and navigates to /login on logout click', () => {
@@ -97,7 +97,7 @@ describe('Layout', () => {
     });
 
     render(<Layout />);
-    fireEvent.click(screen.getByText('Logout'));
+    fireEvent.click(screen.getByRole('button', { name: /logout/i }));
 
     expect(mockLogout).toHaveBeenCalledOnce();
     expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -111,7 +111,7 @@ describe('Layout', () => {
     });
 
     render(<Layout />);
-    fireEvent.click(screen.getByText('Login'));
+    fireEvent.click(screen.getByRole('button', { name: /login/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
@@ -124,7 +124,7 @@ describe('Layout', () => {
     });
 
     render(<Layout />);
-    const dashboardItem = screen.getByText('Dashboard').closest('li');
-    expect(dashboardItem?.querySelector('.Mui-selected')).toBeTruthy();
+    const dashboardButton = screen.getByText('Dashboard').closest('button');
+    expect(dashboardButton).toHaveAttribute('data-selected', 'true');
   });
 });
