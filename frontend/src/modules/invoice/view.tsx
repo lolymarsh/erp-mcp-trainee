@@ -1,38 +1,68 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  CircularProgress,
-  Alert,
-  TablePagination,
-  Autocomplete,
-  Skeleton,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import type { InvoiceResponse, InvoiceWithItemsResponse, PaginationInfo } from './model';
+  Printer,
+  Plus,
+  Trash2,
+  Loader2,
+  ArrowLeft,
+  History,
+  CreditCard,
+} from 'lucide-react';
+import type {
+  InvoiceResponse,
+  InvoiceWithItemsResponse,
+  PaginationInfo,
+} from './model';
 import type { CustomerEntity } from '../customer/model';
 import type { ProductEntity } from '../inventory/model';
 import type { CreateInvoiceItemInput } from './model';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select } from '../../components/ui/select';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
+
+// ============== Formatters ==============
+
+const formatCurrency = (value: string | number) => {
+  const num = typeof value === 'string' ? parseFloat(value) || 0 : value;
+  return num.toLocaleString('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+  });
+};
+
+function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (status) {
+    case 'PAID':
+      return 'secondary';
+    case 'PARTIAL':
+      return 'outline';
+    case 'REFUNDED':
+      return 'destructive';
+    default:
+      return 'default';
+  }
+}
+
+// ============== Invoice List ==============
 
 interface InvoiceListViewProps {
   invoices: InvoiceResponse[];
@@ -63,135 +93,159 @@ export function InvoiceListView({
   statusFilter,
   paymentMethodFilter,
 }: InvoiceListViewProps) {
-  const formatCurrency = (value: string) => {
-    return parseFloat(value).toLocaleString('th-TH', {
-      style: 'currency',
-      currency: 'THB',
-    });
-  };
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return 'success';
-      case 'PARTIAL':
-        return 'warning';
-      case 'REFUNDED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+  const from = pagination ? (pagination.page - 1) * pagination.pageSize + 1 : 1;
+  const to = pagination
+    ? Math.min(pagination.page * pagination.pageSize, pagination.totalData)
+    : invoices.length;
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5">ใบแจ้งหนี้</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={onCreateClick}>
-          สร้างใบแจ้งหนี้
+    <Card className="p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">ใบแจ้งหนี้</h1>
+        <Button onClick={onCreateClick} className="flex items-center gap-1.5">
+          <Plus className="size-4" />
+          <span>สร้างใบแจ้งหนี้</span>
         </Button>
-      </Box>
+      </div>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="ค้นหาเลขที่ใบแจ้งหนี้"
-          variant="outlined"
-          size="small"
-          sx={{ flex: 1 }}
-          onChange={(e) => onSearch(e.target.value)}
-        />
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>สถานะชำระเงิน</InputLabel>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="space-y-1">
+          <Label htmlFor="inv-search">ค้นหาเลขที่ใบแจ้งหนี้</Label>
+          <Input
+            id="inv-search"
+            placeholder="ค้นหาเลขที่ใบแจ้งหนี้..."
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="inv-status-filter">สถานะชำระเงิน</Label>
           <Select
+            id="inv-status-filter"
             value={statusFilter ?? ''}
-            label="สถานะชำระเงิน"
             onChange={(e) => onStatusFilterChange(e.target.value || null)}
           >
-            <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="PENDING">รอชำระ</MenuItem>
-            <MenuItem value="PAID">ชำระแล้ว</MenuItem>
-            <MenuItem value="PARTIAL">ชำระบางส่วน</MenuItem>
-            <MenuItem value="REFUNDED">คืนเงิน</MenuItem>
+            <option value="">ทั้งหมด</option>
+            <option value="PENDING">รอชำระ</option>
+            <option value="PAID">ชำระแล้ว</option>
+            <option value="PARTIAL">ชำระบางส่วน</option>
+            <option value="REFUNDED">คืนเงิน</option>
           </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>วิธีการชำระ</InputLabel>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="inv-method-filter">วิธีการชำระ</Label>
           <Select
+            id="inv-method-filter"
             value={paymentMethodFilter ?? ''}
-            label="วิธีการชำระ"
             onChange={(e) => onPaymentMethodFilterChange(e.target.value || null)}
           >
-            <MenuItem value="">ทั้งหมด</MenuItem>
-            <MenuItem value="CASH">เงินสด</MenuItem>
-            <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
-            <MenuItem value="CREDIT">เครดิต</MenuItem>
-            <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
+            <option value="">ทั้งหมด</option>
+            <option value="CASH">เงินสด</option>
+            <option value="BANK_TRANSFER">โอนเงิน</option>
+            <option value="CREDIT">เครดิต</option>
+            <option value="PROMPTPAY">พร้อมเพย์</option>
           </Select>
-        </FormControl>
-      </Box>
+        </div>
+      </div>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+        >
+          {error}
+        </div>
+      )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>เลขที่ใบแจ้งหนี้</TableCell>
-              <TableCell>ยอดรวม</TableCell>
-              <TableCell>สถานะชำระเงิน</TableCell>
-              <TableCell>วิธีการชำระ</TableCell>
-              <TableCell>วันที่</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                  <TableCell><Skeleton /></TableCell>
-                </TableRow>
-              ))
-            ) : invoices.length === 0 ? (
+      {loading ? (
+        <div role="progressbar" className="flex flex-col gap-2 py-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="grid grid-cols-5 gap-2">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </div>
+          ))}
+        </div>
+      ) : invoices.length === 0 ? (
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          ไม่พบใบแจ้งหนี้
+        </p>
+      ) : (
+        <div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} align="center">
-                  ไม่พบใบแจ้งหนี้
-                </TableCell>
+                <TableHead>เลขที่ใบแจ้งหนี้</TableHead>
+                <TableHead>ยอดรวม</TableHead>
+                <TableHead>สถานะชำระเงิน</TableHead>
+                <TableHead>วิธีการชำระ</TableHead>
+                <TableHead>วันที่</TableHead>
               </TableRow>
-            ) : (
-              invoices.map((inv) => (
-                <TableRow key={inv.id} hover sx={{ cursor: "pointer" }} onClick={() => onSelectInvoice(inv)}>
-                  <TableCell>{inv.invoiceNumber}</TableCell>
+            </TableHeader>
+            <TableBody>
+              {invoices.map((inv) => (
+                <TableRow
+                  key={inv.id}
+                  onClick={() => onSelectInvoice(inv)}
+                  className="cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                >
+                  <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
                   <TableCell>{formatCurrency(inv.grandTotal)}</TableCell>
                   <TableCell>
-                    <Chip label={inv.paymentStatus} color={statusColor(inv.paymentStatus) as 'success' | 'warning' | 'error' | 'default'} size="small" />
+                    <Badge
+                      variant={getStatusBadgeVariant(inv.paymentStatus)}
+                      className={
+                        inv.paymentStatus === 'PAID'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : ''
+                      }
+                    >
+                      {inv.paymentStatus}
+                    </Badge>
                   </TableCell>
                   <TableCell>{inv.paymentMethod ?? '-'}</TableCell>
                   <TableCell>
                     {new Date(inv.createdAt).toLocaleDateString('th-TH')}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        {pagination && (
-          <TablePagination
-            component="div"
-            count={pagination.totalData}
-            page={pagination.page - 1}
-            onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-            rowsPerPage={pagination.pageSize}
-            rowsPerPageOptions={[pagination.pageSize]}
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-          />
-        )}
-      </TableContainer>
-    </Box>
+              ))}
+            </TableBody>
+          </Table>
+
+          {pagination && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {`${from}-${to} จาก ${pagination.totalData}`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }
+
+// ============== Invoice Create Dialog ==============
 
 interface InvoiceCreateViewProps {
   open: boolean;
@@ -233,8 +287,6 @@ export function InvoiceCreateView({
   grandTotal,
   submitting,
   error,
-  customerLoading,
-  productLoading,
   onCustomerChange,
   onPaymentMethodChange,
   onDiscountChange,
@@ -243,22 +295,18 @@ export function InvoiceCreateView({
   onUpdateItemQuantity,
   onSubmit,
   onLoadLookups,
-  onCustomerSearch,
-  onProductSearch,
-  onLoadMoreCustomers,
-  onLoadMoreProducts,
 }: InvoiceCreateViewProps) {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [itemQty, setItemQty] = useState(1);
 
-  const handleOpen = () => {
-    onLoadLookups();
-  };
+  useEffect(() => {
+    if (open) {
+      onLoadLookups();
+    }
+  }, [open, onLoadLookups]);
 
   const handleAddItem = () => {
-    if (!selectedProductId || itemQty < 1) {
-      return;
-    }
+    if (!selectedProductId || itemQty < 1) return;
     onAddItem(selectedProductId, itemQty);
     setSelectedProductId('');
     setItemQty(1);
@@ -272,165 +320,203 @@ export function InvoiceCreateView({
     return products.find((p) => p.id === productId)?.sellPrice ?? '0';
   };
 
-  const formatCurrency = (value: string) => {
-    return parseFloat(value).toLocaleString('th-TH', {
-      style: 'currency',
-      currency: 'THB',
-    });
-  };
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ transition: { onEnter: handleOpen } }}>
-      <DialogTitle>สร้างใบแจ้งหนี้</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>สร้างใบแจ้งหนี้</DialogTitle>
+        </DialogHeader>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, mt: 1 }}>
-          <Autocomplete
-            sx={{ flex: 1 }}
-            options={customers}
-            getOptionLabel={(c) => `${c.firstName} ${c.lastName} (${c.phone})`}
-            value={customers.find((c) => c.id === selectedCustomerId) ?? null}
-            onChange={(_, val) => onCustomerChange(val?.id ?? '')}
-            onInputChange={(_, val, reason) => {
-              if (reason === 'input') onCustomerSearch(val);
-            }}
-            filterOptions={(x) => x}
-            loading={customerLoading}
-            slotProps={{
-              listbox: {
-                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
-                  const listbox = e.currentTarget;
-                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
-                    onLoadMoreCustomers();
-                  }
-                },
-              },
-            }}
-            renderInput={(params) => <TextField {...params} label="ลูกค้า" />}
-          />
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel>วิธีการชำระ</InputLabel>
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="inv-customer">ลูกค้า *</Label>
             <Select
+              id="inv-customer"
+              value={selectedCustomerId}
+              onChange={(e) => onCustomerChange(e.target.value)}
+            >
+              <option value="">-- เลือกลูกค้า --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.phone})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="inv-pay-method">วิธีการชำระ</Label>
+            <Select
+              id="inv-pay-method"
               value={selectedPaymentMethod}
-              label="วิธีการชำระ"
               onChange={(e) => onPaymentMethodChange(e.target.value)}
             >
-              <MenuItem value="">ไม่มี</MenuItem>
-              <MenuItem value="CASH">เงินสด</MenuItem>
-              <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
-              <MenuItem value="CREDIT">เครดิต</MenuItem>
-              <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
+              <option value="">ไม่มี</option>
+              <option value="CASH">เงินสด</option>
+              <option value="BANK_TRANSFER">โอนเงิน</option>
+              <option value="CREDIT">เครดิต</option>
+              <option value="PROMPTPAY">พร้อมเพย์</option>
             </Select>
-          </FormControl>
-        </Box>
+          </div>
+        </div>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-          <Autocomplete
-            sx={{ flex: 1 }}
-            options={products}
-            getOptionLabel={(p) => `${p.name} (${p.sku}) - ${p.sellPrice} THB`}
-            value={products.find((p) => p.id === selectedProductId) ?? null}
-            onChange={(_, val) => setSelectedProductId(val?.id ?? '')}
-            onInputChange={(_, val, reason) => {
-              if (reason === 'input') onProductSearch(val);
-            }}
-            filterOptions={(x) => x}
-            loading={productLoading}
-            slotProps={{
-              listbox: {
-                onScroll: (e: React.UIEvent<HTMLUListElement>) => {
-                  const listbox = e.currentTarget;
-                  if (listbox.scrollHeight - listbox.scrollTop - listbox.clientHeight < 50) {
-                    onLoadMoreProducts();
-                  }
-                },
-              },
-            }}
-            renderInput={(params) => <TextField {...params} label="สินค้า" />}
-          />
-          <TextField
-            type="number"
-            label="จำนวน"
-            value={itemQty}
-            onChange={(e) => setItemQty(Math.max(1, parseInt(e.target.value) || 1))}
-            sx={{ width: 100 }}
-            slotProps={{ htmlInput: { min: 1 } }}
-          />
-          <Button variant="outlined" onClick={handleAddItem} sx={{ whiteSpace: 'nowrap' }}>
+        <div className="flex flex-col sm:flex-row gap-3 items-end p-4 rounded-lg bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+          <div className="flex-1 space-y-1.5 w-full">
+            <Label htmlFor="inv-product-select">สินค้า</Label>
+            <Select
+              id="inv-product-select"
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+            >
+              <option value="">-- เลือกสินค้า --</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.sku}) - {p.sellPrice} THB
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="space-y-1.5 w-24">
+            <Label htmlFor="inv-product-qty">จำนวน</Label>
+            <Input
+              id="inv-product-qty"
+              type="number"
+              min={1}
+              value={itemQty}
+              onChange={(e) => setItemQty(Math.max(1, parseInt(e.target.value) || 1))}
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAddItem}
+            disabled={!selectedProductId}
+            className="shrink-0"
+          >
             เพิ่มสินค้า
           </Button>
-        </Box>
+        </div>
 
         {items.length > 0 && (
-          <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
-            <Table size="small">
-              <TableHead>
+          <div className="border rounded-md overflow-hidden">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell>สินค้า</TableCell>
-                  <TableCell align="right">ราคาต่อหน่วย</TableCell>
-                  <TableCell align="right">Qty</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                  <TableCell />
+                  <TableHead>สินค้า</TableHead>
+                  <TableHead className="text-right">ราคาต่อหน่วย</TableHead>
+                  <TableHead className="text-right w-24">Qty</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {items.map((item, idx) => (
                   <TableRow key={idx}>
-                    <TableCell>{getProductName(item.productId)}</TableCell>
-                    <TableCell align="right">{formatCurrency(getProductPrice(item.productId))}</TableCell>
-                    <TableCell align="right">
-                      <TextField
+                    <TableCell className="font-medium">
+                      {getProductName(item.productId)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(getProductPrice(item.productId))}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
                         type="number"
-                        size="small"
+                        min={1}
+                        className="h-8 text-right"
                         value={item.quantity}
-                        onChange={(e) => onUpdateItemQuantity(idx, Math.max(1, parseInt(e.target.value) || 1))}
-                        sx={{ width: 70 }}
-                        slotProps={{ htmlInput: { min: 1 } }}
+                        onChange={(e) =>
+                          onUpdateItemQuantity(
+                            idx,
+                            Math.max(1, parseInt(e.target.value) || 1)
+                          )
+                        }
                       />
                     </TableCell>
-                    <TableCell align="right">
-                      {formatCurrency((parseFloat(getProductPrice(item.productId)) * item.quantity).toFixed(2))}
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(
+                        (
+                          parseFloat(getProductPrice(item.productId)) *
+                          item.quantity
+                        ).toFixed(2)
+                      )}
                     </TableCell>
                     <TableCell>
-                      <IconButton size="small" onClick={() => onRemoveItem(idx)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onRemoveItem(idx)}
+                        className="size-8 text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </div>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
-          <TextField
-            label="ส่วนลด"
-            type="number"
-            value={discount}
-            onChange={(e) => onDiscountChange(Math.max(0, parseFloat(e.target.value) || 0))}
-            sx={{ width: 130 }}
-            slotProps={{ htmlInput: { min: 0 } }}
-          />
-          <Typography variant="h6">
+        <div className="flex flex-col sm:flex-row justify-end items-end sm:items-center gap-4 pt-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="inv-discount" className="whitespace-nowrap">
+              ส่วนลด:
+            </Label>
+            <Input
+              id="inv-discount"
+              type="number"
+              min={0}
+              className="w-32 text-right"
+              value={discount}
+              onChange={(e) =>
+                onDiscountChange(Math.max(0, parseFloat(e.target.value) || 0))
+              }
+            />
+          </div>
+          <div className="text-lg font-bold">
             Total: {formatCurrency(grandTotal.toFixed(2))}
-          </Typography>
-        </Box>
+          </div>
+        </div>
+
+        <DialogFooter className="pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={submitting}
+          >
+            ยกเลิก
+          </Button>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={submitting || items.length === 0 || !selectedCustomerId}
+          >
+            {submitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              'สร้างใบแจ้งหนี้'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>ยกเลิก</Button>
-        <Button
-          variant="contained"
-          onClick={onSubmit}
-          disabled={submitting || items.length === 0 || !selectedCustomerId}
-        >
-          {submitting ? <CircularProgress size={20} /> : 'สร้างใบแจ้งหนี้'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
+
+// ============== Invoice Detail & Printable View ==============
 
 interface InvoiceDetailViewProps {
   invoice: InvoiceWithItemsResponse | null;
@@ -449,130 +535,173 @@ export function InvoiceDetailView({
   onHistory,
   onUpdatePayment,
 }: InvoiceDetailViewProps) {
-  const formatCurrency = (value: string) => {
-    return parseFloat(value).toLocaleString("th-TH", {
-      style: "currency",
-      currency: "THB",
-    });
-  };
-
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center py-12" role="progressbar">
+        <Loader2 className="size-8 animate-spin text-neutral-500" />
+      </div>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <div
+        role="alert"
+        className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!invoice) {
-    return <Alert severity="info">ไม่พบข้อมูลใบแจ้งหนี้</Alert>;
+    return (
+      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+        ไม่พบข้อมูลใบแจ้งหนี้
+      </div>
+    );
   }
 
-  const statusColor: Record<string, "success" | "warning" | "error" | "default"> = {
-    PAID: "success",
-    PARTIAL: "warning",
-    REFUNDED: "error",
-  };
-
   return (
-    <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button variant="outlined" onClick={onBack}>
-            กลับ
+    <Card className="p-6 print:shadow-none print:border-none print:p-0">
+      {/* Top action bar (hidden in print) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 print:hidden">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1">
+            <ArrowLeft className="size-4" />
+            <span>กลับ</span>
           </Button>
-          <Typography variant="h5">{invoice.invoiceNumber}</Typography>
-          <Chip
-            label={invoice.paymentStatus}
-            color={statusColor[invoice.paymentStatus] ?? "default"}
-            size="small"
-          />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" onClick={() => window.print()}>
-            พิมพ์ใบแจ้งหนี้
+          <h1 className="text-2xl font-bold tracking-tight">{invoice.invoiceNumber}</h1>
+          <Badge
+            variant={getStatusBadgeVariant(invoice.paymentStatus)}
+            className={
+              invoice.paymentStatus === 'PAID'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                : ''
+            }
+          >
+            {invoice.paymentStatus}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5"
+          >
+            <Printer className="size-4" />
+            <span>พิมพ์ใบแจ้งหนี้</span>
           </Button>
-          <Button variant="contained" onClick={onUpdatePayment}>
-            อัพเดทสถานะชำระเงิน
+          <Button
+            size="sm"
+            onClick={onUpdatePayment}
+            className="flex items-center gap-1.5"
+          >
+            <CreditCard className="size-4" />
+            <span>อัพเดทสถานะชำระเงิน</span>
           </Button>
-          <Button variant="outlined" onClick={onHistory}>
-            ประวัติการแก้ไข
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onHistory}
+            className="flex items-center gap-1.5"
+          >
+            <History className="size-4" />
+            <span>ประวัติการแก้ไข</span>
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 4 }}>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">รหัสลูกค้า</Typography>
-          <Typography>{invoice.customerId}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">วันที่</Typography>
-          <Typography>{new Date(invoice.createdAt).toLocaleDateString("th-TH")}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ชำระเงิน</Typography>
-          <Typography>{invoice.paymentMethod ?? "-"}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">ยอดรวม</Typography>
-          <Typography>{formatCurrency(invoice.totalAmount)}</Typography>
-        </Box>
-      </Box>
+      {/* Printable Receipt Header */}
+      <div className="hidden print:block mb-6 border-b pb-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">Versus Thailand</h2>
+            <p className="text-xs text-neutral-500">ใบแจ้งหนี้ / ใบเสร็จรับเงิน</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold">{invoice.invoiceNumber}</p>
+            <p className="text-xs text-neutral-500">
+              {new Date(invoice.createdAt).toLocaleDateString('th-TH')}
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <Typography variant="h6" gutterBottom>รายการสินค้า</Typography>
+      {/* Invoice Meta Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 print:bg-transparent print:border print:p-3">
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">รหัสลูกค้า</span>
+          <p className="font-medium text-sm">{invoice.customerId}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">วันที่</span>
+          <p className="text-sm">{new Date(invoice.createdAt).toLocaleDateString('th-TH')}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ชำระเงิน</span>
+          <p className="text-sm">{invoice.paymentMethod ?? '-'}</p>
+        </div>
+        <div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">ยอดรวม</span>
+          <p className="text-sm font-semibold">{formatCurrency(invoice.totalAmount)}</p>
+        </div>
+      </div>
+
+      {/* Invoice Items Table */}
+      <h2 className="text-lg font-semibold mb-4">รายการสินค้า</h2>
       {invoice.items.length === 0 ? (
-        <Typography color="text.secondary">ไม่มีรายการสินค้า</Typography>
+        <p className="py-4 text-center text-sm text-neutral-500 dark:text-neutral-400 border border-dashed rounded-md">
+          ไม่มีรายการสินค้า
+        </p>
       ) : (
-        <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>สินค้า</TableCell>
-                <TableCell align="right">จำนวน</TableCell>
-                <TableCell align="right">ราคาต่อหน่วย</TableCell>
-                <TableCell align="right">รวม</TableCell>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>สินค้า</TableHead>
+              <TableHead className="text-right">จำนวน</TableHead>
+              <TableHead className="text-right">ราคาต่อหน่วย</TableHead>
+              <TableHead className="text-right">รวม</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoice.items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">{item.productId}</TableCell>
+                <TableCell className="text-right">{item.quantity}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {invoice.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.productId}</TableCell>
-                  <TableCell align="right">{item.quantity}</TableCell>
-                  <TableCell align="right">{formatCurrency(item.unitPrice)}</TableCell>
-                  <TableCell align="right">{formatCurrency(item.total)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 3, mt: 2 }}>
-        <Box sx={{ textAlign: "right" }}>
-          <Typography variant="subtitle2" color="text.secondary">ยอดรวม</Typography>
-          <Typography>{formatCurrency(invoice.totalAmount)}</Typography>
-        </Box>
-        <Box sx={{ textAlign: "right" }}>
-          <Typography variant="subtitle2" color="text.secondary">ส่วนลด</Typography>
-          <Typography>{formatCurrency(invoice.discount)}</Typography>
-        </Box>
-        <Box sx={{ textAlign: "right" }}>
-          <Typography variant="subtitle2" color="text.secondary">ภาษี</Typography>
-          <Typography>{formatCurrency(invoice.tax)}</Typography>
-        </Box>
-        <Box sx={{ textAlign: "right" }}>
-          <Typography variant="h6">ยอดสุทธิ</Typography>
-          <Typography variant="h6">{formatCurrency(invoice.grandTotal)}</Typography>
-        </Box>
-      </Box>
-    </Paper>
+      {/* Summary calculation totals */}
+      <div className="flex flex-col items-end gap-1.5 mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex justify-between w-64 text-sm text-neutral-600 dark:text-neutral-400">
+          <span>ยอดรวม:</span>
+          <span>{formatCurrency(invoice.totalAmount)}</span>
+        </div>
+        <div className="flex justify-between w-64 text-sm text-neutral-600 dark:text-neutral-400">
+          <span>ส่วนลด:</span>
+          <span>{formatCurrency(invoice.discount)}</span>
+        </div>
+        <div className="flex justify-between w-64 text-sm text-neutral-600 dark:text-neutral-400">
+          <span>ภาษี:</span>
+          <span>{formatCurrency(invoice.tax)}</span>
+        </div>
+        <div className="flex justify-between w-64 text-base font-bold text-neutral-900 dark:text-neutral-50 pt-2 border-t">
+          <span>ยอดสุทธิ:</span>
+          <span>{formatCurrency(invoice.grandTotal)}</span>
+        </div>
+      </div>
+    </Card>
   );
 }
+
+// ============== Payment Update Dialog ==============
 
 interface InvoicePaymentUpdateDialogProps {
   open: boolean;
@@ -584,7 +713,12 @@ interface InvoicePaymentUpdateDialogProps {
 }
 
 export function InvoicePaymentUpdateDialog({
-  open, onClose, invoice, submitting, error, onSubmit,
+  open,
+  onClose,
+  invoice,
+  submitting,
+  error,
+  onSubmit,
 }: InvoicePaymentUpdateDialogProps) {
   const [paymentStatus, setPaymentStatus] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -596,7 +730,8 @@ export function InvoicePaymentUpdateDialog({
     }
   }, [open, invoice]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!invoice) return;
     onSubmit({
       paymentStatus,
@@ -606,49 +741,72 @@ export function InvoicePaymentUpdateDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>อัพเดทสถานะชำระเงิน</DialogTitle>
-      <DialogContent>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <FormControl fullWidth>
-            <InputLabel>สถานะชำระเงิน *</InputLabel>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>อัพเดทสถานะชำระเงิน</DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="update-pay-status">สถานะชำระเงิน *</Label>
             <Select
+              id="update-pay-status"
               value={paymentStatus}
-              label="สถานะชำระเงิน *"
               onChange={(e) => setPaymentStatus(e.target.value)}
             >
-              <MenuItem value="PENDING">รอชำระ</MenuItem>
-              <MenuItem value="PAID">ชำระแล้ว</MenuItem>
-              <MenuItem value="PARTIAL">ชำระบางส่วน</MenuItem>
-              <MenuItem value="REFUNDED">คืนเงิน</MenuItem>
+              <option value="PENDING">รอชำระ</option>
+              <option value="PAID">ชำระแล้ว</option>
+              <option value="PARTIAL">ชำระบางส่วน</option>
+              <option value="REFUNDED">คืนเงิน</option>
             </Select>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel>วิธีการชำระ</InputLabel>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="update-pay-method">วิธีการชำระ</Label>
             <Select
+              id="update-pay-method"
               value={paymentMethod}
-              label="วิธีการชำระ"
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
-              <MenuItem value="">ไม่มี</MenuItem>
-              <MenuItem value="CASH">เงินสด</MenuItem>
-              <MenuItem value="BANK_TRANSFER">โอนเงิน</MenuItem>
-              <MenuItem value="CREDIT">เครดิต</MenuItem>
-              <MenuItem value="PROMPTPAY">พร้อมเพย์</MenuItem>
+              <option value="">ไม่มี</option>
+              <option value="CASH">เงินสด</option>
+              <option value="BANK_TRANSFER">โอนเงิน</option>
+              <option value="CREDIT">เครดิต</option>
+              <option value="PROMPTPAY">พร้อมเพย์</option>
             </Select>
-          </FormControl>
-          <Typography variant="caption" color="text.secondary">
-            Invoice: {invoice?.invoiceNumber}
-          </Typography>
-        </Box>
+          </div>
+
+          {invoice && (
+            <p className="text-xs text-neutral-500">
+              Invoice: {invoice.invoiceNumber}
+            </p>
+          )}
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={submitting}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" disabled={submitting || !paymentStatus}>
+              {submitting ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>ยกเลิก</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={submitting || !paymentStatus}>
-          {submitting ? <CircularProgress size={20} /> : 'บันทึก'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
