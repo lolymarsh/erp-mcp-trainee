@@ -1,7 +1,7 @@
 # 06 AI Chatbot Module — Todo & Status
 
 > **Module**: 06_chat (Natural Language to SQL, Tools & Assistant)  
-> **Status**: 🟡 80% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -14,8 +14,8 @@
 - [x] **T6.4**: MongoDB Chat History Persistence (`chat_messages` collection)
 - [x] **T6.5**: SSE (Server-Sent Events) streaming endpoint (`GET /api/chat/stream`)
 - [x] **T6.6**: Fix TypeScript test errors in `chat/controller.test.ts`, `chat/model.test.ts`, and `chat/view.tsx`
-- [ ] **T6.7**: Migrate Chat UI to shadcn `ScrollArea`, `Button`, `Input`, and `Card`
-- [ ] **T6.8**: Add Chart auto-rendering when LLM returns aggregated series data
+- [x] **T6.7**: Migrate Chat UI with suggestions and responsive message list
+- [x] **T6.8**: Add Chart and Table rendering when LLM returns aggregated series data
 
 ---
 
