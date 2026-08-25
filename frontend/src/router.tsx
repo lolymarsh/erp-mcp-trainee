@@ -399,7 +399,7 @@ function InventoryDetailRoute() {
 
 function InvoiceListRoute() {
   const navigate = useNavigate();
-  const { invoices, loading, error, pagination, setPage, refetch, setSearch, setStatusFilter, setPaymentMethodFilter, search, statusFilter, paymentMethodFilter } =
+  const { invoices, loading, error, pagination, setPage, refetch, setSearch, setStatusFilter, setPaymentMethodFilter, statusFilter, paymentMethodFilter } =
     useInvoiceList();
   const createCtl = useInvoiceCreate();
   const [createOpen, setCreateOpen] = useState(false);

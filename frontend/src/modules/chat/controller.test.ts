@@ -6,7 +6,6 @@ type ErrorCallback = (error: string) => void;
 type CompleteCallback = () => void;
 
 const mockStream = vi.hoisted(() => vi.fn());
-const mockSend = vi.hoisted(() => vi.fn());
 const mockExportResult = vi.hoisted(() => vi.fn());
 
 function getStreamEventCb(): StreamCallback {

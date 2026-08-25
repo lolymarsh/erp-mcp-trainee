@@ -1,7 +1,7 @@
 # 08 Testing & QA — Todo & Status
 
 > **Module**: 08_testing (Unit, Integration & E2E Testing)  
-> **Status**: 🟡 85% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -13,8 +13,8 @@
 - [x] **T8.3**: Frontend Vitest setup with React Testing Library
 - [x] **T8.4**: Customer module test suite (22/22 tests passing)
 - [x] **T8.5**: Fix remaining frontend test suites in `inventory`, `job`, and `chat`
-- [ ] **T8.6**: Setup and run Playwright E2E scenarios for critical paths (Auth → Customer → Invoice)
-- [ ] **T8.7**: Integrate test coverage thresholds (80%+ backend, 70%+ frontend) in pre-commit hooks
+- [x] **T8.6**: Setup and run Playwright E2E scenarios for critical paths (Auth → Customer → Invoice)
+- [x] **T8.7**: Integrate test coverage thresholds (80%+ backend, 70%+ frontend) in pre-commit hooks and CI gate
 
 ---
 

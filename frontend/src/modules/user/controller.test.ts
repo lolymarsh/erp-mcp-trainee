@@ -16,7 +16,6 @@ import {
   useUserCreate,
   useUserUpdate,
   useUserDelete,
-  useUserToggleActive,
 } from './controller';
 
 const mockUser = {
