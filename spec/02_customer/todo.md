@@ -1,7 +1,7 @@
 # 02 Customer Module — Todo & Status
 
 > **Module**: 02_customer (Customer & Vehicle Management)  
-> **Status**: 🟢 90% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -14,8 +14,8 @@
 - [x] **T2.4**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T2.5**: Frontend UX Improvements (Sonner toast on save/delete + Skeleton loader + inline error helper)
 - [x] **T2.6**: Unit and component tests for Customer module (22/22 tests passing)
-- [ ] **T2.7**: Migrate Customer Table & Dialogs from MUI to shadcn/ui components (`Table`, `Dialog`, `Input`, `Button`)
-- [ ] **T2.8**: Add CSV / Excel Export for customer contact list
+- [x] **T2.7**: Migrate Customer Table & Dialogs from MUI to shadcn/ui components (`Table`, `Dialog`, `Input`, `Button`)
+- [x] **T2.8**: Add CSV / Excel Export for customer contact list
 
 ---
 

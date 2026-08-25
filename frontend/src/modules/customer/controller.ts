@@ -73,6 +73,27 @@ export function useCustomerList(): UseCustomerListReturn {
     setPage(1);
   }, [debouncedSearch]);
 
+  const exportCsv = useCallback(() => {
+    if (customers.length === 0) return;
+    const headers = ['ชื่อ', 'นามสกุล', 'เบอร์โทร', 'อีเมล', 'ที่อยู่'];
+    const rows = customers.map((c) => [
+      `"${c.firstName}"`,
+      `"${c.lastName}"`,
+      `"${c.phone}"`,
+      `"${c.email ?? ''}"`,
+      `"${c.address ?? ''}"`,
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('ส่งออกข้อมูลลูกค้าสำเร็จ');
+  }, [customers]);
+
   return {
     customers,
     loading,
@@ -81,6 +102,7 @@ export function useCustomerList(): UseCustomerListReturn {
     refetch: fetchCustomers,
     setPage,
     setSearch,
+    exportCsv,
   };
 }
 

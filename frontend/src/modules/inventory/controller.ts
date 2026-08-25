@@ -83,6 +83,27 @@ export function useInventoryList(): UseInventoryListReturn {
     setPage(1);
   }, [debouncedSearch]);
 
+  const exportCsv = useCallback(() => {
+    if (products.length === 0) return;
+    const headers = ['SKU', 'ชื่อสินค้า', 'ราคาขาย', 'สต็อกคงเหลือ', 'ขั้นต่ำ', 'หน่วย'];
+    const rows = products.map((p) => [
+      `"${p.sku}"`,
+      `"${p.name}"`,
+      `"${p.sellPrice}"`,
+      `"${p.currentStock}"`,
+      `"${p.minStock}"`,
+      `"${p.unit ?? ''}"`,
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [products]);
+
   return {
     products,
     loading,
@@ -91,6 +112,7 @@ export function useInventoryList(): UseInventoryListReturn {
     refetch: fetchProducts,
     setPage,
     setSearch,
+    exportCsv,
   };
 }
 

@@ -94,7 +94,7 @@ function LoginGuard() {
 
 function CustomerListRoute() {
   const navigate = useNavigate();
-  const { customers, loading, error, pagination, setPage, setSearch, refetch } =
+  const { customers, loading, error, pagination, setPage, setSearch, refetch, exportCsv } =
     useCustomerList();
   const createCtl = useCustomerCreate(refetch);
 
@@ -111,6 +111,7 @@ function CustomerListRoute() {
           navigate(`/customers/${customer.id}`);
         }}
         onCreateClick={() => createCtl.setOpen(true)}
+        onExportCsv={exportCsv}
       />
       <CustomerCreateDialog
         open={createCtl.open}
@@ -225,7 +226,7 @@ function CustomerDetailRoute() {
 
 function InventoryListRoute() {
   const navigate = useNavigate();
-  const { products, loading, error, pagination, setPage, setSearch, refetch } =
+  const { products, loading, error, pagination, setPage, setSearch, refetch, exportCsv } =
     useInventoryList();
   const createCtl = useProductCreate(refetch);
 
@@ -243,6 +244,7 @@ function InventoryListRoute() {
         }}
         onCreateClick={() => createCtl.setOpen(true)}
         onManageCategoriesClick={() => navigate('/inventory/categories')}
+        onExportCsv={exportCsv}
       />
       <ProductCreateDialog
         open={createCtl.open}

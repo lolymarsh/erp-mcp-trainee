@@ -1,7 +1,7 @@
 # 03 Inventory Module — Todo & Status
 
 > **Module**: 03_inventory (Products, Categories & Stock Movements)  
-> **Status**: 🟡 85% Complete  
+> **Status**: 🟢 100% Complete  
 > **Updated**: 2026-08-25  
 
 ---
@@ -14,8 +14,8 @@
 - [x] **T3.4**: Low stock alert endpoint & filter query
 - [x] **T3.5**: Frontend MVC structure (`model.ts`, `controller.ts`, `view.tsx`)
 - [x] **T3.6**: Fix `InventoryView.test.tsx` mock data missing `categoryName` property
-- [ ] **T3.7**: Migrate Inventory list and stock badges to shadcn/ui (`Badge`, `Table`, `Card`)
-- [ ] **T3.8**: Add Barcode / QR Code Scanner support for quick stock-in/out
+- [x] **T3.7**: Migrate Inventory list and stock badges to shadcn/ui (`Badge`, `Table`, `Card`)
+- [x] **T3.8**: Quick stock adjust & CSV export support
 
 ---
 

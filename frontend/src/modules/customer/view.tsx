@@ -37,6 +37,7 @@ interface CustomerListViewProps {
   onPageChange: (page: number) => void;
   onSelectCustomer: (customer: CustomerEntity) => void;
   onCreateClick: () => void;
+  onExportCsv?: () => void;
 }
 
 export function CustomerListView({
@@ -48,14 +49,22 @@ export function CustomerListView({
   onPageChange,
   onSelectCustomer,
   onCreateClick,
+  onExportCsv,
 }: CustomerListViewProps) {
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">รายชื่อลูกค้า</Typography>
-        <Button variant="contained" onClick={onCreateClick}>
-          เพิ่มลูกค้า
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {onExportCsv && (
+            <Button variant="outlined" onClick={onExportCsv} disabled={customers.length === 0}>
+              ส่งออก CSV
+            </Button>
+          )}
+          <Button variant="contained" onClick={onCreateClick}>
+            เพิ่มลูกค้า
+          </Button>
+        </Box>
       </Box>
 
       <TextField

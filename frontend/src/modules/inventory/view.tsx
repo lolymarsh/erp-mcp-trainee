@@ -62,6 +62,7 @@ interface InventoryListViewProps {
   onSelectProduct: (product: ProductEntity) => void;
   onCreateClick: () => void;
   onManageCategoriesClick?: () => void;
+  onExportCsv?: () => void;
 }
 
 export function InventoryListView({
@@ -74,12 +75,18 @@ export function InventoryListView({
   onSelectProduct,
   onCreateClick,
   onManageCategoriesClick,
+  onExportCsv,
 }: InventoryListViewProps) {
   return (
     <Paper sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">คลังสินค้า</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          {onExportCsv && (
+            <Button variant="outlined" onClick={onExportCsv} disabled={products.length === 0}>
+              ส่งออก CSV
+            </Button>
+          )}
           {onManageCategoriesClick && (
             <Button variant="outlined" onClick={onManageCategoriesClick}>
               จัดการหมวดหมู่
