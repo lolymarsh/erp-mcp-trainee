@@ -13,6 +13,7 @@ import {
 import { Label } from '../../components/ui/label';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
+import { ThemeToggle } from '../../components/ui/theme-toggle';
 
 export function LoginPage(): React.ReactElement {
   const [username, setUsername] = useState('');
@@ -62,7 +63,10 @@ export function LoginPage(): React.ReactElement {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-100 p-4 dark:bg-neutral-900">
+    <div className="relative flex min-h-screen items-center justify-center bg-neutral-100 p-4 dark:bg-neutral-950">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm shadow-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Versus ERP</CardTitle>

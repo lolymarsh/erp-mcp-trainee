@@ -236,13 +236,23 @@ export function DashboardView({
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="month" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#888888" opacity={0.2} />
+                  <XAxis dataKey="month" fontSize={12} stroke="#888888" />
                   <YAxis
                     tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
                     fontSize={12}
+                    stroke="#888888"
                   />
-                  <Tooltip formatter={(value) => formatCurrency(String(value))} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(23, 23, 23, 0.95)',
+                      borderColor: '#404040',
+                      borderRadius: '8px',
+                      color: '#f5f5f5',
+                      fontSize: '12px',
+                    }}
+                    formatter={(value) => formatCurrency(String(value))}
+                  />
                   <Bar dataKey="amount" fill="#0284c7" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -258,15 +268,25 @@ export function DashboardView({
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topTechChartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis type="number" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#888888" opacity={0.2} />
+                  <XAxis type="number" fontSize={12} stroke="#888888" />
                   <YAxis
                     type="category"
                     dataKey="name"
                     width={90}
                     fontSize={12}
+                    stroke="#888888"
                   />
-                  <Tooltip formatter={(value) => formatNumber(Number(value))} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(23, 23, 23, 0.95)',
+                      borderColor: '#404040',
+                      borderRadius: '8px',
+                      color: '#f5f5f5',
+                      fontSize: '12px',
+                    }}
+                    formatter={(value) => formatNumber(Number(value))}
+                  />
                   <Bar dataKey="jobCount" fill="#16a34a" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { Button } from '../../components/ui/button';
+import { ThemeToggle } from '../../components/ui/theme-toggle';
 
 export function Layout(): React.ReactElement {
   const navigate = useNavigate();
@@ -43,9 +44,10 @@ export function Layout(): React.ReactElement {
         <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
           Versus ERP
         </div>
-        <div>
+        <div className="flex items-center gap-2.5">
+          <ThemeToggle />
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pl-2 border-l border-neutral-200 dark:border-neutral-800">
               <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
                 {user?.displayName}
               </span>
