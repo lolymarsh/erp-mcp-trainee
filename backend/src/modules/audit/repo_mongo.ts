@@ -83,7 +83,7 @@ export class AuditLogRepository implements IAuditLogRepository {
           createdAtQuery.$lte = new Date(item.less_than);
         }
         if (Object.keys(createdAtQuery).length > 0) {
-          (query as any).createdAt = createdAtQuery;
+          (query as Record<string, unknown>).createdAt = createdAtQuery;
         }
       }
     }

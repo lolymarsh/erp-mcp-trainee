@@ -16,6 +16,7 @@ jest.mock("./repo_mongo", () => ({
   ChatMongoRepository: jest.fn().mockImplementation(() => ({
     Save: jest.fn().mockResolvedValue(undefined),
     GetHistory: jest.fn(),
+    GetHistoryAsc: jest.fn().mockResolvedValue([]),
   })),
 }));
 
@@ -54,6 +55,7 @@ describe("ChatService", () => {
   let svc: ChatService;
 
   beforeEach(() => {
+    process.env.OPENAI_API_KEY = "test-key";
     jest.clearAllMocks();
     pool = createMockPool();
     redis = {

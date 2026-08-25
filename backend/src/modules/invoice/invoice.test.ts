@@ -9,6 +9,7 @@ jest.mock("uuid", () => {
 });
 
 import Redis from "ioredis";
+import type { IAuditLogService } from "../audit/service";
 import { InvoiceService } from "./service";
 import type { IInvoiceRepository } from "./repo";
 import type { ICustomerRepository } from "../customer/repo";
@@ -90,7 +91,7 @@ describe("InvoiceService", () => {
       AdjustStock: jest.fn(),
     };
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InvoiceService(repo, customerRepo, inventoryRepo, redis, mockAuditService as any);
+    svc = new InvoiceService(repo, customerRepo, inventoryRepo, redis, mockAuditService as unknown as IAuditLogService);
   });
 
   describe("filter", () => {

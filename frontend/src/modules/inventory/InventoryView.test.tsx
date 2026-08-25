@@ -74,8 +74,8 @@ describe('InventoryListView', () => {
     expect(screen.getByText('OIL-001')).toBeInTheDocument();
   });
 
-  it('renders loading spinner when loading', () => {
-    render(
+  it('renders loading spinner/skeleton when loading', () => {
+    const { container } = render(
       <InventoryListView
         products={[]}
         loading={true}
@@ -88,7 +88,7 @@ describe('InventoryListView', () => {
       />,
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
   });
 
   it('renders empty state when no products', () => {
@@ -197,6 +197,6 @@ describe('InventoryListView', () => {
       />,
     );
 
-    expect(screen.getByText('หน้า 1 / 1 (2 รายการ)')).toBeInTheDocument();
+    expect(screen.getByText(/1-2 จาก 2/)).toBeInTheDocument();
   });
 });

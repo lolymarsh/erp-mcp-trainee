@@ -213,7 +213,10 @@ describe('useInvoiceCreate', () => {
   it('submit fails validation when no customer selected', async () => {
     const { result } = renderHook(() => useInvoiceCreate());
 
-    const invoice = await result.current.submit();
+    let invoice = null;
+    await act(async () => {
+      invoice = await result.current.submit();
+    });
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('Please select a customer');
   });
@@ -225,7 +228,10 @@ describe('useInvoiceCreate', () => {
       result.current.setSelectedCustomerId('c1');
     });
 
-    const invoice = await result.current.submit();
+    let invoice = null;
+    await act(async () => {
+      invoice = await result.current.submit();
+    });
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('Please add at least one item');
   });
@@ -258,9 +264,12 @@ describe('useInvoiceCreate', () => {
       result.current.addItem('p1', 2);
     });
 
-    const invoice = await result.current.submit();
+    let invoice: unknown = null;
+    await act(async () => {
+      invoice = await result.current.submit();
+    });
     expect(invoice).not.toBeNull();
-    expect(invoice?.invoiceNumber).toBe('INV-2025-001');
+    expect((invoice as { invoiceNumber: string })?.invoiceNumber).toBe('INV-2025-001');
     expect(mockApi.post).toHaveBeenCalledWith('/sales/invoices', {
       customerId: 'c1',
       items: [{ productId: 'p1', quantity: 2 }],
@@ -290,7 +299,10 @@ describe('useInvoiceCreate', () => {
       result.current.addItem('p1', 2);
     });
 
-    const invoice = await result.current.submit();
+    let invoice = null;
+    await act(async () => {
+      invoice = await result.current.submit();
+    });
     expect(invoice).toBeNull();
     expect(result.current.error).toBe('API Error');
   });

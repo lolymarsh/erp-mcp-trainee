@@ -2,6 +2,7 @@ jest.mock("uuid", () => ({ v4: () => "mocked-uuid-product" }));
 
 import Redis from "ioredis";
 import type { MySql2Database } from "drizzle-orm/mysql2";
+import type { IAuditLogService } from "../audit/service";
 import { InventoryService } from "./service";
 import type { IInventoryRepository } from "./repo";
 import {
@@ -76,7 +77,7 @@ describe("InventoryService", () => {
       transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({})),
     } as unknown as MySql2Database;
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new InventoryService(repo, db, redis, mockAuditService as any);
+    svc = new InventoryService(repo, db, redis, mockAuditService as unknown as IAuditLogService);
   });
 
   describe("filter", () => {

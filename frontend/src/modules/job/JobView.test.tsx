@@ -50,76 +50,66 @@ const mockPagination: PaginationInfo = {
 describe('JobQueueView', () => {
   const onPageChange = vi.fn();
   const onStatusFilterChange = vi.fn();
+  const onJobTypeFilterChange = vi.fn();
+  const onSearch = vi.fn();
   const onStatusChange = vi.fn();
   const onClearStatusError = vi.fn();
   const onRowClick = vi.fn();
   const onCreateClick = vi.fn();
+
+  const defaultProps = {
+    jobs: mockJobs,
+    loading: false,
+    error: null,
+    pagination: mockPagination,
+    statusFilter: null,
+    jobTypeFilter: null,
+    search: '',
+    onPageChange,
+    onStatusFilterChange,
+    onJobTypeFilterChange,
+    onSearch,
+    onStatusChange,
+    statusChangeError: null,
+    onClearStatusError,
+    onRowClick,
+    onCreateClick,
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders jobs table with data', () => {
-    render(
-      <JobQueueView
-        jobs={mockJobs}
-        loading={false}
-        error={null}
-        pagination={mockPagination}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
-      />,
-    );
+    render(<JobQueueView {...defaultProps} />);
 
-    expect(screen.getByText('Job Queue')).toBeInTheDocument();
+    expect(screen.getByText('คิวงาน')).toBeInTheDocument();
     expect(screen.getByText('c1')).toBeInTheDocument();
     expect(screen.getByText('c2')).toBeInTheDocument();
-    expect(screen.getByText('Install')).toBeInTheDocument();
-    expect(screen.getByText('Repair')).toBeInTheDocument();
+    expect(screen.getByText('ติดตั้ง')).toBeInTheDocument();
+    expect(screen.getByText('ซ่อม')).toBeInTheDocument();
   });
 
-  it('renders loading spinner when loading', () => {
-    render(
+  it('renders loading spinner/skeleton when loading', () => {
+    const { container } = render(
       <JobQueueView
+        {...defaultProps}
         jobs={[]}
         loading={true}
-        error={null}
         pagination={null}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
       />,
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
   });
 
   it('renders error alert', () => {
     render(
       <JobQueueView
+        {...defaultProps}
         jobs={[]}
-        loading={false}
         error="Failed to load"
         pagination={null}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
       />,
     );
 
@@ -129,82 +119,33 @@ describe('JobQueueView', () => {
   it('renders empty state when no jobs', () => {
     render(
       <JobQueueView
+        {...defaultProps}
         jobs={[]}
-        loading={false}
-        error={null}
         pagination={null}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
       />,
     );
 
-    expect(screen.getByText('No jobs found')).toBeInTheDocument();
+    expect(screen.getByText('ไม่พบงาน')).toBeInTheDocument();
   });
 
   it('has status filter dropdown', () => {
-    render(
-      <JobQueueView
-        jobs={mockJobs}
-        loading={false}
-        error={null}
-        pagination={mockPagination}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
-      />,
-    );
+    render(<JobQueueView {...defaultProps} />);
 
-    expect(screen.getAllByText('Status Filter').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('กรองสถานะ').length).toBeGreaterThan(0);
   });
 
   it('shows status change dropdown for non-terminal statuses', () => {
-    render(
-      <JobQueueView
-        jobs={mockJobs}
-        loading={false}
-        error={null}
-        pagination={mockPagination}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
-        statusChangeError={null}
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
-      />,
-    );
+    render(<JobQueueView {...defaultProps} />);
 
-    const changeButtons = screen.getAllByText('Change...');
+    const changeButtons = screen.getAllByText('เปลี่ยน...');
     expect(changeButtons).toHaveLength(2);
   });
 
   it('shows status change error via Snackbar', () => {
     render(
       <JobQueueView
-        jobs={mockJobs}
-        loading={false}
-        error={null}
-        pagination={mockPagination}
-        statusFilter={null}
-        onPageChange={onPageChange}
-        onStatusFilterChange={onStatusFilterChange}
-        onStatusChange={onStatusChange}
+        {...defaultProps}
         statusChangeError="Version conflict"
-        onClearStatusError={onClearStatusError}
-        onRowClick={onRowClick}
-        onCreateClick={onCreateClick}
       />,
     );
 

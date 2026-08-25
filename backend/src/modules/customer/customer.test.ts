@@ -4,6 +4,8 @@ import { CustomerService } from "./service";
 import type { ICustomerRepository } from "./repo";
 import { NotFoundError, ConflictError } from "../../shared/errors/AppError";
 
+import type { IAuditLogService } from "../audit/service";
+
 const mockCustomer = {
   id: "cust-1",
   firstName: "สมชาย",
@@ -48,7 +50,7 @@ describe("CustomerService", () => {
       UpdateVehicle: jest.fn(),
       DeleteVehicle: jest.fn(),
     };
-    svc = new CustomerService(repo, mockAuditService as any);
+    svc = new CustomerService(repo, mockAuditService as unknown as IAuditLogService);
   });
 
   describe("filter", () => {

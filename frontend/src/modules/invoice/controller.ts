@@ -234,11 +234,20 @@ export function useInvoiceCreate(): UseInvoiceCreateReturn {
     setProducts([]);
     customerSearchTerm.current = '';
     productSearchTerm.current = '';
-    await Promise.all([
-      searchCustomers('', 1, false),
-      searchProducts('', 1, false),
-    ]);
-  }, [searchCustomers, searchProducts]);
+    setError(null);
+    try {
+      const [cRes, pRes] = await Promise.all([
+        customerApi.Filter({ page: 1, pageSize: 200, sortBy: 'asc', sortName: 'firstName', filters: [] }),
+        inventoryApi.Filter({ page: 1, pageSize: 200, sortBy: 'asc', sortName: 'name', filters: [] }),
+      ]);
+      setCustomers(cRes.data);
+      setProducts(pRes.data);
+      setCustomerTotalPages(cRes.pagination.totalPage);
+      setProductTotalPages(pRes.pagination.totalPage);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    }
+  }, []);
 
   const addItem = useCallback(
     (productId: string, quantity: number) => {

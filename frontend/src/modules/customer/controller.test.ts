@@ -91,19 +91,21 @@ describe('useCustomerList', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     mockApi.post.mockResolvedValue(mockFilterResponse);
-    await act(async () => {
+    act(() => {
       result.current.setSearch('สมชาย');
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(mockApi.post).toHaveBeenLastCalledWith('/customers/filter', {
-      page: 1,
-      pageSize: 20,
-      sortBy: 'desc',
-      sortName: 'createdAt',
-      filters: [{ field: 'firstName', operator: 'contains', value: 'สมชาย' }],
-    });
+    await waitFor(
+      () =>
+        expect(mockApi.post).toHaveBeenLastCalledWith('/customers/filter', {
+          page: 1,
+          pageSize: 20,
+          sortBy: 'desc',
+          sortName: 'createdAt',
+          filters: [{ field: 'firstName', operator: 'contains', value: 'สมชาย' }],
+        }),
+      { timeout: 2000 }
+    );
   });
 
   it('refetch works correctly', async () => {

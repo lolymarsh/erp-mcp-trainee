@@ -47,25 +47,41 @@ describe('LoginPage', () => {
     });
   });
 
-  it('displays error alert when error is present', () => {
+  it('displays error alert when form error is present', () => {
+    mockError = 'Server error occurred';
+
+    render(<LoginPage />);
+
+    expect(screen.getByText('Server error occurred')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('shows password error helper when invalid credentials error is present', () => {
     mockError = 'Invalid credentials';
 
     render(<LoginPage />);
 
-    expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('รหัสผ่านไม่ถูกต้อง')).toBeInTheDocument();
   });
 
-  it('shows loading text on button when loading', () => {
+  it('shows progress bar on button and disables button when loading', () => {
     mockLoading = true;
 
     render(<LoginPage />);
 
-    expect(screen.getByRole('button', { name: 'กำลังเข้า...' })).toBeDisabled();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar').closest('button')).toBeDisabled();
   });
 
-  it('shows normal button text when not loading', () => {
+  it('enables submit button when username and password are provided', () => {
     render(<LoginPage />);
+
+    fireEvent.change(screen.getByLabelText(/ชื่อผู้ใช้/), {
+      target: { value: 'admin' },
+    });
+    fireEvent.change(screen.getByLabelText(/รหัสผ่าน/), {
+      target: { value: 'secret' },
+    });
 
     expect(screen.getByRole('button', { name: 'เข้าสู่ระบบ' })).not.toBeDisabled();
   });

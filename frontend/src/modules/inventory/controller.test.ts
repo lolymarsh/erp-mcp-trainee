@@ -83,19 +83,21 @@ describe('useInventoryList', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     mockApi.post.mockResolvedValue(mockFilterResponse);
-    await act(async () => {
+    act(() => {
       result.current.setSearch('น้ำมัน');
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    expect(mockApi.post).toHaveBeenLastCalledWith('/inventory/products/filter', {
-      page: 1,
-      pageSize: 20,
-      sortBy: 'desc',
-      sortName: 'createdAt',
-      filters: [{ field: 'name', operator: 'contains', value: 'น้ำมัน' }],
-    });
+    await waitFor(
+      () =>
+        expect(mockApi.post).toHaveBeenLastCalledWith('/inventory/products/filter', {
+          page: 1,
+          pageSize: 20,
+          sortBy: 'desc',
+          sortName: 'createdAt',
+          filters: [{ field: 'name', operator: 'contains', value: 'น้ำมัน' }],
+        }),
+      { timeout: 2000 },
+    );
   });
 
   it('handles error gracefully', async () => {

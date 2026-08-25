@@ -19,7 +19,8 @@
 
 ```
 Frontend:  React 19 + Vite + TypeScript (strict)
-           React Router v7, MUI v6, Tailwind CSS v4
+           React Router v7, shadcn/ui + Tailwind CSS v4
+           Lucide React (icons), Sonner (toasts)
            Zustand (global state), Recharts (charts)
            Zod (validation), Axios (HTTP)
 

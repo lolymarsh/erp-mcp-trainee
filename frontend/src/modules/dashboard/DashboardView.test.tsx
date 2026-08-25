@@ -28,10 +28,10 @@ describe('DashboardView', () => {
     vi.clearAllMocks();
   });
 
-  it('renders loading spinner when loading with no summary', () => {
-    render(<DashboardView summary={null} loading={true} error={null} />);
+  it('renders loading spinner/skeleton when loading with no summary', () => {
+    const { container } = render(<DashboardView summary={null} loading={true} error={null} />);
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(container.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
   });
 
   it('renders error alert when error with no summary', () => {

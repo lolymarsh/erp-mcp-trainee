@@ -48,7 +48,7 @@ export function useJobQueue(): UseJobQueueReturn {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [jobTypeFilter, setJobTypeFilter] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const _debouncedSearch = useDebouncedValue(search, 400);
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -64,6 +64,13 @@ export function useJobQueue(): UseJobQueueReturn {
           field: "jobType",
           operator: "eq",
           value: jobTypeFilter,
+        });
+      }
+      if (debouncedSearch.trim()) {
+        filters.push({
+          field: "notes",
+          operator: "contains",
+          value: debouncedSearch.trim(),
         });
       }
 
@@ -83,7 +90,7 @@ export function useJobQueue(): UseJobQueueReturn {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, jobTypeFilter]);
+  }, [page, statusFilter, jobTypeFilter, debouncedSearch]);
 
   useEffect(() => {
     void fetchJobs();
@@ -91,7 +98,7 @@ export function useJobQueue(): UseJobQueueReturn {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, jobTypeFilter]);
+  }, [statusFilter, jobTypeFilter, debouncedSearch]);
 
   return {
     jobs,

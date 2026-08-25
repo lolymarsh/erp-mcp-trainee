@@ -9,6 +9,7 @@ jest.mock("uuid", () => {
 });
 
 import Redis from "ioredis";
+import type { IAuditLogService } from "../audit/service";
 import { JobService } from "./service";
 import type { IJobRepository } from "./repo";
 import type { ICustomerRepository } from "../customer/repo";
@@ -75,7 +76,7 @@ describe("JobService", () => {
       DeleteVehicle: jest.fn(),
     };
     redis = { del: jest.fn() } as unknown as jest.Mocked<Redis>;
-    svc = new JobService(repo, customerRepo, redis, mockAuditService as any);
+    svc = new JobService(repo, customerRepo, redis, mockAuditService as unknown as IAuditLogService);
   });
 
   describe("Filter", () => {

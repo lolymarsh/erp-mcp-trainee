@@ -12,6 +12,7 @@ export interface ChatMessage {
   resultCount?: number;
   data?: Record<string, unknown>[];
   format?: string;
+  cached?: boolean;
   timestamp: Date;
   isError?: boolean;
   errorCode?: string;
@@ -164,6 +165,7 @@ export function useChat() {
       resultCount: number,
       data: Record<string, unknown>[],
       msgFormat: string,
+      cached = false,
     ) => {
       const content = formatMessageContent(data, msgFormat);
       const assistantMessage: ChatMessage = {
@@ -174,6 +176,7 @@ export function useChat() {
         resultCount,
         data,
         format: msgFormat,
+        cached,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -183,6 +186,7 @@ export function useChat() {
 
   const handleErrorEvent = useCallback(
     (code: string, message: string, question: string) => {
+      setError(message || code);
       const knownCodes = [
         'MISSING_API_KEY', 'OPENAI_KEY_INVALID', 'GEMINI_KEY_INVALID', 'OPENROUTER_KEY_INVALID',
         'OPENROUTER_INSUFFICIENT_BALANCE',
@@ -284,11 +288,13 @@ export function useChat() {
                 currentStreaming.data = prev.data;
                 return prev;
               });
+              const isCached = (payload.cached as boolean) ?? false;
               addAssistantMessage(
                 currentStreaming.sql,
                 currentStreaming.resultCount,
                 currentStreaming.data,
                 format,
+                isCached,
               );
               setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
               setLoading(false);
@@ -304,10 +310,11 @@ export function useChat() {
           }
         },
         (err) => {
-          if (err.code === 'NETWORK_ERROR') {
+          setError(typeof err === 'string' ? err : err.message);
+          if (typeof err !== 'string' && err.code === 'NETWORK_ERROR') {
             showToast(errorMessages.NETWORK_ERROR, 'error', false);
           } else {
-            showToast(err.message, 'error', false);
+            showToast(typeof err === 'string' ? err : err.message, 'error', false);
           }
           setStreaming({ active: false, sql: '', resultCount: 0, data: [] });
           setLoading(false);
@@ -319,6 +326,11 @@ export function useChat() {
     },
     [format, provider, model, loading, streaming.active, sessionId, showToast, addAssistantMessage, handleErrorEvent, loadSessions],
   );
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setError(null);
+  }, []);
 
   const cancelStream = useCallback(() => {
     controllerRef.current?.abort();
@@ -384,6 +396,7 @@ export function useChat() {
     setProvider: handleProviderChange,
     setModel,
     sendMessage,
+    clearMessages,
     cancelStream,
     newSession,
     switchSession,
@@ -399,7 +412,7 @@ function formatMessageContent(
   format: string,
 ): string {
   if (data.length === 0) {
-    return 'ไม่พบข้อมูล';
+    return 'No results found.';
   }
 
   switch (format) {

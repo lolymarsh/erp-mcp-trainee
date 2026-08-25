@@ -9,6 +9,7 @@ export interface AuditMeta {
 }
 
 declare global {
+  /* eslint-disable-next-line @typescript-eslint/no-namespace */
   namespace Express {
     interface Request {
       auditMeta?: AuditMeta;
@@ -22,7 +23,7 @@ export function AuditMetaMiddleware(
   next: NextFunction,
 ): void {
   const displayName =
-    (req as any).user?.displayName ?? null;
+    (req as unknown as { user?: { displayName?: string } }).user?.displayName ?? null;
   req.auditMeta = {
     ipAddress: req.ip ?? null,
     userAgent: req.get("User-Agent") ?? null,

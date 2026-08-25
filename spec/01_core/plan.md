@@ -542,8 +542,8 @@ Client                     Backend
 ```bash
 npm create vite@latest frontend -- --template react-ts
 cd frontend
-npm install @mui/material@latest @mui/icons-material@latest @emotion/react@latest @emotion/styled@latest
-npm install tailwindcss@latest @tailwindcss/vite@latest
+npm install tailwindcss@latest @tailwindcss/vite@latest clsx tailwind-merge class-variance-authority lucide-react sonner
+npm install @radix-ui/react-slot @radix-ui/react-dialog @radix-ui/react-label
 npm install react-router-dom@latest zustand@latest axios@latest recharts@latest
 npm install -D vitest@latest @testing-library/react@latest @testing-library/jest-dom@latest
 ```

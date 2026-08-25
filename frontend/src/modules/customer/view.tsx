@@ -17,7 +17,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   Skeleton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -74,7 +73,7 @@ export function CustomerListView({
       )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box role="progressbar" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <Box key={i} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
               <Skeleton variant="text" height={24} />
@@ -135,15 +134,29 @@ export function CustomerListView({
           ))}
 
           {pagination && (
-            <TablePagination
-              component="div"
-              count={pagination.totalData}
-              page={pagination.page - 1}
-              onPageChange={(_, newPage) => onPageChange(newPage + 1)}
-              rowsPerPage={pagination.pageSize}
-              rowsPerPageOptions={[pagination.pageSize]}
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} จาก ${count}`}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="body2" color="text.secondary">
+                {`หน้า ${pagination.page} / ${pagination.totalPage || 1} (${pagination.totalData} รายการ)`}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={!pagination.hasPreviousPage}
+                  onClick={() => onPageChange(pagination.page - 1)}
+                >
+                  ก่อนหน้า
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => onPageChange(pagination.page + 1)}
+                >
+                  ถัดไป
+                </Button>
+              </Box>
+            </Box>
           )}
         </Box>
       )}

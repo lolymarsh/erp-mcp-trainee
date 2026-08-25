@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isAxiosError } from 'axios';
 import { z } from 'zod';
-import type { CustomerEntity, CustomerWithVehicles, PaginationResponse, FilterParams } from './model';
+import { toast } from 'sonner';
+import type { CustomerEntity, CustomerWithVehicles, PaginationResponse, FilterParams, VehicleEntity } from './model';
 import { customerApi } from './model';
 import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
+
 
 const customerFormSchema = z.object({
   firstName: z.string().min(1, 'กรุณากรอกชื่อ'),
@@ -160,11 +162,13 @@ export function useCustomerCreate(onSuccess: () => void): UseCustomerCreateRetur
     setFieldErrors({});
     try {
       await customerApi.Create(parsed.data);
+      toast.success('สร้างข้อมูลลูกค้าเรียบร้อยแล้ว');
       onSuccess();
       handleClose();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create customer';
       setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -233,15 +237,18 @@ export function useCustomerUpdate(id: string, onSuccess: () => void): UseCustome
     setFieldErrors({});
     try {
       await customerApi.Update(id, { ...parsed.data, version });
+      toast.success('อัปเดตข้อมูลลูกค้าเรียบร้อยแล้ว');
       onSuccess();
       handleClose();
     } catch (err: unknown) {
       if (isAxiosError(err) && err.response?.status === 409) {
         setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        toast.error('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
         onSuccess();
       } else {
         const message = err instanceof Error ? err.message : 'Failed to update customer';
         setError(message);
+        toast.error(message);
       }
     } finally {
       setLoading(false);
@@ -281,15 +288,18 @@ export function useCustomerDelete(
     setError(null);
     try {
       await customerApi.SoftDelete(id, { version });
+      toast.success('ลบข้อมูลลูกค้าเรียบร้อยแล้ว');
       handleClose();
       onSuccess();
     } catch (err: unknown) {
       if (isAxiosError(err) && err.response?.status === 409) {
         setError('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
+        toast.error('ข้อมูลถูกแก้ไขโดยผู้อื่น กรุณาลองใหม่');
         if (onConflict) onConflict();
       } else {
         const message = err instanceof Error ? err.message : 'Failed to delete customer';
         setError(message);
+        toast.error(message);
       }
     } finally {
       setLoading(false);

@@ -92,8 +92,17 @@ export const chatApi = {
     return data.data;
   },
 
-  GetHistory: async (sessionIdOverride?: string, limit = 50): Promise<ChatMessageDocument[]> => {
-    const sid = sessionIdOverride || sessionId;
+  GetHistory: async (sessionIdOrLimit?: string | number, maybeLimit = 50): Promise<ChatMessageDocument[]> => {
+    let sid = sessionId;
+    let limit = 50;
+    if (typeof sessionIdOrLimit === "number") {
+      limit = sessionIdOrLimit;
+    } else if (typeof sessionIdOrLimit === "string") {
+      sid = sessionIdOrLimit;
+      if (typeof maybeLimit === "number") {
+        limit = maybeLimit;
+      }
+    }
     const { data } = await api.get("/chat/history", {
       params: { limit },
       headers: { "X-Session-Id": sid },
